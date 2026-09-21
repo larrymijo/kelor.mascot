@@ -8,22 +8,24 @@ The site copy is **Spanish** (`lang="es"`). Code, file names, commits, PRs and r
 
 ## Stack (pinned; see `docs/decisions.md` for why)
 
-| Area              | Choice                                                                                         |
-| ----------------- | ---------------------------------------------------------------------------------------------- |
-| Framework         | Next.js 16.3 (App Router, Turbopack), React 19.2.x, TypeScript 5.9                             |
-| Styling           | Tailwind CSS v4 (tokens in `src/app/globals.css`)                                              |
-| 3D (phase 2+)     | three r186, @react-three/fiber 9, @react-three/drei 10, @react-three/postprocessing 3 + `n8ao` |
-| Motion (phase 5+) | GSAP 3.15 (ScrollTrigger, SplitText), Lenis                                                    |
-| Debug             | leva (dev only, never in production bundles)                                                   |
-| Tests             | Vitest 5 for pure logic, Playwright for captures (uses installed Chrome)                       |
-| Assets (phase 3+) | gltf-transform, KTX-Software 4.4+, sharp, headless Blender (CPU)                               |
-| Tooling           | pnpm 12 via corepack, ESLint 9 flat config, Prettier 3                                         |
-| Hosting           | Vercel; heavy media on Cloudflare R2 or Vercel Blob (decided in phase 4)                       |
+| Area              | Choice                                                                                               |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| Framework         | Next.js 16.3 (App Router, Turbopack), React 19.2.x, TypeScript 5.9                                   |
+| Styling           | Tailwind CSS v4 (tokens in `src/app/globals.css`)                                                    |
+| 3D (phase 2+)     | three r186, @react-three/fiber 9, @react-three/drei 10, @react-three/postprocessing 3 (bundles N8AO) |
+| Motion (phase 5+) | GSAP 3.15 (ScrollTrigger, SplitText), Lenis                                                          |
+| Debug             | leva (dev only, never in production bundles)                                                         |
+| Tests             | Vitest 5 for pure logic, Playwright for captures (uses installed Chrome)                             |
+| Assets (phase 3+) | gltf-transform, KTX-Software 4.4+, sharp, headless Blender (CPU)                                     |
+| Tooling           | pnpm 12 via corepack, ESLint 9 flat config, Prettier 3                                               |
+| Hosting           | Vercel; heavy media on Cloudflare R2 or Vercel Blob (decided in phase 4)                             |
 
 Version constraints that matter:
 
 - React stays on **19.2.x** because @react-three/fiber 9.7 requires `react <19.3`.
 - TypeScript stays on **5.9** and ESLint on **9** until Next 16 officially supports TS 7 and ESLint 10.
+- three is pinned to **0.186.x** because postprocessing 6.39 requires `three <0.187`. Upgrade both together.
+- Studio lighting uses drei `Lightformer`s only: `Environment` presets download HDR files from a CDN.
 
 ## Hard constraints
 
