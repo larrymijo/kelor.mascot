@@ -52,9 +52,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Cache Blender
+      - name: Restore cached Blender
         id: blender-cache
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: ~/blender
           key: blender-${{ env.BLENDER_VERSION }}-linux-x64
@@ -68,6 +68,14 @@ jobs:
           mkdir -p ~/blender
           tar -xf blender.tar.xz -C ~/blender --strip-components=1
           rm blender.tar.xz
+
+      # Saved right away, so a failing build does not throw the download away.
+      - name: Save Blender to the cache
+        if: steps.blender-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
 
       - name: Blender system libraries
         run: |
