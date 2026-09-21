@@ -20,6 +20,7 @@ import os
 import sys
 import time
 
+import bmesh
 import bpy
 import numpy as np
 from mathutils import Vector
@@ -93,14 +94,44 @@ def import_source(path):
     return source
 
 
-def build_volume(source, voxel_size):
-    """One closed, symmetric surface: voxel remesh, then mirror +X onto -X."""
-    volume = duplicate(source, "volume")
-    volume.data.materials.clear()
-    remesh = volume.modifiers.new("voxel", "REMESH")
+def non_manifold_edges(obj):
+    mesh = bmesh.new()
+    mesh.from_mesh(obj.data)
+    count = sum(1 for edge in mesh.edges if not edge.is_manifold)
+    mesh.free()
+    return count
+
+
+def clean(obj, merge_distance):
+    """Weld the mirror seam, drop loose bits and make normals point outwards."""
+    mesh = bmesh.new()
+    mesh.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(mesh, verts=mesh.verts, dist=merge_distance)
+    loose = [v for v in mesh.verts if not v.link_faces]
+    bmesh.ops.delete(mesh, geom=loose, context="VERTS")
+    bmesh.ops.recalc_face_normals(mesh, faces=mesh.faces)
+    mesh.to_mesh(obj.data)
+    mesh.free()
+    obj.data.update()
+
+
+def voxel_remesh(obj, voxel_size):
+    remesh = obj.modifiers.new("voxel", "REMESH")
     remesh.mode = "VOXEL"
     remesh.voxel_size = voxel_size
-    apply_modifier(volume, remesh)
+    apply_modifier(obj, remesh)
+
+
+def build_volume(source, voxel_size):
+    """One closed, symmetric surface: voxel remesh, mirror +X onto -X, weld the seam.
+
+    Returns the volume and whether it is exactly symmetric (Quadriflow's symmetry
+    mode needs that). If the seam still leaves non-manifold edges, a second voxel
+    pass closes them at the cost of exact symmetry.
+    """
+    volume = duplicate(source, "volume")
+    volume.data.materials.clear()
+    voxel_remesh(volume, voxel_size)
     mirror = volume.modifiers.new("symmetry", "MIRROR")
     mirror.use_axis = (True, False, False)
     mirror.use_bisect_axis = (True, False, False)
@@ -108,22 +139,38 @@ def build_volume(source, voxel_size):
     mirror.use_mirror_merge = True
     mirror.merge_threshold = voxel_size * 0.5
     apply_modifier(volume, mirror)
-    log(f"volume: {len(volume.data.polygons)} faces at {voxel_size} m voxels")
-    return volume
+    clean(volume, voxel_size * 0.25)
+    broken = non_manifold_edges(volume)
+    symmetric = broken == 0
+    if not symmetric:
+        log(f"mirror seam left {broken} non-manifold edges; re-voxelising")
+        voxel_remesh(volume, voxel_size)
+        clean(volume, voxel_size * 0.25)
+        broken = non_manifold_edges(volume)
+    log(f"volume: {len(volume.data.polygons)} faces at {voxel_size} m voxels, "
+        f"{broken} non-manifold edges, symmetric={symmetric}")
+    if broken:
+        raise RuntimeError(f"The volume still has {broken} non-manifold edges")
+    return volume, symmetric
 
 
-def retopologise(volume, quads, smooth_iterations, name):
+def retopologise(volume, symmetric, quads, smooth_iterations, name):
     low = duplicate(volume, name)
-    activate(low)
-    result = bpy.ops.object.quadriflow_remesh(
-        mode="FACES",
-        target_faces=quads,
-        use_mesh_symmetry=True,
-        use_preserve_sharp=False,
-        use_preserve_boundary=False,
-        smooth_normals=False,
-        seed=0,
-    )
+    result = set()
+    for use_symmetry in ([True, False] if symmetric else [False]):
+        activate(low)
+        result = bpy.ops.object.quadriflow_remesh(
+            mode="FACES",
+            target_faces=quads,
+            use_mesh_symmetry=use_symmetry,
+            use_preserve_sharp=False,
+            use_preserve_boundary=False,
+            smooth_normals=False,
+            seed=0,
+        )
+        if "FINISHED" in result:
+            break
+        log(f"Quadriflow {name} with symmetry={use_symmetry} returned {result}")
     if "FINISHED" not in result:
         raise RuntimeError(f"Quadriflow did not finish for {name}: {result}")
     if smooth_iterations:
@@ -288,7 +335,7 @@ def main():
     deform_names = [b["name"] for b in rig["bones"] if b["deform"]]
 
     source = import_source(os.path.join(out, "normalized.glb"))
-    volume = build_volume(source, fit["retopo"]["voxelSizeM"])
+    volume, symmetric = build_volume(source, fit["retopo"]["voxelSizeM"])
     report = {"blender": bpy.app.version_string, "tiers": {}}
 
     for tier in ("full", "lite"):
@@ -297,7 +344,11 @@ def main():
         os.makedirs(folder, exist_ok=True)
         size = fit["bake"]["size"][tier]
         low, triangles = retopologise(
-            volume, fit["retopo"]["targetQuads"][tier], fit["retopo"]["smoothIterations"], f"body_{tier}"
+            volume,
+            symmetric,
+            fit["retopo"]["targetQuads"][tier],
+            fit["retopo"]["smoothIterations"],
+            f"body_{tier}",
         )
         unwrap(low)
 
