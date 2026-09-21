@@ -84,14 +84,14 @@
         "full": {
           "triangles": 11952,
           "textureSize": 1024,
-          "seconds": 12.6,
+          "seconds": 11.8,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 4464,
           "textureSize": 512,
-          "seconds": 5.5,
+          "seconds": 5.6,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -113,7 +113,7 @@
           ]
         },
         "mouthY": 0.8662,
-        "kB": 1859
+        "kB": 1133
       },
       "lite": {
         "repairedVertices": 0,
@@ -135,22 +135,17 @@
     },
     "validate": {
       "full": {
-        "ok": false,
-        "notPassing": [
-          {
-            "id": "file.size",
-            "status": "fail",
-            "message": "1859 kB (budget 1500 kB)",
-            "hint": "Compress with gltf-transform (Meshopt geometry, KTX2 textures) or lower texture sizes."
-          }
-        ]
+        "ok": true,
+        "notPassing": []
       },
       "lite": {
         "ok": true,
         "notPassing": []
       }
+    },
+    "review": {
+      "folder": "assets/review/phase-3"
     }
   },
-  "ok": false,
-  "error": "The validator rejected the model"
+  "ok": true
 }
