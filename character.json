@@ -70,10 +70,10 @@
       { "name": "neck_01", "parent": "chest", "role": "neck", "restHead": [0, 0.68, 0.03] },
       { "name": "neck_02", "parent": "neck_01", "role": "neck", "restHead": [0, 0.72, 0.04] },
       { "name": "head", "parent": "neck_02", "role": "head", "restHead": [0, 0.76, 0.05] },
-      { "name": "eye_L", "parent": "head", "role": "eye", "restHead": [0.09, 0.98, 0.2] },
-      { "name": "eye_R", "parent": "head", "role": "eye", "restHead": [-0.09, 0.98, 0.2] },
-      { "name": "eyelid_L", "parent": "head", "role": "eyelid", "restHead": [0.09, 0.98, 0.2] },
-      { "name": "eyelid_R", "parent": "head", "role": "eyelid", "restHead": [-0.09, 0.98, 0.2] },
+      { "name": "eye_L", "parent": "head", "role": "eye", "restHead": [0.105, 1, 0.26] },
+      { "name": "eye_R", "parent": "head", "role": "eye", "restHead": [-0.105, 1, 0.26] },
+      { "name": "eyelid_L", "parent": "head", "role": "eyelid", "restHead": [0.105, 1, 0.26] },
+      { "name": "eyelid_R", "parent": "head", "role": "eyelid", "restHead": [-0.105, 1, 0.26] },
       { "name": "tail_01", "parent": "hips", "role": "tail", "restHead": [0, 0.36, -0.14] },
       { "name": "tail_02", "parent": "tail_01", "role": "tail", "restHead": [0, 0.3, -0.28] },
       { "name": "tail_03", "parent": "tail_02", "role": "tail", "restHead": [0, 0.24, -0.4] },
@@ -227,11 +227,12 @@
     },
     "idle": { "returnToCameraAfterS": 4, "lookAroundIntervalS": [2.5, 5] },
     "blink": {
+      "_doc": "Eyelid geometry is authored open in the bind pose. A positive rotation of closedAngleDeg about the eyelid bone local +X closes it.",
       "bones": ["eyelid_L", "eyelid_R"],
       "intervalS": [2, 6],
       "durationS": 0.15,
       "doubleBlinkChance": 0.15,
-      "closedAngleDeg": 38
+      "closedAngleDeg": 72
     }
   },
 
