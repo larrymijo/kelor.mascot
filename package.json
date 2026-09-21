@@ -2,11 +2,26 @@
   "name": "kelor-mascot",
   "version": "0.1.0",
   "private": true,
+  "description": "KELOR Interactive promotional site starring a 3D mascot.",
+  "type": "module",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "typecheck": "next typegen && tsc --noEmit",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "validate:model": "node scripts/assets/validate.mjs",
+    "check": "next typegen && tsc --noEmit && eslint && prettier --check . && vitest run && node scripts/assets/validate.mjs && next build"
   },
   "dependencies": {
     "next": "16.3.5",
@@ -14,14 +29,19 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
+    "eslint": "^9.39.5",
     "eslint-config-next": "16.3.5",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  },
-  "packageManager": "pnpm@12.4.2"
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.8",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.1",
+    "zod": "^4.6.5"
+  }
 }

@@ -1,0 +1,15 @@
+# Generated or managed by tools
+pnpm-lock.yaml
+next-env.d.ts
+AGENTS.md
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+
+# Binary and heavy assets
+public/models/
+assets/
+*.glb
+*.ktx2

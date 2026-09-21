@@ -1,3 +1,7 @@
+# pnpm 12 reads project settings from this file.
+engineStrict: true
+
+# Postinstall scripts are opt-in. Next.js falls back gracefully without them.
 allowBuilds:
   sharp: false
   unrs-resolver: false
