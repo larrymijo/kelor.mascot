@@ -373,8 +373,19 @@ describe('CLI', () => {
 
   it('skips missing contract files unless --strict, when run as a script', () => {
     const script = resolve(__dirname, 'validate.mjs')
-    const output = execFileSync(process.execPath, [script], { encoding: 'utf8' })
+    const missing = join(dir, 'missing-contract.json')
+    const files = { ...contract.files, lite: join(dir, 'none.lite.glb'), full: join(dir, 'none.full.glb') }
+    writeFileSync(missing, JSON.stringify({ ...contract, files }))
+    const output = execFileSync(process.execPath, [script, '--contract', missing], { encoding: 'utf8' })
     expect(output).toContain('SKIP  lite')
-    expect(() => execFileSync(process.execPath, [script, '--strict'], { stdio: 'pipe' })).toThrow()
+    expect(() =>
+      execFileSync(process.execPath, [script, '--contract', missing, '--strict'], { stdio: 'pipe' }),
+    ).toThrow()
+  })
+
+  it('passes the committed placeholder models in strict mode', () => {
+    const script = resolve(__dirname, 'validate.mjs')
+    const output = execFileSync(process.execPath, [script, '--strict'], { encoding: 'utf8' })
+    expect(output.match(/Result: PASS/g)).toHaveLength(2)
   })
 })
