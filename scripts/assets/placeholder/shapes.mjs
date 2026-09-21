@@ -91,10 +91,10 @@ export function taperedTube(points, radii, radialSegments, tubularSegments) {
 export function bodyParts(detail) {
   const s = (n) => seg(n, detail)
   const parts = [
-    { name: 'head', bones: ['head', 'neck_02'], belly: false, geometries: [ellipsoid([0, 0.95, 0.06], [0.27, 0.24, 0.25], s(40), s(28))] },
+    { name: 'head', bones: ['head', 'neck_02'], belly: false, geometries: [ellipsoid([0, 0.93, 0.06], [0.28, 0.25, 0.25], s(40), s(28))] },
     { name: 'snout', bones: ['head'], belly: true, geometries: [ellipsoid(SNOUT.center, SNOUT.radii, s(32), s(20))] },
-    { name: 'neck', bones: ['chest', 'neck_01', 'neck_02', 'head'], belly: true, geometries: [ellipsoid([0, 0.68, 0.03], [0.15, 0.11, 0.14], s(24), s(14))] },
-    { name: 'torso', bones: ['hips', 'spine_01', 'spine_02', 'chest'], belly: true, geometries: [ellipsoid([0, 0.46, 0], [0.24, 0.25, 0.22], s(40), s(28))] },
+    { name: 'neck', bones: ['chest', 'neck_01', 'neck_02', 'head'], belly: false, geometries: [ellipsoid([0, 0.7, 0.02], [0.13, 0.1, 0.12], s(24), s(14))] },
+    { name: 'torso', bones: ['hips', 'spine_01', 'spine_02', 'chest'], belly: true, geometries: [ellipsoid([0, 0.46, 0], [0.24, 0.26, 0.22], s(40), s(28))] },
     {
       name: 'tail',
       bones: ['hips', 'tail_01', 'tail_02', 'tail_03', 'tail_04'],
