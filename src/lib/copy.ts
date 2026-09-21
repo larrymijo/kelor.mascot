@@ -8,10 +8,13 @@ export const copy = {
     description:
       'Estudio de software en Ecuador. Muy pronto, una experiencia 3D con nuestra nueva mascota.',
   },
-  placeholder: {
+  hero: {
     eyebrow: 'Próximamente',
     title: 'Algo está por eclosionar.',
-    body: 'Estamos preparando una experiencia 3D protagonizada por la nueva mascota del estudio. Muy pronto podrás conocerla.',
+    body: 'Estamos preparando una experiencia 3D protagonizada por la nueva mascota del estudio.',
+    /** Accessible description of the decorative 3D scene. */
+    sceneLabel:
+      'Escena 3D: un huevo hexagonal con los colores del logo de KELOR se agrieta y de él nace un pequeño dinosaurio morado.',
     cta: {
       label: 'Conoce KELOR Interactive',
       // Current studio site; switch to the final domain once it exists.

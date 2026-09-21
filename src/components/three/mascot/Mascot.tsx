@@ -5,10 +5,13 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import type { Group } from 'three'
 import { character } from '@/lib/character'
-import { smoothstep } from '@/lib/math/damp'
+import { degToRad, smoothstep } from '@/lib/math/damp'
 import { modelUrl } from '@/lib/scene/model'
 import { useScene } from '../store'
 import { MascotRig } from './MascotRig'
+
+/** Three-quarter turn towards the key light, so the tail and plates read. Phase 5 turns the head back to the viewer. */
+const POSE_YAW = degToRad(22)
 
 const easeOutBack = (t: number) => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2
 
@@ -72,7 +75,7 @@ export function Mascot() {
   })
 
   return (
-    <group ref={root} visible={false}>
+    <group ref={root} visible={false} rotation-y={POSE_YAW}>
       <primitive object={rig.scene} />
     </group>
   )
