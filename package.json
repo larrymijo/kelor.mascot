@@ -21,7 +21,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "validate:model": "node scripts/assets/validate.mjs",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm validate:model && pnpm build"
+    "check": "next typegen && tsc --noEmit && eslint && prettier --check . && vitest run && node scripts/assets/validate.mjs && next build"
   },
   "dependencies": {
     "next": "16.3.5",
