@@ -72,7 +72,7 @@ Each failed rule prints the measured value, the budget and a hint on how to fix 
 
 ## Deploying on Vercel
 
-1. Go to https://vercel.com/new and import `larrymijo/kelor-mascot`.
+1. Go to https://vercel.com/new and import `larrymijo/kelor.mascot`. The repository is private: if it is not listed, use "Adjust GitHub App Permissions" to give Vercel access to it.
 2. Keep the detected framework preset (Next.js) and the default build settings.
 3. Add the environment variable `ENABLE_EXPERIMENTAL_COREPACK` with value `1` (all environments), so Vercel uses the exact pnpm version from `packageManager`.
 4. Deploy. Node.js 24 is selected automatically from `engines` in `package.json`.
