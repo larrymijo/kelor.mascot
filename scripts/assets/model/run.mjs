@@ -133,8 +133,8 @@ async function main(argv) {
           textures: {
             baseColor: image('basecolor.jpg', 'image/jpeg'),
             orm: image('orm.jpg', 'image/jpeg'),
-            normal: existsSync(join(folder, 'normal.png'))
-              ? image('normal.png', 'image/png')
+            normal: existsSync(join(folder, 'normal.jpg'))
+              ? image('normal.jpg', 'image/jpeg')
               : undefined,
           },
         })

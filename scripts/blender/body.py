@@ -6,7 +6,7 @@ map (from a clean voxel volume), builds the contract armature from
 build/model/rig.json and binds the body with automatic weights.
 
 Outputs, per tier, in <out>/<tier>/: body.glb (skinned mesh, no materials),
-basecolor.jpg, orm.jpg (R: AO, G: roughness, B: 0) and normal.png (full).
+basecolor.jpg, orm.jpg (R: AO, G: roughness, B: 0) and normal.jpg (full).
 A JSON report goes to <out>/body-report.json.
 
 Run (Blender 5.2 LTS):
@@ -364,7 +364,8 @@ def main():
         if tier == "full":
             normal = new_image(f"normal_{tier}", size, non_color=True)
             bake("NORMAL", low, normal, high=volume, samples=4, fit=fit)
-            save_image(normal, os.path.join(folder, "normal.png"), "PNG")
+            # JPEG keeps the uncompressed budget until KTX2 arrives in phase 4.
+            save_image(normal, os.path.join(folder, "normal.jpg"), "JPEG", 95)
 
         armature = build_armature(rig)
         weights = bind(low, armature, deform_names)
