@@ -48,6 +48,7 @@ Version constraints that matter:
 | Metric                                            | Budget                                             |
 | ------------------------------------------------- | -------------------------------------------------- |
 | Initial JS (excluding the lazily loaded 3D chunk) | ≤ 150 kB gzip                                      |
+| Deferred 3D JS (the stage chunk)                  | ≤ 420 kB gzip                                      |
 | LCP (4G, mid-range phone)                         | < 2.0 s                                            |
 | CLS                                               | 0                                                  |
 | TBT                                               | < 200 ms                                           |
@@ -55,7 +56,7 @@ Version constraints that matter:
 | Frame rate                                        | 60 fps on Intel integrated GPU at quality `medium` |
 | Lighthouse accessibility                          | ≥ 95                                               |
 
-Model budgets (triangles, bones, textures, draw calls, clips) live in `character.json` and are enforced by `pnpm validate:model`.
+Model budgets (triangles, bones, textures, draw calls, clips) live in `character.json` and are enforced by `pnpm validate:model`. JS budgets are enforced by `pnpm size` after a build.
 
 ## Character bible (summary)
 
@@ -93,16 +94,27 @@ scripts/blender         headless Blender pipeline (Python, phase 3)
 scripts/review          capture and review tooling
 assets/concept          concept art chosen by the owner (input to phase 3)
 docs/                   scroll script, decisions log
-public/models           built GLBs (validated against character.json)
+public/models           GLBs validated against character.json (generated placeholders until phase 3)
 ```
+
+## Stage architecture (phase 2)
+
+- `src/components/sections/StageMount.tsx` is the client boundary: it lazy-loads `src/components/three/Experience.tsx` with `next/dynamic` (`ssr: false`) and keeps the static brand mark until the first frame.
+- `src/components/three/Stage.tsx` is the only place that creates the Canvas. It picks the boot tier, pauses off screen, and drives the boot sequence.
+- Scene state lives in the zustand store `src/components/three/store.ts`; pure logic (boot sequence, quality tiers, framing, damping) lives in `src/lib` and is unit tested.
+- The mascot is wrapped by `MascotRig` (clips, expressions, plate glow); all lookups use contract names.
+- React Compiler lint rules forbid mutating hook values: keep three.js mutations inside classes like `MascotRig` or read objects with `get()` inside effects.
+- `?debug` opens the leva panel and FPS meter on local and preview builds, never on production.
 
 ## Commands
 
 ```bash
 corepack pnpm dev              # local dev server
-corepack pnpm check            # typecheck + lint + format:check + test + validate:model + build
-corepack pnpm validate:model   # validate GLBs in public/models against character.json
-corepack pnpm e2e              # Playwright captures (run `pnpm build` first)
+corepack pnpm check            # typecheck, lint, format, tests, strict model validation, placeholder freshness, build, bundle budget
+corepack pnpm validate:model   # validate GLBs in public/models against character.json (strict)
+corepack pnpm build:placeholder # regenerate the placeholder GLBs (add --check to verify)
+corepack pnpm size             # bundle report and JS budgets (after build)
+corepack pnpm e2e              # Playwright: 3D hero, reduced motion, keyboard, debug panel, captures (after build)
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same checks on every PR.
+CI (`.github/workflows/ci.yml`) runs the same checks plus the e2e suite on every PR and uploads the captures as an artifact.
