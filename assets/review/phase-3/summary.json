@@ -1,0 +1,84 @@
+{
+  "source": "assets/source/standin-raw.glb",
+  "steps": {
+    "normalize": {
+      "sourceHeight": 1.007,
+      "scale": 1.1914,
+      "feetCentre": [
+        -0.101,
+        0.251
+      ],
+      "triangles": 75832,
+      "meshes": 1
+    },
+    "rig": {
+      "landmarks": {
+        "heightM": 1.2,
+        "feetBackZ": -0.1105,
+        "crotchY": 0.204,
+        "legX": 0.1165,
+        "neckY": 0.702,
+        "neckHalfWidth": 0.1321,
+        "torsoFrontZ": 0.1612,
+        "headCenterY": 0.936,
+        "headHalfWidth": 0.2844,
+        "snoutTip": [
+          0,
+          0.8962,
+          0.2829
+        ],
+        "mouthY": 0.8662,
+        "hand": [
+          0.2547,
+          0.4751,
+          0.1035
+        ],
+        "tailTip": [
+          0,
+          0.1632,
+          -0.6739
+        ],
+        "tailCurve": [
+          [
+            -0.1605,
+            0.4538
+          ],
+          [
+            -0.2247,
+            0.4611
+          ],
+          [
+            -0.2888,
+            0.3936
+          ],
+          [
+            -0.353,
+            0.3375
+          ],
+          [
+            -0.4172,
+            0.2954
+          ],
+          [
+            -0.4814,
+            0.2548
+          ],
+          [
+            -0.5456,
+            0.2181
+          ],
+          [
+            -0.6097,
+            0.1837
+          ],
+          [
+            -0.6739,
+            0.162
+          ]
+        ]
+      }
+    }
+  },
+  "ok": false,
+  "error": "scripts/blender/body.py exited with 1"
+}
