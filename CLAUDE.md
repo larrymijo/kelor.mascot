@@ -2,7 +2,7 @@
 
 # KELOR Interactive: promotional site with a 3D mascot
 
-Promotional website for KELOR Interactive. The star is a 3D mascot: an adorable chibi bipedal dinosaur, purple, that follows the cursor with its eyes inside a cinematic, scroll-driven experience. Goals, in order: it must look very 3D, load exceptionally fast, and feel cinematic.
+Promotional website for KELOR Interactive. The star is a 3D mascot, **Kelo**: an adorable chibi bipedal dinosaur, purple, that follows the cursor with its eyes inside a cinematic, scroll-driven experience. Goals, in order: it must look very 3D, load exceptionally fast, and feel cinematic.
 
 The site copy is **Spanish** (`lang="es"`). Code, file names, commits, PRs and repo docs are **English**.
 

@@ -3,7 +3,7 @@ name: kelor-mascot
 description: Character bible, canonical names and budgets for the KELOR Interactive 3D mascot (purple chibi bipedal dinosaur). Use for any work that touches the mascot - concept art briefs, the Blender pipeline, GLB export and validation, R3F runtime code (gaze, blink, expressions, director), animation clips, colours, naming, or reviewing whether a design stays on-model and original.
 ---
 
-# KELOR mascot
+# Kelo, the KELOR mascot
 
 The machine-readable contract is `character.json` at the repo root. This skill explains the intent behind it. When the two disagree, `character.json` wins and this file must be updated in the same PR.
 
@@ -124,23 +124,18 @@ What makes it ours: violet-blue hue (not red-purple), glowing **hexagonal** plat
 
 ## Concept art brief (the owner generates the images)
 
-Ask for a character turnaround that an image-to-3D service can reconstruct:
+Two images per design, both generated and chosen by the owner:
 
-- Views: front, three-quarter, side, back. Same character, same scale, **A-pose** (arms 30° down), mouth closed, neutral expression.
-- Flat, even lighting, no cast shadows, plain light-grey background, no text or watermark.
-- Clean, stylised 3D render look (soft clay/vinyl toy), not a painting.
-- Prompt skeleton: _"Character turnaround sheet of an original chibi bipedal baby dinosaur mascot, violet-blue skin (#7A3FE4) with lavender belly (#B794FF), huge round eyes set low, mitten hands and feet, thick tapering tail, five rounded hexagonal glowing plates along the spine, soft vinyl-toy 3D render, A-pose, front, side, three-quarter and back views, flat studio lighting, plain light grey background."_
-- Save chosen images in `assets/concept/` as `concept-<view>-<nn>.png` (≤ 2 MB each).
+1. **Hero concept** (for approval): a turnaround sheet with front, three-quarter, side and back views at the same scale, **A-pose** (arms 30° down), mouth closed, neutral expression, the full face and the dorsal plates. Flat even lighting, plain light-grey background, no text or watermark, soft vinyl-toy 3D render look.
+   _"Character turnaround sheet of Kelo, an original chibi bipedal baby dinosaur mascot: big round head, pear-shaped soft body, short thick legs with mitten feet, small mitten arms, thick tapering tail, violet-blue skin (#7A3FE4) with a lavender belly (#B794FF), huge round eyes set low on the face, small closed smile, five rounded hexagonal glowing plates along the spine and tail. Soft vinyl-toy 3D render, A-pose, front, three-quarter, side and back views at the same scale, flat even studio lighting, plain light grey background, no text."_
+2. **Base image** (input to image-to-3D): the same character and pose with a **blank face (no eyes, mouth or blush) and no dorsal plates**, because eyes, lids, mouth shapes and plates are separate geometry or the expression atlas in the contract.
+   _"Same character, same proportions and A-pose, but with a completely smooth blank face (no eyes, no mouth, no blush) and no plates on its back. Full body, centred, flat even lighting, no shadows, plain light grey background."_
 
-## Name candidates (pending the owner's choice)
+Files: `assets/concept/concept-sheet-01.png` and `assets/concept/concept-base-{front,side,back}-01.png` (PNG, at least 1024 px, at most 2 MB). The image-to-3D output goes to `assets/source/kelo-raw.glb`: textured GLB, symmetry on, highest detail, no rig, animation or low-poly remesh, at most 50 MB, on a plan that allows commercial use.
 
-1. **Kelo**: derived from KELOR, so the mascot carries the studio name.
-2. **Mora**: Spanish for blackberry, a purple fruit loved in Ecuador; warm and local.
-3. **Ovi**: from _ovum_ and a nod to the oviraptor; it was born from the egg.
-4. **Hexi**: from the hexagon of the logo, the egg and the plates.
-5. **Tesi**: from _tesela_, a tile of a tessellation, like the hexagonal plates.
+## Name
 
-When a name is chosen, set `meta.name` in `character.json` and update this section.
+The mascot is **Kelo** (chosen on 2026-09-22 from Kelo, Mora, Ovi, Hexi and Tesi): derived from KELOR, so the mascot carries the studio name. `meta.name` in `character.json` holds it.
 
 ## Review checklist for mascot work
 
