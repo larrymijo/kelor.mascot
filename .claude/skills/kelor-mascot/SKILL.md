@@ -120,7 +120,7 @@ What makes it ours: violet-blue hue (not red-purple), glowing **hexagonal** plat
 
 ## Concept art brief (the owner generates the images)
 
-Ask for a character turnaround that a image-to-3D service can reconstruct:
+Ask for a character turnaround that an image-to-3D service can reconstruct:
 
 - Views: front, three-quarter, side, back. Same character, same scale, **A-pose** (arms 30° down), mouth closed, neutral expression.
 - Flat, even lighting, no cast shadows, plain light-grey background, no text or watermark.
