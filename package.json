@@ -21,8 +21,9 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "validate:model": "node scripts/assets/validate.mjs --strict",
-    "check": "next typegen && tsc --noEmit && eslint && prettier --check . && vitest run && node scripts/assets/validate.mjs --strict && node scripts/assets/build-placeholder.mjs --check && next build",
-    "build:placeholder": "node scripts/assets/build-placeholder.mjs"
+    "check": "next typegen && tsc --noEmit && eslint && prettier --check . && vitest run && node scripts/assets/validate.mjs --strict && node scripts/assets/build-placeholder.mjs --check && next build && node scripts/review/bundle-report.mjs",
+    "build:placeholder": "node scripts/assets/build-placeholder.mjs",
+    "size": "node scripts/review/bundle-report.mjs"
   },
   "dependencies": {
     "@react-three/drei": "10.7.8",
