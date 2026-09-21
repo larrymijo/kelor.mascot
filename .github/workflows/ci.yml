@@ -48,8 +48,11 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
-      - name: Validate mascot models
+      - name: Validate mascot models (strict)
         run: pnpm validate:model
+
+      - name: Check placeholder models are up to date
+        run: pnpm build:placeholder --check
 
       - name: Build
         run: pnpm build
