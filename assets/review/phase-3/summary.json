@@ -77,8 +77,80 @@
           ]
         ]
       }
+    },
+    "body": {
+      "blender": "5.2.2 LTS",
+      "tiers": {
+        "full": {
+          "triangles": 11952,
+          "textureSize": 1024,
+          "seconds": 12.6,
+          "unweightedVertices": 0,
+          "emptyGroups": []
+        },
+        "lite": {
+          "triangles": 4464,
+          "textureSize": 512,
+          "seconds": 5.5,
+          "unweightedVertices": 0,
+          "emptyGroups": []
+        }
+      }
+    },
+    "assemble": {
+      "full": {
+        "repairedVertices": 0,
+        "eyes": {
+          "L": [
+            0.105,
+            1.0008,
+            0.20274240096266025
+          ],
+          "R": [
+            -0.105,
+            1.0008,
+            0.20273923109365474
+          ]
+        },
+        "mouthY": 0.8662,
+        "kB": 1859
+      },
+      "lite": {
+        "repairedVertices": 0,
+        "eyes": {
+          "L": [
+            0.105,
+            1.0008,
+            0.20267636991880086
+          ],
+          "R": [
+            -0.105,
+            1.0008,
+            0.20221607502371616
+          ]
+        },
+        "mouthY": 0.8662,
+        "kB": 436
+      }
+    },
+    "validate": {
+      "full": {
+        "ok": false,
+        "notPassing": [
+          {
+            "id": "file.size",
+            "status": "fail",
+            "message": "1859 kB (budget 1500 kB)",
+            "hint": "Compress with gltf-transform (Meshopt geometry, KTX2 textures) or lower texture sizes."
+          }
+        ]
+      },
+      "lite": {
+        "ok": true,
+        "notPassing": []
+      }
     }
   },
   "ok": false,
-  "error": "scripts/blender/body.py exited with 1"
+  "error": "The validator rejected the model"
 }

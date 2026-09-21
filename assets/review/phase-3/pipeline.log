@@ -1,4 +1,4 @@
-Kelo model pipeline, 2026-09-21T23:52:04.605Z
+Kelo model pipeline, 2026-09-21T23:54:36.513Z
 
 == 1. normalize
 {"sourceHeight":1.007,"scale":1.1914,"feetCentre":[-0.101,0.251],"triangles":75832,"meshes":1}
@@ -6,34 +6,104 @@ Kelo model pipeline, 2026-09-21T23:52:04.605Z
 
 == 2. rig
 {"heightM":1.2,"feetBackZ":-0.1105,"crotchY":0.204,"legX":0.1165,"neckY":0.702,"neckHalfWidth":0.1321,"torsoFrontZ":0.1612,"headCenterY":0.936,"headHalfWidth":0.2844,"snoutTip":[0,0.8962,0.2829],"mouthY":0.8662,"hand":[0.2547,0.4751,0.1035],"tailTip":[0,0.1632,-0.6739],"tailCurve":[[-0.1605,0.4538],[-0.2247,0.4611],[-0.2888,0.3936],[-0.353,0.3375],[-0.4172,0.2954],[-0.4814,0.2548],[-0.5456,0.2181],[-0.6097,0.1837],[-0.6739,0.162]]}
-== rig done in 0.1s
+== rig done in 0.0s
 
 == 3. body
 $ /home/runner/blender/blender -b --factory-startup --python-exit-code 1 -P scripts/blender/body.py -- --root /home/runner/work/kelor.mascot/kelor.mascot --out build/model
-23:52:07 | INFO: Data are loaded, start creating Blender stuff
-23:52:07 | INFO: Blender create Mesh node standin
-23:52:07 | INFO: glTF import finished in 0.14s
+23:54:39 | INFO: Data are loaded, start creating Blender stuff
+23:54:39 | INFO: Blender create Mesh node standin
+23:54:39 | INFO: glTF import finished in 0.13s
 [body     0.3s] source: 75832 faces, 1 material(s)
-[body     1.3s] volume: 86976 faces at 0.006 m voxels
-Traceback (most recent call last):
-  File "/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py", line 337, in <module>
-    main()
-    ~~~~^^
-  File "/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py", line 299, in main
-    low, triangles = retopologise(
-                     ~~~~~~~~~~~~^
-        volume, fit["retopo"]["targetQuads"][tier], fit["retopo"]["smoothIterations"], f"body_{tier}"
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py", line 128, in retopologise
-    raise RuntimeError(f"Quadriflow did not finish for {name}: {result}")
-RuntimeError: Quadriflow did not finish for body_full: {'CANCELLED'}
+[body     1.3s] volume: 86966 faces at 0.006 m voxels, 0 non-manifold edges, symmetric=True
+Info: QuadriFlow: Remeshing completed
+[body     5.2s] body_full: 5976 faces, 11952 triangles (target 6500 quads)
+/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py:211: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+Info: Baking map saved to internal image, save it externally or pack it
+[body     7.9s] baked DIFFUSE 1024px on body_full in 1.4s
+Info: Baking map saved to internal image, save it externally or pack it
+[body    12.7s] baked AO 1024px on body_full in 4.9s
+Info: Baking map saved to internal image, save it externally or pack it
+[body    13.2s] baked NORMAL 1024px on body_full in 0.5s
+Info: 4426 vertex weights limited
+[body    13.7s] weights: 0 unweighted vertices, 0 empty bone groups
+INFO Draco is available, use library at /home/runner/blender/lib/libbf_intern_draco_bridge.so
+INFO MeshOptimizer is available, use library at /home/runner/blender/lib/libbf_intern_meshopt_bridge.so
+23:54:52 | INFO: Starting glTF 2.0 export
+23:54:52 | INFO: Extracting primitive: body
+23:54:52 | INFO: Primitives created: 1
+23:54:52 | INFO: Finished glTF 2.0 export in 0.04916119575500488 s
 
-Error: script failed, file: 'scripts/blender/body.py', exiting.
-Warning: QuadriFlow: The mesh needs to be manifold and have face normals that point in a consistent direction
+[body    13.9s] full done in 12.6s
+Info: QuadriFlow: Remeshing completed
+[body    16.9s] body_lite: 2232 faces, 4464 triangles (target 2400 quads)
+Info: Baking map saved to internal image, save it externally or pack it
+[body    18.2s] baked DIFFUSE 512px on body_lite in 0.3s
+Info: Baking map saved to internal image, save it externally or pack it
+[body    19.3s] baked AO 512px on body_lite in 1.0s
+Info: 1764 vertex weights limited
+[body    19.4s] weights: 0 unweighted vertices, 0 empty bone groups
+23:54:58 | INFO: Starting glTF 2.0 export
+23:54:58 | INFO: Extracting primitive: body.001
+23:54:58 | INFO: Primitives created: 1
+23:54:58 | INFO: Finished glTF 2.0 export in 0.022742271423339844 s
+
+[body    19.4s] lite done in 5.5s
+[body    19.4s] body step finished
 Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:34:58)
 
 Blender quit
+== body done in 21.7s
 
-FAILED: scripts/blender/body.py exited with 1
+== 4. assemble
+full: 1859 kB, 0 repaired vertices
+lite: 436 kB, 0 repaired vertices
+== assemble done in 1.4s
+
+== 5. validate
+  PASS full glb.container: glTF 2.0 binary, generator: glTF-Transform v4.5.0
+  FAIL full file.size: 1859 kB (budget 1500 kB)
+  PASS full extensions: used: KHR_materials_unlit
+  PASS full geometry.triangles: 15256 triangles (budget 24000)
+  PASS full geometry.drawCalls: 6 primitives rendered (budget 6)
+  PASS full geometry.morphTargets: 0 morph targets (budget 0)
+  PASS full skin.influences: up to 4 influences per vertex (budget 4)
+  PASS full skeleton.skin: 1 skin(s) sharing one skeleton
+  PASS full skeleton.boneCount: 28 bones (budget 32)
+  PASS full skeleton.names: all 28 bones match
+  PASS full skeleton.hierarchy: parents match the contract
+  PASS full meshes.required: found body, face, eyes, eyelids, eye_highlights, plates
+  PASS full materials.count: 5 materials (budget 5)
+  PASS full materials.required: found body, face, eyes, highlight, plates
+  PASS full textures.count: 5 images (budget 5)
+  PASS full textures.size: body_orm 1024×1024 jpeg, body_basecolor 1024×1024 jpeg, body_normal 1024×1024 png, face_atlas 1024×1024 png, eyes_basecolor 256×256 png
+  PASS full animations.required: found idle, hatch, look_around, roar, jump, wave
+  PASS full animations.duration: every clip within ±0.1 s of its nominal length
+  PASS full animations.total: 18.8 s of animation (budget 30 s)
+  PASS full animations.procedural: no clip keys eye_L, eye_R, eyelid_L, eyelid_R
+  PASS full animations.rootMotion: "root" is never keyed
+  PASS full scale.height: body is 1.199 m tall (expected 1.2 m)
+  PASS lite glb.container: glTF 2.0 binary, generator: glTF-Transform v4.5.0
+  PASS lite file.size: 436 kB (budget 500 kB)
+  PASS lite extensions: used: KHR_materials_unlit
+  PASS lite geometry.triangles: 6002 triangles (budget 8000)
+  PASS lite geometry.drawCalls: 6 primitives rendered (budget 6)
+  PASS lite geometry.morphTargets: 0 morph targets (budget 0)
+  PASS lite skin.influences: up to 4 influences per vertex (budget 4)
+  PASS lite skeleton.skin: 1 skin(s) sharing one skeleton
+  PASS lite skeleton.boneCount: 28 bones (budget 32)
+  PASS lite skeleton.names: all 28 bones match
+  PASS lite skeleton.hierarchy: parents match the contract
+  PASS lite meshes.required: found body, face, eyes, eyelids, eye_highlights, plates
+  PASS lite materials.count: 5 materials (budget 5)
+  PASS lite materials.required: found body, face, eyes, highlight, plates
+  PASS lite textures.count: 4 images (budget 4)
+  PASS lite textures.size: body_orm 512×512 jpeg, body_basecolor 512×512 jpeg, face_atlas 512×512 png, eyes_basecolor 128×128 png
+  PASS lite animations.required: found idle, hatch, look_around, roar, jump, wave
+  PASS lite animations.duration: every clip within ±0.1 s of its nominal length
+  PASS lite animations.total: 18.8 s of animation (budget 30 s)
+  PASS lite animations.procedural: no clip keys eye_L, eye_R, eyelid_L, eyelid_R
+  PASS lite animations.rootMotion: "root" is never keyed
+  PASS lite scale.height: body is 1.198 m tall (expected 1.2 m)
+
+FAILED: The validator rejected the model
