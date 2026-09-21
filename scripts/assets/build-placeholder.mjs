@@ -2,7 +2,8 @@
 /**
  * Build the placeholder mascot GLBs from character.json.
  *
- *   node scripts/assets/build-placeholder.mjs            write both tiers to character.json files.*
+ *   node scripts/assets/build-placeholder.mjs            write both tiers to build/placeholder/
+ *   node scripts/assets/build-placeholder.mjs --public   write them to character.json files.* (replaces the model)
  *   node scripts/assets/build-placeholder.mjs --check    exit 1 if the files on disk are out of date
  *
  * The placeholder honours the whole contract (bone names, hierarchy and rest
@@ -121,19 +122,24 @@ export async function main(argv, io = {}) {
   const log = io.log ?? ((s) => console.log(s))
   const check = argv.includes('--check')
   const contract = JSON.parse(readFileSync(resolve(REPO_ROOT, 'character.json'), 'utf8'))
+  // Since phase 3 the real model owns public/models; the placeholder writes to build/ unless asked.
+  const target = (tier) =>
+    argv.includes('--public')
+      ? contract.files[tier]
+      : `build/placeholder/${contract.files[tier].split('/').pop()}`
   let stale = 0
   for (const tier of TIERS) {
-    const path = resolve(REPO_ROOT, contract.files[tier])
+    const path = resolve(REPO_ROOT, target(tier))
     const bytes = await buildPlaceholder({ contract, tier })
     const kb = Math.round(bytes.byteLength / 1024)
     if (check) {
       const same = existsSync(path) && Buffer.compare(readFileSync(path), Buffer.from(bytes)) === 0
-      log(`${same ? 'OK   ' : 'STALE'} ${contract.files[tier]} (${kb} kB)`)
+      log(`${same ? 'OK   ' : 'STALE'} ${target(tier)} (${kb} kB)`)
       if (!same) stale += 1
     } else {
       mkdirSync(dirname(path), { recursive: true })
       writeFileSync(path, bytes)
-      log(`wrote ${contract.files[tier]} (${kb} kB)`)
+      log(`wrote ${target(tier)} (${kb} kB)`)
     }
   }
   if (stale)
