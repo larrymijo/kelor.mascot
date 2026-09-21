@@ -1,0 +1,140 @@
+import { Document, NodeIO } from '@gltf-transform/core'
+import { beforeAll, describe, expect, it } from 'vitest'
+import contract from '../../character.json'
+import fit from '../../assets/model/fit.json'
+import { boneSegments, merge, skinByDistance } from './assembly/skinning.mjs'
+import { buildModel, readBody } from './build-model.mjs'
+import { parseGlb } from './glb.mjs'
+import { measureLandmarks } from './model/landmarks.mjs'
+import { bodyParts } from './placeholder/shapes.mjs'
+import { bodyBaseColor, bodyNormal, bodyOrm } from './placeholder/textures.mjs'
+import { validateGlb } from './validate.mjs'
+
+type Bone = (typeof contract.skeleton.bones)[number]
+const bones = contract.skeleton.bones as Bone[]
+const jointOf = (name: string) => bones.findIndex((b) => b.name === name)
+const ZEROED = 50
+
+/** What Blender exports: a skinned body whose joints come in a different order. */
+async function blenderLikeBody() {
+  const segments = boneSegments(bones)
+  const geometry = merge(
+    bodyParts(0.5).flatMap((part) =>
+      part.geometries.map((g) => skinByDistance(g, part.bones, segments, jointOf)),
+    ),
+  )
+  const blenderOrder = [...bones].reverse()
+  const toBlender = new Map(blenderOrder.map((b, i) => [jointOf(b.name), i]))
+  const joints = Uint16Array.from(geometry.attributes.skinIndex.array, (j) => toBlender.get(j)!)
+  const weights = Float32Array.from(geometry.attributes.skinWeight.array)
+  weights.fill(0, 0, ZEROED * 4)
+
+  const doc = new Document()
+  const buffer = doc.createBuffer()
+  type Typed = Float32Array<ArrayBuffer> | Uint16Array<ArrayBuffer> | Uint32Array<ArrayBuffer>
+  const accessor = (array: Typed, type: 'SCALAR' | 'VEC2' | 'VEC3' | 'VEC4') =>
+    doc.createAccessor().setArray(array).setType(type).setBuffer(buffer)
+  const nodes = blenderOrder.map((b) => doc.createNode(b.name))
+  const skin = doc.createSkin('Armature')
+  nodes.forEach((n) => skin.addJoint(n))
+  const prim = doc
+    .createPrimitive()
+    .setAttribute(
+      'POSITION',
+      accessor(Float32Array.from(geometry.attributes.position.array), 'VEC3'),
+    )
+    .setAttribute('NORMAL', accessor(Float32Array.from(geometry.attributes.normal.array), 'VEC3'))
+    .setAttribute('TEXCOORD_0', accessor(Float32Array.from(geometry.attributes.uv.array), 'VEC2'))
+    .setAttribute('JOINTS_0', accessor(joints, 'VEC4'))
+    .setAttribute('WEIGHTS_0', accessor(weights, 'VEC4'))
+    .setIndices(accessor(Uint32Array.from(geometry.index!.array), 'SCALAR'))
+  const body = doc
+    .createNode('body')
+    .setMesh(doc.createMesh('body').addPrimitive(prim))
+    .setSkin(skin)
+  const scene = doc.createScene()
+  nodes.forEach((n) => scene.addChild(n))
+  scene.addChild(body)
+  return {
+    bytes: await new NodeIO().writeBinary(doc),
+    positions: Float32Array.from(geometry.attributes.position.array),
+    contractJoints: Uint16Array.from(geometry.attributes.skinIndex.array),
+  }
+}
+
+let built: Awaited<ReturnType<typeof buildModel>>
+let tierBytes: Uint8Array
+let contractJoints: Uint16Array
+
+beforeAll(async () => {
+  const body = await blenderLikeBody()
+  const { bytes, positions } = body
+  contractJoints = body.contractJoints
+  const landmarks = measureLandmarks(positions, contract.meta.heightM)
+  const segments = boneSegments(bones)
+  const rig = {
+    landmarks,
+    bones: bones.map((b) => ({
+      ...b,
+      tail: segments.get(b.name)?.[1].toArray() ?? b.restHead,
+      deform: b.role !== 'root' && b.role !== 'eye' && b.role !== 'eyelid',
+    })),
+  }
+  const png = (data: Uint8Array) => ({ data, mimeType: 'image/png' })
+  tierBytes = bytes
+  built = await buildModel({
+    contract,
+    fit,
+    tier: 'full',
+    body: bytes,
+    rig,
+    textures: {
+      baseColor: png(bodyBaseColor(contract.colors, 256)),
+      orm: png(bodyOrm(64)),
+      normal: png(bodyNormal(64)),
+    },
+  })
+})
+
+describe('build-model', () => {
+  it('remaps Blender joint order to the contract order', async () => {
+    const geometry = await readBody(tierBytes, contract)
+    const read = geometry.attributes.skinIndex.array
+    // Vertices past the zeroed ones keep their weights, so their joints must round-trip.
+    const start = ZEROED * 4
+    expect(Array.from(read.slice(start, start + 400))).toEqual(
+      Array.from(contractJoints.slice(start, start + 400)),
+    )
+  })
+
+  it('repairs vertices that automatic weights left empty', () => {
+    expect(built.report.repairedVertices).toBe(ZEROED)
+  })
+
+  it('produces a contract GLB with no validator failures or warnings', () => {
+    const report = validateGlb({ bytes: built.bytes, contract, tier: 'full' })
+    expect(report.results.filter((r) => r.status !== 'pass')).toEqual([])
+  })
+
+  it('sinks the eyeballs into the head and mirrors them', () => {
+    const { L, R } = built.report.eyes
+    expect(L[0]).toBeCloseTo(-R[0], 6)
+    expect(L[2]).toBeCloseTo(R[2], 6)
+    expect(L[2]).toBeGreaterThan(0.1)
+  })
+
+  it('moves the eye and eyelid bones onto the eyeballs', () => {
+    const { json } = parseGlb(built.bytes)
+    const node = (name: string) => json.nodes.find((n: { name: string }) => n.name === name)
+    const head = node('head').translation as number[]
+    const eye = node('eye_L').translation as number[]
+    const lid = node('eyelid_L').translation as number[]
+    expect(lid).toEqual(eye)
+    expect(eye[2]! + head[2]!).toBeGreaterThan(0)
+  })
+
+  it('marks the file as the real model with its source', () => {
+    const { json } = parseGlb(built.bytes)
+    expect(json.extras).toMatchObject({ kelorModel: true, source: fit.source })
+  })
+})
