@@ -1,0 +1,69 @@
+{
+  "_doc": "How the Blender pipeline and scripts/assets/build-model.mjs turn one image-to-3D source into the contract model. Model-specific knobs live here; the contract stays in character.json. Validated by scripts/assets/fit.ts in tests; the Python side reads it as plain JSON.",
+  "source": "assets/source/standin-raw.glb",
+
+  "orientation": {
+    "_doc": "Where the source's character faces and which axis is up, in glTF axes. The pipeline rotates it to +Y up, facing +Z.",
+    "forward": "-Z",
+    "up": "+Y"
+  },
+  "symmetrize": true,
+
+  "retopo": {
+    "_doc": "Voxel remesh makes the source one manifold volume; Quadriflow then builds quads. Face counts are quads (about twice as many triangles).",
+    "voxelSizeM": 0.006,
+    "targetQuads": { "full": 6500, "lite": 2400 },
+    "smoothIterations": 2
+  },
+
+  "bake": {
+    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. Sizes are pixels per tier; normal maps only on full.",
+    "size": { "full": 1024, "lite": 512 },
+    "samples": 16,
+    "cageExtrusionM": 0.02,
+    "maxRayDistanceM": 0.06,
+    "roughness": 0.6,
+    "jpegQuality": 88
+  },
+
+  "rig": {
+    "_doc": "Bone rest heads come from landmarks measured on the normalised mesh. Overrides replace a bone's measured head (metres, contract axes).",
+    "overrides": {}
+  },
+
+  "eyes": {
+    "_doc": "Eyeballs sit at ±x on a front ray at height y (null: measured from the head), sunk so that protrude × radius stays outside the skin.",
+    "x": 0.105,
+    "y": null,
+    "protrude": 0.7
+  },
+
+  "face": {
+    "_doc": "Front patch of the snout that carries the expression atlas. mouthY null: measured from the snout. Half extents are in metres around the mouth anchor.",
+    "mouthY": null,
+    "halfWidth": 0.17,
+    "up": 0.11,
+    "down": 0.08,
+    "offsetM": 0.0015
+  },
+
+  "plates": {
+    "_doc": "Hexagonal plates cast onto the back and tail from these bones, outward along dir (y, z). size in metres, embed is the share of the plate below the skin.",
+    "embed": 0.45,
+    "items": [
+      { "bone": "neck_02", "t": 0.5, "size": 0.06, "dir": [0.6, -1] },
+      { "bone": "chest", "t": 0.5, "size": 0.075, "dir": [0.5, -1] },
+      { "bone": "spine_02", "t": 0.5, "size": 0.082, "dir": [0.2, -1] },
+      { "bone": "spine_01", "t": 0.3, "size": 0.075, "dir": [0.1, -1] },
+      { "bone": "tail_02", "t": 0.3, "size": 0.06, "dir": [1, -0.2] },
+      { "bone": "tail_03", "t": 0.4, "size": 0.046, "dir": [1, -0.15] },
+      { "bone": "tail_04", "t": 0.3, "size": 0.034, "dir": [1, -0.1] }
+    ]
+  },
+
+  "review": {
+    "_doc": "Cycles CPU review renders committed to assets/review/phase-3.",
+    "resolution": 640,
+    "samples": 24
+  }
+}
