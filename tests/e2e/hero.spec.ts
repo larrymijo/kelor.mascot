@@ -77,3 +77,24 @@ test.describe('3D hero', () => {
     expect(animation).toBe('none')
   })
 })
+
+test.describe('preview debug panel', () => {
+  test('appears only with ?debug and drives the mascot', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'One profile is enough for the tooling')
+    const errors = collectErrors(page)
+
+    await page.goto('/')
+    await expect(scene(page)).toHaveAttribute('data-scene-state', /egg|hatching|ready/, {
+      timeout: 20_000,
+    })
+    await expect(page.getByText('KELOR debug')).toHaveCount(0)
+
+    await page.goto('/?debug')
+    await expect(page.getByText('KELOR debug')).toBeVisible({ timeout: 20_000 })
+    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 20_000 })
+    await page.getByRole('button', { name: 'play roar' }).click()
+    await page.waitForTimeout(800)
+    await page.screenshot({ path: 'scripts/review/out/debug-roar-desktop.png' })
+    expect(errors).toEqual([])
+  })
+})
