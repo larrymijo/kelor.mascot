@@ -27,9 +27,9 @@ Every decision and assumption that shapes the project, so nothing is argued twic
 
 ## Open questions
 
-| Question                                                                                         | Needed by |
-| ------------------------------------------------------------------------------------------------ | --------- |
-| Mascot name (five candidates in `.claude/skills/kelor-mascot/SKILL.md`).                         | Phase 3   |
-| Final domain and CTA target. The placeholder links to `kelorinteractive.com`, not yet confirmed. | Phase 6   |
-| Sound design source and licence (sound stays off by default).                                    | Phase 6   |
-| Cloudflare R2 or Vercel Blob for heavy media.                                                    | Phase 4   |
+| Question                                                                                                                                                           | Needed by |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| Mascot name (five candidates in `.claude/skills/kelor-mascot/SKILL.md`).                                                                                           | Phase 3   |
+| Final domain and CTA target. `kelorinteractive.com` does not resolve yet, so the placeholder CTA links to the current studio site, `kelor-interactive.vercel.app`. | Phase 6   |
+| Sound design source and licence (sound stays off by default).                                                                                                      | Phase 6   |
+| Cloudflare R2 or Vercel Blob for heavy media.                                                                                                                      | Phase 4   |
