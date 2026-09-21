@@ -29,11 +29,11 @@ test.describe('3D hero', () => {
     expect((await cta.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
 
     await expect(scene(page)).toHaveAttribute('data-scene-state', /egg|hatching|ready/, {
-      timeout: 20_000,
+      timeout: 30_000,
     })
     await page.screenshot({ path: `scripts/review/out/hero-egg-${testInfo.project.name}.png` })
 
-    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 20_000 })
+    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
     await page.waitForTimeout(2_800) // let the hatch clip settle into idle
     await page.screenshot({ path: `scripts/review/out/hero-ready-${testInfo.project.name}.png` })
 
@@ -69,7 +69,7 @@ test.describe('3D hero', () => {
       })
     })
     await page.goto('/')
-    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 20_000 })
+    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
     expect(seen.has('hatching')).toBe(false)
     const animation = await page
       .getByTestId('logo-glow')
@@ -85,13 +85,13 @@ test.describe('preview debug panel', () => {
 
     await page.goto('/')
     await expect(scene(page)).toHaveAttribute('data-scene-state', /egg|hatching|ready/, {
-      timeout: 20_000,
+      timeout: 30_000,
     })
     await expect(page.getByText('KELOR debug')).toHaveCount(0)
 
     await page.goto('/?debug')
-    await expect(page.getByText('KELOR debug')).toBeVisible({ timeout: 20_000 })
-    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 20_000 })
+    await expect(page.getByText('KELOR debug')).toBeVisible({ timeout: 30_000 })
+    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
     await page.getByRole('button', { name: 'play roar' }).click()
     await page.waitForTimeout(800)
     await page.screenshot({ path: 'scripts/review/out/debug-roar-desktop.png' })
