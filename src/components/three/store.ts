@@ -6,8 +6,9 @@
 import { create } from 'zustand'
 import type { QualityTier } from '@/lib/quality/detect'
 import { initialBootState, type BootState } from '@/lib/scene/boot'
+import type { ExpressionName } from './mascot/MascotRig'
 
-export type ExpressionName = 'neutral' | 'happy' | 'surprised' | 'roar'
+export type { ExpressionName }
 
 /** Live-tunable values; the preview debug panel writes them. */
 export interface Tweaks {
