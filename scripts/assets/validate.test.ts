@@ -30,7 +30,8 @@ const rule = (report: Report, id: string) => {
   return result
 }
 
-const failures = (report: Report) => report.results.filter((r) => r.status === 'fail').map((r) => r.id)
+const failures = (report: Report) =>
+  report.results.filter((r) => r.status === 'fail').map((r) => r.id)
 
 describe('glb.mjs', () => {
   it('round-trips the JSON and BIN chunks', () => {
@@ -115,12 +116,18 @@ describe('validateGlb on a model that follows the contract', () => {
 describe('validateGlb failures', () => {
   it('fails an invalid container with a hint', () => {
     const report = validateGlb({ bytes: new Uint8Array(64), contract, tier: 'full' })
-    expect(rule(report, 'glb.container')).toMatchObject({ status: 'fail', hint: expect.any(String) })
+    expect(rule(report, 'glb.container')).toMatchObject({
+      status: 'fail',
+      hint: expect.any(String),
+    })
     expect(report.ok).toBe(false)
   })
 
   it('fails when the file exceeds the tier size budget', () => {
-    const report = validate({ tier: 'lite', padBytes: (contract.budgets.lite.maxFileKB + 20) * 1024 })
+    const report = validate({
+      tier: 'lite',
+      padBytes: (contract.budgets.lite.maxFileKB + 20) * 1024,
+    })
     expect(rule(report, 'file.size').status).toBe('fail')
   })
 
@@ -130,7 +137,10 @@ describe('validateGlb failures', () => {
         gltf.extensionsUsed = ['KHR_draco_mesh_compression']
       },
     })
-    expect(rule(report, 'extensions')).toMatchObject({ status: 'fail', hint: expect.stringMatching(/Meshopt/) })
+    expect(rule(report, 'extensions')).toMatchObject({
+      status: 'fail',
+      hint: expect.stringMatching(/Meshopt/),
+    })
   })
 
   it('fails when the triangle budget is exceeded', () => {
@@ -204,7 +214,9 @@ describe('validateGlb failures', () => {
     const report = validate({
       mutate: ({ gltf, bone }) => {
         const tail3 = bone('tail_03')
-        gltf.nodes[tail3].children = gltf.nodes[tail3].children.filter((c: number) => c !== bone('tail_04'))
+        gltf.nodes[tail3].children = gltf.nodes[tail3].children.filter(
+          (c: number) => c !== bone('tail_04'),
+        )
         gltf.nodes[bone('hips')].children.push(bone('tail_04'))
       },
     })
@@ -216,7 +228,10 @@ describe('validateGlb failures', () => {
   it('fails on too many bones', () => {
     const report = validate({
       mutate: ({ gltf, bone }) => {
-        const extras = Array.from({ length: 10 }, (_, i) => gltf.nodes.push({ name: `extra_${i}` }) - 1)
+        const extras = Array.from(
+          { length: 10 },
+          (_, i) => gltf.nodes.push({ name: `extra_${i}` }) - 1,
+        )
         gltf.nodes[bone('root')].children.push(...extras)
         gltf.skins[0].joints.push(...extras)
       },
@@ -352,7 +367,10 @@ describe('CLI', () => {
   })
 
   it('exits 1 with readable output when a rule fails', () => {
-    writeFileSync(join(dir, 'broken.glb'), buildModel({ mutate: ({ gltf }) => (gltf.animations = []) }))
+    writeFileSync(
+      join(dir, 'broken.glb'),
+      buildModel({ mutate: ({ gltf }) => (gltf.animations = []) }),
+    )
     const { code, out } = run(['--file', 'broken.glb'])
     expect(code).toBe(1)
     expect(out).toMatch(/FAIL\s+animations\.required/)
@@ -374,12 +392,20 @@ describe('CLI', () => {
   it('skips missing contract files unless --strict, when run as a script', () => {
     const script = resolve(__dirname, 'validate.mjs')
     const missing = join(dir, 'missing-contract.json')
-    const files = { ...contract.files, lite: join(dir, 'none.lite.glb'), full: join(dir, 'none.full.glb') }
+    const files = {
+      ...contract.files,
+      lite: join(dir, 'none.lite.glb'),
+      full: join(dir, 'none.full.glb'),
+    }
     writeFileSync(missing, JSON.stringify({ ...contract, files }))
-    const output = execFileSync(process.execPath, [script, '--contract', missing], { encoding: 'utf8' })
+    const output = execFileSync(process.execPath, [script, '--contract', missing], {
+      encoding: 'utf8',
+    })
     expect(output).toContain('SKIP  lite')
     expect(() =>
-      execFileSync(process.execPath, [script, '--contract', missing, '--strict'], { stdio: 'pipe' }),
+      execFileSync(process.execPath, [script, '--contract', missing, '--strict'], {
+        stdio: 'pipe',
+      }),
     ).toThrow()
   })
 

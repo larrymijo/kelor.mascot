@@ -16,7 +16,10 @@ export function bodyBaseColor(colors, size) {
   const base = hexToRgb(colors.mascot['500'])
   const light = hexToRgb(colors.mascot['300'])
   const canvas = new Canvas(size, size)
-  canvas.shade((_u, v) => [...(v < 0.5 ? mix(deep, base, v * 2) : mix(base, light, (v - 0.5) * 2)), 1])
+  canvas.shade((_u, v) => [
+    ...(v < 0.5 ? mix(deep, base, v * 2) : mix(base, light, (v - 0.5) * 2)),
+    1,
+  ])
   return canvas.toPng()
 }
 
@@ -79,7 +82,13 @@ export function faceAtlas(colors, expressions, size) {
           bounds,
         ),
       blush: (alpha) => {
-        for (const side of [-1, 1]) canvas.paint(sdf.ellipse(px(0.105 * side), py(0.9), 0.032 * sx, 0.016 * sy), blush, alpha, bounds)
+        for (const side of [-1, 1])
+          canvas.paint(
+            sdf.ellipse(px(0.105 * side), py(0.9), 0.032 * sx, 0.016 * sy),
+            blush,
+            alpha,
+            bounds,
+          )
       },
     })
   }

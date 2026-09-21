@@ -17,7 +17,8 @@ function sway(bone, axis, amplitudeDeg, phase = 0, samples = 8) {
   for (let i = 0; i <= samples; i++) {
     const t = i / samples
     const value = [0, 0, 0]
-    value[index] = i === samples ? keys[0][1][index] : amplitudeDeg * Math.sin(2 * Math.PI * (t + phase))
+    value[index] =
+      i === samples ? keys[0][1][index] : amplitudeDeg * Math.sin(2 * Math.PI * (t + phase))
     keys.push([t, value])
   }
   return { bone, path: 'rotation', keys }
@@ -31,8 +32,16 @@ const axisKeys = (times, axis, values) =>
     return [t, v]
   })
 
-const rot = (bone, times, axis, values) => ({ bone, path: 'rotation', keys: axisKeys(times, axis, values) })
-const lift = (bone, times, values) => ({ bone, path: 'translation', keys: axisKeys(times, 'y', values) })
+const rot = (bone, times, axis, values) => ({
+  bone,
+  path: 'rotation',
+  keys: axisKeys(times, axis, values),
+})
+const lift = (bone, times, values) => ({
+  bone,
+  path: 'translation',
+  keys: axisKeys(times, 'y', values),
+})
 const mirror = (values) => values.map((v) => -v)
 
 const TAIL = ['tail_01', 'tail_02', 'tail_03', 'tail_04']
@@ -73,8 +82,18 @@ const lookAround = (() => {
   const t = [0, 0.12, 0.3, 0.42, 0.62, 0.75, 0.9, 1]
   const yaw = [0, 22, 22, 0, -22, -22, 0, 0]
   return [
-    rot('neck_01', t, 'y', yaw.map((v) => v * 0.2)),
-    rot('neck_02', t, 'y', yaw.map((v) => v * 0.2)),
+    rot(
+      'neck_01',
+      t,
+      'y',
+      yaw.map((v) => v * 0.2),
+    ),
+    rot(
+      'neck_02',
+      t,
+      'y',
+      yaw.map((v) => v * 0.2),
+    ),
     {
       bone: 'head',
       path: 'rotation',

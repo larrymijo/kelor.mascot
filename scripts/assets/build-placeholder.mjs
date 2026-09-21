@@ -148,7 +148,8 @@ function shadeBody(geometry, belly) {
 function prepare(geometry) {
   const g = geometry.index ? geometry : geometry.toNonIndexed()
   for (const name of Object.keys(g.attributes)) {
-    if (!['position', 'normal', 'uv', 'skinIndex', 'skinWeight'].includes(name)) g.deleteAttribute(name)
+    if (!['position', 'normal', 'uv', 'skinIndex', 'skinWeight'].includes(name))
+      g.deleteAttribute(name)
   }
   g.clearGroups()
   return g
@@ -181,20 +182,26 @@ export async function buildPlaceholder({ contract, tier }) {
   // Geometry ------------------------------------------------------------------
   const body = merge(
     bodyParts(detail).flatMap((part) =>
-      part.geometries.map((g) => skinByDistance(shadeBody(g, part.belly), part.bones, segments, jointOf)),
+      part.geometries.map((g) =>
+        skinByDistance(shadeBody(g, part.belly), part.bones, segments, jointOf),
+      ),
     ),
   )
   const face = faceShell(detail)
   projectFaceUvs(face, 1 / contract.expressions.grid[0])
   skinRigid(face, jointOf('head'))
 
-  const eyes = merge(['eye_L', 'eye_R'].map((b) => skinRigid(eyeball(restOf(b), detail), jointOf(b))))
+  const eyes = merge(
+    ['eye_L', 'eye_R'].map((b) => skinRigid(eyeball(restOf(b), detail), jointOf(b))),
+  )
   const lidTilt = contract.gaze.blink.closedAngleDeg
   const eyelids = merge(
     ['eyelid_L', 'eyelid_R'].map((b) => skinRigid(eyelid(restOf(b), lidTilt, detail), jointOf(b))),
   )
   const catchlights = merge(
-    ['eye_L', 'eye_R'].flatMap((b) => highlights(restOf(b), detail)).map((g) => skinRigid(g, jointOf('head'))),
+    ['eye_L', 'eye_R']
+      .flatMap((b) => highlights(restOf(b), detail))
+      .map((g) => skinRigid(g, jointOf('head'))),
   )
   const plates = merge(PLATES.map((p) => skinRigid(plate(p), jointOf(p.bone))))
 
@@ -202,7 +209,8 @@ export async function buildPlaceholder({ contract, tier }) {
   const doc = new Document()
   doc.getRoot().setExtras({ kelorPlaceholder: true, contractVersion: contract.contractVersion })
   const buffer = doc.createBuffer()
-  const accessor = (array, type) => doc.createAccessor().setArray(array).setType(type).setBuffer(buffer)
+  const accessor = (array, type) =>
+    doc.createAccessor().setArray(array).setType(type).setBuffer(buffer)
 
   const scene = doc.createScene('Scene')
   const armature = doc.createNode('Armature')
@@ -221,7 +229,10 @@ export async function buildPlaceholder({ contract, tier }) {
   }
   const inverseBind = new Float32Array(16 * bones.length)
   bones.forEach((bone, i) => {
-    inverseBind.set(new THREE.Matrix4().makeTranslation(...bone.restHead.map((v) => -v)).elements, i * 16)
+    inverseBind.set(
+      new THREE.Matrix4().makeTranslation(...bone.restHead.map((v) => -v)).elements,
+      i * 16,
+    )
   })
   const skin = doc
     .createSkin('Armature')
@@ -240,11 +251,14 @@ export async function buildPlaceholder({ contract, tier }) {
     .setOcclusionTexture(orm)
     .setRoughnessFactor(1)
     .setMetallicFactor(1)
-  if (settings.normal) bodyMaterial.setNormalTexture(texture('body_normal', bodyNormal(settings.normal)))
+  if (settings.normal)
+    bodyMaterial.setNormalTexture(texture('body_normal', bodyNormal(settings.normal)))
 
   const faceMaterial = doc
     .createMaterial('face')
-    .setBaseColorTexture(texture('face_atlas', faceAtlas(colors, contract.expressions, settings.face)))
+    .setBaseColorTexture(
+      texture('face_atlas', faceAtlas(colors, contract.expressions, settings.face)),
+    )
     .setAlphaMode('BLEND')
     .setRoughnessFactor(0.6)
     .setMetallicFactor(0)
@@ -277,7 +291,12 @@ export async function buildPlaceholder({ contract, tier }) {
       .setAttribute('TEXCOORD_0', accessor(Float32Array.from(a.uv.array), 'VEC2'))
       .setAttribute('JOINTS_0', accessor(joints, 'VEC4'))
       .setAttribute('WEIGHTS_0', accessor(Float32Array.from(a.skinWeight.array), 'VEC4'))
-      .setIndices(accessor(a.position.count > 65535 ? Uint32Array.from(index) : Uint16Array.from(index), 'SCALAR'))
+      .setIndices(
+        accessor(
+          a.position.count > 65535 ? Uint32Array.from(index) : Uint16Array.from(index),
+          'SCALAR',
+        ),
+      )
       .setMaterial(material)
     const mesh = doc.createMesh(name).addPrimitive(primitive)
     armature.addChild(doc.createNode(name).setMesh(mesh).setSkin(skin))
@@ -322,7 +341,9 @@ export async function buildPlaceholder({ contract, tier }) {
       const values =
         track.path === 'rotation'
           ? track.keys.flatMap(([, [x, y, z]]) =>
-              new THREE.Quaternion().setFromEuler(new THREE.Euler(deg(x), deg(y), deg(z), 'XYZ')).toArray(),
+              new THREE.Quaternion()
+                .setFromEuler(new THREE.Euler(deg(x), deg(y), deg(z), 'XYZ'))
+                .toArray(),
             )
           : track.keys.flatMap(([, offset]) => {
               const bone = bones[jointOf(track.bone)]
@@ -373,11 +394,15 @@ export async function main(argv, io = {}) {
       log(`wrote ${contract.files[tier]} (${kb} kB)`)
     }
   }
-  if (stale) log('Placeholder models are out of date: run "corepack pnpm build:placeholder" and commit them.')
+  if (stale)
+    log(
+      'Placeholder models are out of date: run "corepack pnpm build:placeholder" and commit them.',
+    )
   return stale ? 1 : 0
 }
 
-const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+const invokedDirectly =
+  process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href
 if (invokedDirectly) {
   process.exitCode = await main(process.argv.slice(2))
 }

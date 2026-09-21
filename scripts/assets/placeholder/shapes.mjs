@@ -14,7 +14,13 @@ export const FACE_PATCH = { xMin: -0.175, xMax: 0.175, yMin: 0.78, yMax: 0.97 }
 const SNOUT = { center: [0, 0.88, 0.22], radii: [0.17, 0.11, 0.12] }
 
 /** Eye construction, relative to the eye bone (the eyeball centre). */
-export const EYE = { radius: 0.085, lidRadius: 0.092, lidCapDeg: 115, irisRatio: 0.42, pupilRatio: 0.3 }
+export const EYE = {
+  radius: 0.085,
+  lidRadius: 0.092,
+  lidCapDeg: 115,
+  irisRatio: 0.42,
+  pupilRatio: 0.3,
+}
 
 const seg = (n, detail, min = 6) => Math.max(min, Math.round(n * detail))
 
@@ -91,39 +97,102 @@ export function taperedTube(points, radii, radialSegments, tubularSegments) {
 export function bodyParts(detail) {
   const s = (n) => seg(n, detail)
   const parts = [
-    { name: 'head', bones: ['head', 'neck_02'], belly: false, geometries: [ellipsoid([0, 0.93, 0.06], [0.28, 0.25, 0.25], s(40), s(28))] },
-    { name: 'snout', bones: ['head'], belly: true, geometries: [ellipsoid(SNOUT.center, SNOUT.radii, s(32), s(20))] },
-    { name: 'neck', bones: ['chest', 'neck_01', 'neck_02', 'head'], belly: false, geometries: [ellipsoid([0, 0.7, 0.02], [0.13, 0.1, 0.12], s(24), s(14))] },
-    { name: 'torso', bones: ['hips', 'spine_01', 'spine_02', 'chest'], belly: true, geometries: [ellipsoid([0, 0.46, 0], [0.24, 0.26, 0.22], s(40), s(28))] },
+    {
+      name: 'head',
+      bones: ['head', 'neck_02'],
+      belly: false,
+      geometries: [ellipsoid([0, 0.93, 0.06], [0.28, 0.25, 0.25], s(40), s(28))],
+    },
+    {
+      name: 'snout',
+      bones: ['head'],
+      belly: true,
+      geometries: [ellipsoid(SNOUT.center, SNOUT.radii, s(32), s(20))],
+    },
+    {
+      name: 'neck',
+      bones: ['chest', 'neck_01', 'neck_02', 'head'],
+      belly: false,
+      geometries: [ellipsoid([0, 0.7, 0.02], [0.13, 0.1, 0.12], s(24), s(14))],
+    },
+    {
+      name: 'torso',
+      bones: ['hips', 'spine_01', 'spine_02', 'chest'],
+      belly: true,
+      geometries: [ellipsoid([0, 0.46, 0], [0.24, 0.26, 0.22], s(40), s(28))],
+    },
     {
       name: 'tail',
       bones: ['hips', 'tail_01', 'tail_02', 'tail_03', 'tail_04'],
       belly: false,
       geometries: taperedTube(
-        [[0, 0.4, -0.1], [0, 0.36, -0.2], [0, 0.3, -0.3], [0, 0.24, -0.41], [0, 0.19, -0.5], [0, 0.155, -0.58]],
+        [
+          [0, 0.4, -0.1],
+          [0, 0.36, -0.2],
+          [0, 0.3, -0.3],
+          [0, 0.24, -0.41],
+          [0, 0.19, -0.5],
+          [0, 0.155, -0.58],
+        ],
         [0.14, 0.115, 0.09, 0.065, 0.045, 0.025],
         s(20),
         s(28),
       ),
     },
   ]
-  for (const [side, x] of [['L', 1], ['R', -1]]) {
+  for (const [side, x] of [
+    ['L', 1],
+    ['R', -1],
+  ]) {
     parts.push(
-      { name: `thigh_${side}`, bones: ['hips', `thigh_${side}`, `shin_${side}`], belly: false, geometries: [ellipsoid([0.12 * x, 0.25, 0.02], [0.11, 0.13, 0.12], s(24), s(16))] },
+      {
+        name: `thigh_${side}`,
+        bones: ['hips', `thigh_${side}`, `shin_${side}`],
+        belly: false,
+        geometries: [ellipsoid([0.12 * x, 0.25, 0.02], [0.11, 0.13, 0.12], s(24), s(16))],
+      },
       {
         name: `shin_${side}`,
         bones: [`thigh_${side}`, `shin_${side}`, `foot_${side}`],
         belly: false,
-        geometries: taperedTube([[0.115 * x, 0.2, 0.03], [0.115 * x, 0.13, 0.035], [0.115 * x, 0.07, 0.04]], [0.085, 0.08, 0.075], s(16), s(6)),
+        geometries: taperedTube(
+          [
+            [0.115 * x, 0.2, 0.03],
+            [0.115 * x, 0.13, 0.035],
+            [0.115 * x, 0.07, 0.04],
+          ],
+          [0.085, 0.08, 0.075],
+          s(16),
+          s(6),
+        ),
       },
-      { name: `foot_${side}`, bones: [`shin_${side}`, `foot_${side}`], belly: false, geometries: [ellipsoid([0.115 * x, 0.045, 0.07], [0.085, 0.045, 0.12], s(24), s(14))] },
+      {
+        name: `foot_${side}`,
+        bones: [`shin_${side}`, `foot_${side}`],
+        belly: false,
+        geometries: [ellipsoid([0.115 * x, 0.045, 0.07], [0.085, 0.045, 0.12], s(24), s(14))],
+      },
       {
         name: `arm_${side}`,
         bones: ['chest', `upperarm_${side}`, `forearm_${side}`, `hand_${side}`],
         belly: false,
-        geometries: taperedTube([[0.16 * x, 0.585, 0.06], [0.195 * x, 0.52, 0.12], [0.215 * x, 0.47, 0.16]], [0.052, 0.046, 0.04], s(14), s(10)),
+        geometries: taperedTube(
+          [
+            [0.16 * x, 0.585, 0.06],
+            [0.195 * x, 0.52, 0.12],
+            [0.215 * x, 0.47, 0.16],
+          ],
+          [0.052, 0.046, 0.04],
+          s(14),
+          s(10),
+        ),
       },
-      { name: `hand_${side}`, bones: [`forearm_${side}`, `hand_${side}`], belly: false, geometries: [ellipsoid([0.222 * x, 0.455, 0.172], [0.05, 0.045, 0.05], s(16), s(12))] },
+      {
+        name: `hand_${side}`,
+        bones: [`forearm_${side}`, `hand_${side}`],
+        belly: false,
+        geometries: [ellipsoid([0.222 * x, 0.455, 0.172], [0.05, 0.045, 0.05], s(16), s(12))],
+      },
     )
   }
   return parts

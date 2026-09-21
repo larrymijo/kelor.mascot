@@ -82,13 +82,19 @@ export class Canvas {
     this.width = width
     this.height = height
     this.data = new Float32Array(width * height * 4)
-    for (let i = 0; i < width * height; i++) this.data.set(fill.map((v, k) => (k < 3 ? v / 255 : v)), i * 4)
+    for (let i = 0; i < width * height; i++)
+      this.data.set(
+        fill.map((v, k) => (k < 3 ? v / 255 : v)),
+        i * 4,
+      )
   }
 
   /** Composite a colour where `sdf(x, y) < 0`. colour is [r, g, b] bytes, alpha 0 to 1. */
   paint(sdf, rgb, alpha = 1, bounds = [0, 0, this.width, this.height]) {
     const [r, g, b] = rgb.map((v) => v / 255)
-    const [x0, y0, x1, y1] = bounds.map((v, i) => Math.max(0, Math.min(i % 2 ? this.height : this.width, Math.round(v))))
+    const [x0, y0, x1, y1] = bounds.map((v, i) =>
+      Math.max(0, Math.min(i % 2 ? this.height : this.width, Math.round(v))),
+    )
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
         const coverage = Math.min(1, Math.max(0, 0.5 - sdf(x + 0.5, y + 0.5)))

@@ -159,7 +159,8 @@ export function buildModel({ tier = 'full', mutate, padBytes = 0 }: ModelOptions
   const addAccessor = (accessor: Gltf) => gltf.accessors.push(accessor) - 1
   const addBufferView = (bytes: Uint8Array) => {
     const padded = pad4(bytes, 0)
-    const index = gltf.bufferViews.push({ buffer: 0, byteOffset: binLength, byteLength: bytes.length }) - 1
+    const index =
+      gltf.bufferViews.push({ buffer: 0, byteOffset: binLength, byteLength: bytes.length }) - 1
     binParts.push(padded)
     binLength += padded.length
     return index
@@ -199,7 +200,11 @@ export function buildModel({ tier = 'full', mutate, padBytes = 0 }: ModelOptions
     const position = addAccessor({ componentType: FLOAT, type: 'VEC3', count: vertices, ...bounds })
     const joints = addAccessor({ componentType: UNSIGNED_BYTE, type: 'VEC4', count: vertices })
     const weights = addAccessor({ componentType: FLOAT, type: 'VEC4', count: vertices })
-    const indices = addAccessor({ componentType: UNSIGNED_INT, type: 'SCALAR', count: triangles * 3 })
+    const indices = addAccessor({
+      componentType: UNSIGNED_INT,
+      type: 'SCALAR',
+      count: triangles * 3,
+    })
     const mesh =
       gltf.meshes.push({
         name: required.name,
@@ -226,7 +231,13 @@ export function buildModel({ tier = 'full', mutate, padBytes = 0 }: ModelOptions
 
   // One rotation channel on the hips per required clip.
   for (const clip of contract.clips.required) {
-    const input = addAccessor({ componentType: FLOAT, type: 'SCALAR', count: 2, min: [0], max: [clip.durationS] })
+    const input = addAccessor({
+      componentType: FLOAT,
+      type: 'SCALAR',
+      count: 2,
+      min: [0],
+      max: [clip.durationS],
+    })
     const output = addAccessor({ componentType: FLOAT, type: 'VEC4', count: 2 })
     gltf.animations.push({
       name: clip.name,
