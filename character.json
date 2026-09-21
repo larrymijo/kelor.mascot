@@ -1,0 +1,317 @@
+{
+  "_doc": "Single source of truth for the KELOR mascot. Read by scripts/assets/validate.mjs (phase 1), scripts/blender/* (phase 3) and the R3F runtime (phase 2+). Validated by src/lib/character/schema.ts in tests. Change values here, never hard-code them elsewhere. Bump contractVersion on breaking changes.",
+  "contractVersion": 1,
+
+  "meta": {
+    "_doc": "Coordinate system follows glTF: metres, +Y up, the character faces +Z (towards the default camera). Left side (_L) is +X. Origin sits between the feet on the ground plane.",
+    "id": "kelor-mascot",
+    "name": null,
+    "version": "0.1.0",
+    "units": "meters",
+    "upAxis": "+Y",
+    "forwardAxis": "+Z",
+    "origin": "feet-center",
+    "heightM": 1.2,
+    "heightToleranceRatio": 0.1,
+    "headHeightRatio": 0.4
+  },
+
+  "files": {
+    "_doc": "Output paths of the asset pipeline, relative to the repo root. Hosting (public/ vs R2/Blob) is decided in phase 4.",
+    "full": "public/models/mascot.full.glb",
+    "lite": "public/models/mascot.lite.glb",
+    "allowedExtensions": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu",
+      "KHR_texture_transform",
+      "KHR_materials_emissive_strength",
+      "KHR_materials_unlit"
+    ]
+  },
+
+  "budgets": {
+    "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. Draw calls = mesh primitives rendered once (shadow passes excluded).",
+    "full": {
+      "maxFileKB": 1500,
+      "maxTriangles": 24000,
+      "maxBones": 32,
+      "maxInfluencesPerVertex": 4,
+      "maxDrawCalls": 6,
+      "maxMaterials": 5,
+      "maxTextures": 5,
+      "maxTextureSize": 2048,
+      "maxMorphTargets": 0,
+      "maxAnimationSeconds": 30
+    },
+    "lite": {
+      "maxFileKB": 500,
+      "maxTriangles": 8000,
+      "maxBones": 32,
+      "maxInfluencesPerVertex": 4,
+      "maxDrawCalls": 6,
+      "maxMaterials": 5,
+      "maxTextures": 4,
+      "maxTextureSize": 1024,
+      "maxMorphTargets": 0,
+      "maxAnimationSeconds": 30
+    }
+  },
+
+  "skeleton": {
+    "_doc": "Exact bone names and hierarchy. restHead is the nominal bone head position in metres for a 1.2 m character; phase 2 builds the placeholder rig from it and phase 3 refits it to the real mesh landmarks. Procedural bones are driven at runtime only: animation clips must never key them.",
+    "rootBone": "root",
+    "bones": [
+      { "name": "root", "parent": null, "role": "root", "restHead": [0, 0, 0] },
+      { "name": "hips", "parent": "root", "role": "spine", "restHead": [0, 0.34, -0.02] },
+      { "name": "spine_01", "parent": "hips", "role": "spine", "restHead": [0, 0.42, -0.02] },
+      { "name": "spine_02", "parent": "spine_01", "role": "spine", "restHead": [0, 0.52, 0] },
+      { "name": "chest", "parent": "spine_02", "role": "spine", "restHead": [0, 0.6, 0.02] },
+      { "name": "neck_01", "parent": "chest", "role": "neck", "restHead": [0, 0.68, 0.03] },
+      { "name": "neck_02", "parent": "neck_01", "role": "neck", "restHead": [0, 0.72, 0.04] },
+      { "name": "head", "parent": "neck_02", "role": "head", "restHead": [0, 0.76, 0.05] },
+      { "name": "eye_L", "parent": "head", "role": "eye", "restHead": [0.09, 0.98, 0.2] },
+      { "name": "eye_R", "parent": "head", "role": "eye", "restHead": [-0.09, 0.98, 0.2] },
+      { "name": "eyelid_L", "parent": "head", "role": "eyelid", "restHead": [0.09, 0.98, 0.2] },
+      { "name": "eyelid_R", "parent": "head", "role": "eyelid", "restHead": [-0.09, 0.98, 0.2] },
+      { "name": "tail_01", "parent": "hips", "role": "tail", "restHead": [0, 0.36, -0.14] },
+      { "name": "tail_02", "parent": "tail_01", "role": "tail", "restHead": [0, 0.3, -0.28] },
+      { "name": "tail_03", "parent": "tail_02", "role": "tail", "restHead": [0, 0.24, -0.4] },
+      { "name": "tail_04", "parent": "tail_03", "role": "tail", "restHead": [0, 0.19, -0.5] },
+      { "name": "thigh_L", "parent": "hips", "role": "leg", "restHead": [0.1, 0.32, 0] },
+      { "name": "shin_L", "parent": "thigh_L", "role": "leg", "restHead": [0.11, 0.18, 0.02] },
+      { "name": "foot_L", "parent": "shin_L", "role": "leg", "restHead": [0.11, 0.05, 0.02] },
+      { "name": "thigh_R", "parent": "hips", "role": "leg", "restHead": [-0.1, 0.32, 0] },
+      { "name": "shin_R", "parent": "thigh_R", "role": "leg", "restHead": [-0.11, 0.18, 0.02] },
+      { "name": "foot_R", "parent": "shin_R", "role": "leg", "restHead": [-0.11, 0.05, 0.02] },
+      { "name": "upperarm_L", "parent": "chest", "role": "arm", "restHead": [0.15, 0.58, 0.08] },
+      {
+        "name": "forearm_L",
+        "parent": "upperarm_L",
+        "role": "arm",
+        "restHead": [0.19, 0.52, 0.12]
+      },
+      { "name": "hand_L", "parent": "forearm_L", "role": "arm", "restHead": [0.21, 0.47, 0.15] },
+      { "name": "upperarm_R", "parent": "chest", "role": "arm", "restHead": [-0.15, 0.58, 0.08] },
+      {
+        "name": "forearm_R",
+        "parent": "upperarm_R",
+        "role": "arm",
+        "restHead": [-0.19, 0.52, 0.12]
+      },
+      { "name": "hand_R", "parent": "forearm_R", "role": "arm", "restHead": [-0.21, 0.47, 0.15] }
+    ],
+    "procedural": ["eye_L", "eye_R", "eyelid_L", "eyelid_R"]
+  },
+
+  "meshes": {
+    "_doc": "Required mesh names (glTF mesh or node name). All are skinned to the single armature. Both eyes share one mesh, each eye weighted 100 % to its eye bone; same for the eyelids. That keeps the model at 6 draw calls.",
+    "required": [
+      {
+        "name": "body",
+        "material": "body",
+        "_doc": "Closed, rounded skin. Belly and cheeks lighter via texture."
+      },
+      {
+        "name": "face",
+        "material": "face",
+        "_doc": "Thin shell over the face carrying the expression atlas (mouth, brows, blush). Weighted to head."
+      },
+      {
+        "name": "eyes",
+        "material": "eyes",
+        "_doc": "Two spheres with iris and pupil in the texture. Weighted 100 % to eye_L / eye_R."
+      },
+      {
+        "name": "eyelids",
+        "material": "body",
+        "_doc": "Upper lids as partial spheres slightly larger than the eyes. Weighted 100 % to eyelid_L / eyelid_R."
+      },
+      {
+        "name": "eye_highlights",
+        "material": "highlight",
+        "_doc": "Small unlit quads weighted to head, not to the eyes, so the catchlights stay fixed while the eyes rotate."
+      },
+      {
+        "name": "plates",
+        "material": "plates",
+        "_doc": "Hexagonal dorsal plates along spine and tail. Emissive, driven by a runtime glow uniform."
+      }
+    ]
+  },
+
+  "materials": {
+    "_doc": "Required material names. Colours reference colors.* tokens.",
+    "required": [
+      {
+        "name": "body",
+        "model": "pbr",
+        "textures": ["body_basecolor", "body_orm", "body_normal"]
+      },
+      { "name": "face", "model": "pbr", "textures": ["face_atlas"], "alphaMode": "BLEND" },
+      { "name": "eyes", "model": "pbr", "textures": ["eyes_basecolor"] },
+      { "name": "highlight", "model": "unlit", "textures": [] },
+      { "name": "plates", "model": "pbr", "textures": [], "emissive": "glow" }
+    ]
+  },
+
+  "textures": {
+    "_doc": "Expected images. size is the edge in px per tier (square, power of two); null means the texture is dropped in that tier. AO is baked into the red channel of body_orm.",
+    "items": [
+      { "name": "body_basecolor", "colorSpace": "srgb", "size": { "full": 2048, "lite": 1024 } },
+      { "name": "body_orm", "colorSpace": "linear", "size": { "full": 1024, "lite": 512 } },
+      { "name": "body_normal", "colorSpace": "linear", "size": { "full": 1024, "lite": null } },
+      { "name": "face_atlas", "colorSpace": "srgb", "size": { "full": 1024, "lite": 1024 } },
+      { "name": "eyes_basecolor", "colorSpace": "srgb", "size": { "full": 512, "lite": 256 } }
+    ]
+  },
+
+  "expressions": {
+    "_doc": "Expressions are cells of a 2x2 atlas on the face material, switched by UV offset (texture.offset in three). Cells are [column, row] with row 0 at the top (glTF UV origin). The face mesh UVs are authored inside cell [0, 0]. No morph targets, no jaw.",
+    "mesh": "face",
+    "texture": "face_atlas",
+    "grid": [2, 2],
+    "default": "neutral",
+    "cells": {
+      "neutral": [0, 0],
+      "happy": [1, 0],
+      "surprised": [0, 1],
+      "roar": [1, 1]
+    }
+  },
+
+  "clips": {
+    "_doc": "Required animation clips, baked at fps, no root motion (the root bone is never keyed). Procedural bones (skeleton.procedural) are never keyed. durationS is nominal, checked with durationToleranceS.",
+    "fps": 30,
+    "rootMotion": false,
+    "durationToleranceS": 0.1,
+    "required": [
+      { "name": "idle", "loop": true, "durationS": 4, "_doc": "Breathing, soft weight shift." },
+      {
+        "name": "hatch",
+        "loop": false,
+        "durationS": 2.5,
+        "_doc": "Pops out of the egg shell and settles."
+      },
+      {
+        "name": "look_around",
+        "loop": true,
+        "durationS": 8,
+        "_doc": "Idle curiosity, used on touch devices without interaction."
+      },
+      {
+        "name": "roar",
+        "loop": false,
+        "durationS": 2,
+        "_doc": "Finale. Pairs with the roar expression."
+      },
+      { "name": "jump", "loop": false, "durationS": 0.8, "_doc": "Small hop on click or tap." },
+      { "name": "wave", "loop": false, "durationS": 1.5, "_doc": "Greeting next to the CTA." }
+    ]
+  },
+
+  "gaze": {
+    "_doc": "Look-at layer applied after AnimationMixer.update as a rotation offset on top of the clip pose, never replacing it. Damping is frame-rate independent: x += (target - x) * (1 - exp(-lambda * dt)). Angles are limits relative to the clip pose.",
+    "target": { "lambda": 10, "defaultDistanceM": 2.5 },
+    "eyes": { "bones": ["eye_L", "eye_R"], "maxYawDeg": 35, "maxPitchDeg": 25, "lambda": 14 },
+    "headChain": {
+      "_doc": "Total yaw and pitch shared along the chain; shares must add up to 1.",
+      "links": [
+        { "bone": "neck_01", "share": 0.2 },
+        { "bone": "neck_02", "share": 0.2 },
+        { "bone": "head", "share": 0.6 }
+      ],
+      "maxYawDeg": 40,
+      "maxPitchDeg": 25,
+      "lambda": 5
+    },
+    "idle": { "returnToCameraAfterS": 4, "lookAroundIntervalS": [2.5, 5] },
+    "blink": {
+      "bones": ["eyelid_L", "eyelid_R"],
+      "intervalS": [2, 6],
+      "durationS": 0.15,
+      "doubleBlinkChance": 0.15,
+      "closedAngleDeg": 38
+    }
+  },
+
+  "colors": {
+    "_doc": "Purple is the accent for the mascot, glows and the CTA only. The UI stays on the monochrome logo palette. Mirrored as Tailwind tokens in src/app/globals.css.",
+    "mascot": {
+      "700": "#4A1FA8",
+      "500": "#7A3FE4",
+      "300": "#B794FF",
+      "glow": "#D9C7FF"
+    },
+    "eyes": { "sclera": "#F7F7F7", "iris": "#151515", "highlight": "#FFFFFF" },
+    "brandMono": {
+      "ink900": "#151515",
+      "ink500": "#545454",
+      "ink300": "#A6A6A6",
+      "ink50": "#F7F7F7"
+    }
+  },
+
+  "egg": {
+    "_doc": "Procedural loader (0 KB of assets): a bevelled hexagonal prism that reads like the logo's isometric cube. Wobbles while the GLB downloads and hatches when the model is ready and at least minDisplayS has passed, so it never flickers.",
+    "shape": "hexagonal-prism",
+    "heightM": 0.7,
+    "radiusM": 0.28,
+    "bevelM": 0.03,
+    "faceColors": ["#545454", "#A6A6A6", "#F7F7F7"],
+    "crackGlow": "glow",
+    "wobble": { "maxAngleDeg": 6, "frequencyHz": 1.4 },
+    "minDisplayS": 1.8,
+    "hatchDurationS": 1.2
+  },
+
+  "quality": {
+    "_doc": "Tier picked at boot from device heuristics, then adjusted at runtime with drei's PerformanceMonitor: step down below lowerFps, up above upperFps, lock after flipflops.",
+    "default": "medium",
+    "tiers": {
+      "high": {
+        "model": "full",
+        "dprMax": 2,
+        "shadows": true,
+        "ao": "full",
+        "bloom": true,
+        "depthOfField": true,
+        "particles": 600,
+        "filmGrain": true
+      },
+      "medium": {
+        "model": "full",
+        "dprMax": 1.5,
+        "shadows": true,
+        "ao": "half",
+        "bloom": true,
+        "depthOfField": false,
+        "particles": 250,
+        "filmGrain": true
+      },
+      "low": {
+        "model": "lite",
+        "dprMax": 1,
+        "shadows": false,
+        "ao": "off",
+        "bloom": false,
+        "depthOfField": false,
+        "particles": 80,
+        "filmGrain": false
+      }
+    },
+    "performanceMonitor": { "lowerFps": 45, "upperFps": 58, "flipflops": 3 }
+  },
+
+  "accessibility": {
+    "_doc": "Applied when prefers-reduced-motion: reduce. The scene stays, motion is minimised, and content never depends on the animation.",
+    "reducedMotion": {
+      "cameraOrbit": false,
+      "particles": false,
+      "filmGrain": false,
+      "hatch": "cut",
+      "gazeLambdaScale": 0.5,
+      "idleClip": "idle"
+    }
+  }
+}
