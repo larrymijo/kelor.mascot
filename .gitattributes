@@ -1,0 +1,18 @@
+# Normalise line endings to LF everywhere (the host has core.autocrlf=true).
+* text=auto eol=lf
+
+# Binary assets: never touch.
+*.glb binary
+*.gltf binary
+*.ktx2 binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.exr binary
+*.hdr binary
+*.blend binary
+*.woff2 binary
+*.mp3 binary
+*.ogg binary
