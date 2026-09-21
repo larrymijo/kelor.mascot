@@ -9,6 +9,8 @@ const PORT = 3100
  */
 export default defineConfig({
   testDir: 'tests/e2e',
+  // GPU-less CI runners render WebGL in software, which is slow; give the 3D hero room.
+  timeout: 60_000,
   outputDir: 'test-results',
   fullyParallel: true,
   // The owner's machine is an i5 with integrated graphics: keep local runs light.

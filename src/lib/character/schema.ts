@@ -176,6 +176,7 @@ export const characterSchema = z
         lookAroundIntervalS: range,
       }),
       blink: z.strictObject({
+        ...docShape,
         bones: z.array(boneName).min(1),
         intervalS: range,
         durationS: z.number().positive().max(1),

@@ -39,7 +39,9 @@ export function validateGlb({ bytes, contract, tier, baseDir = process.cwd() }) 
   /** @type {RuleResult[]} */
   const results = []
   const add = (id, status, message, hint) =>
-    results.push(hint && status !== 'pass' ? { id, status, message, hint } : { id, status, message })
+    results.push(
+      hint && status !== 'pass' ? { id, status, message, hint } : { id, status, message },
+    )
   const done = () => ({ tier, ok: results.every((r) => r.status !== 'fail'), results })
 
   const budget = contract.budgets[tier]
@@ -167,60 +169,70 @@ export function validateGlb({ bytes, contract, tier, baseDir = process.cwd() }) 
   const skins = gltf.skins ?? []
   const expectedBones = contract.skeleton.bones
   if (skins.length === 0) {
-    add('skeleton.skin', 'fail', 'no skin found', 'Parent the meshes to the armature with automatic weights.')
+    add(
+      'skeleton.skin',
+      'fail',
+      'no skin found',
+      'Parent the meshes to the armature with automatic weights.',
+    )
   } else {
-  const jointSets = skins.map((s) => [...s.joints].sort((a, b) => a - b).join(','))
-  add(
-    'skeleton.skin',
-    new Set(jointSets).size === 1 ? 'pass' : 'warn',
-    new Set(jointSets).size === 1
-      ? `${skins.length} skin(s) sharing one skeleton`
-      : `${skins.length} skins with different joint sets`,
-    'Use a single armature for every mesh.',
-  )
-  const jointIndices = [...new Set(skins.flatMap((s) => s.joints))]
-  const boneNodeByName = new Map(jointIndices.map((i) => [nodes[i]?.name ?? `node ${i}`, i]))
-  add(
-    'skeleton.boneCount',
-    boneNodeByName.size <= budget.maxBones ? 'pass' : 'fail',
-    `${boneNodeByName.size} bones (budget ${budget.maxBones})`,
-    'Remove helper and IK bones from the exported deform set.',
-  )
+    const jointSets = skins.map((s) => [...s.joints].sort((a, b) => a - b).join(','))
+    add(
+      'skeleton.skin',
+      new Set(jointSets).size === 1 ? 'pass' : 'warn',
+      new Set(jointSets).size === 1
+        ? `${skins.length} skin(s) sharing one skeleton`
+        : `${skins.length} skins with different joint sets`,
+      'Use a single armature for every mesh.',
+    )
+    const jointIndices = [...new Set(skins.flatMap((s) => s.joints))]
+    const boneNodeByName = new Map(jointIndices.map((i) => [nodes[i]?.name ?? `node ${i}`, i]))
+    add(
+      'skeleton.boneCount',
+      boneNodeByName.size <= budget.maxBones ? 'pass' : 'fail',
+      `${boneNodeByName.size} bones (budget ${budget.maxBones})`,
+      'Remove helper and IK bones from the exported deform set.',
+    )
 
-  const missingBones = expectedBones.map((b) => b.name).filter((n) => !boneNodeByName.has(n))
-  const extraBones = [...boneNodeByName.keys()].filter(
-    (n) => !expectedBones.some((b) => b.name === n),
-  )
-  add(
-    'skeleton.names',
-    missingBones.length === 0 && extraBones.length === 0 ? 'pass' : 'fail',
-    missingBones.length === 0 && extraBones.length === 0
-      ? `all ${expectedBones.length} bones match`
-      : [
-          missingBones.length ? `missing: ${list(missingBones)}` : '',
-          extraBones.length ? `unexpected: ${list(extraBones)}` : '',
-        ]
-          .filter(Boolean)
-          .join(' · '),
-    'Rename bones to match character.json skeleton.bones exactly (case-sensitive).',
-  )
+    const missingBones = expectedBones.map((b) => b.name).filter((n) => !boneNodeByName.has(n))
+    const extraBones = [...boneNodeByName.keys()].filter(
+      (n) => !expectedBones.some((b) => b.name === n),
+    )
+    add(
+      'skeleton.names',
+      missingBones.length === 0 && extraBones.length === 0 ? 'pass' : 'fail',
+      missingBones.length === 0 && extraBones.length === 0
+        ? `all ${expectedBones.length} bones match`
+        : [
+            missingBones.length ? `missing: ${list(missingBones)}` : '',
+            extraBones.length ? `unexpected: ${list(extraBones)}` : '',
+          ]
+            .filter(Boolean)
+            .join(' · '),
+      'Rename bones to match character.json skeleton.bones exactly (case-sensitive).',
+    )
 
-  const wrongParents = []
-  for (const bone of expectedBones) {
-    const index = boneNodeByName.get(bone.name)
-    if (index === undefined) continue
-    const parentIndex = parentOf.get(index)
-    const parentName = parentIndex === undefined ? null : (nodes[parentIndex]?.name ?? null)
-    const parentIsBone = parentIndex !== undefined && jointIndices.includes(parentIndex)
-    const ok = bone.parent === null ? !parentIsBone : parentName === bone.parent
-    if (!ok) wrongParents.push(`${bone.name} → ${parentName ?? 'none'} (expected ${bone.parent ?? 'no bone'})`)
-  }
-  add(
-    'skeleton.hierarchy',
-    wrongParents.length === 0 ? 'pass' : 'fail',
-    wrongParents.length === 0 ? 'parents match the contract' : `wrong parent: ${list(wrongParents, 5)}`,
-    'Re-parent the bones as listed in character.json skeleton.bones.',
-  )
+    const wrongParents = []
+    for (const bone of expectedBones) {
+      const index = boneNodeByName.get(bone.name)
+      if (index === undefined) continue
+      const parentIndex = parentOf.get(index)
+      const parentName = parentIndex === undefined ? null : (nodes[parentIndex]?.name ?? null)
+      const parentIsBone = parentIndex !== undefined && jointIndices.includes(parentIndex)
+      const ok = bone.parent === null ? !parentIsBone : parentName === bone.parent
+      if (!ok)
+        wrongParents.push(
+          `${bone.name} → ${parentName ?? 'none'} (expected ${bone.parent ?? 'no bone'})`,
+        )
+    }
+    add(
+      'skeleton.hierarchy',
+      wrongParents.length === 0 ? 'pass' : 'fail',
+      wrongParents.length === 0
+        ? 'parents match the contract'
+        : `wrong parent: ${list(wrongParents, 5)}`,
+      'Re-parent the bones as listed in character.json skeleton.bones.',
+    )
   }
 
   // Meshes and materials ------------------------------------------------------
@@ -254,11 +266,18 @@ export function validateGlb({ bytes, contract, tier, baseDir = process.cwd() }) 
     if (!info) continue
     if (!info.skinned) meshIssues.push(`${required.name} is not skinned`)
     if (!info.materialNames.includes(required.material)) {
-      meshIssues.push(`${required.name} uses ${list(info.materialNames) || 'no material'}, expected ${required.material}`)
+      meshIssues.push(
+        `${required.name} uses ${list(info.materialNames) || 'no material'}, expected ${required.material}`,
+      )
     }
   }
   if (meshIssues.length) {
-    add('meshes.binding', 'warn', list(meshIssues, 6), 'Check skinning and material slots per mesh.')
+    add(
+      'meshes.binding',
+      'warn',
+      list(meshIssues, 6),
+      'Check skinning and material slots per mesh.',
+    )
   }
 
   const materials = gltf.materials ?? []
@@ -323,7 +342,12 @@ export function validateGlb({ bytes, contract, tier, baseDir = process.cwd() }) 
     `Resize to a power of two, at most ${budget.maxTextureSize}px for the ${tier} tier.`,
   )
   if (unreadable.length) {
-    add('textures.readable', 'warn', `could not read the size of ${list(unreadable)}`, 'Embed images as PNG, JPEG, WebP or KTX2.')
+    add(
+      'textures.readable',
+      'warn',
+      `could not read the size of ${list(unreadable)}`,
+      'Embed images as PNG, JPEG, WebP or KTX2.',
+    )
   }
   const expectedTextures = contract.textures.items
     .filter((t) => t.size[tier] !== null)
@@ -342,10 +366,7 @@ export function validateGlb({ bytes, contract, tier, baseDir = process.cwd() }) 
   // Animations ----------------------------------------------------------------
   const animations = gltf.animations ?? []
   const clipDuration = (animation) =>
-    Math.max(
-      0,
-      ...(animation.samplers ?? []).map((s) => accessors[s.input]?.max?.[0] ?? 0),
-    )
+    Math.max(0, ...(animation.samplers ?? []).map((s) => accessors[s.input]?.max?.[0] ?? 0))
   const byName = new Map(animations.map((a, i) => [a.name ?? `animation ${i}`, a]))
   const requiredClips = contract.clips.required
   const missingClips = requiredClips.map((c) => c.name).filter((n) => !byName.has(n))
@@ -410,7 +431,9 @@ export function validateGlb({ bytes, contract, tier, baseDir = process.cwd() }) 
   add(
     'animations.rootMotion',
     keyedRoot.size === 0 ? 'pass' : 'fail',
-    keyedRoot.size === 0 ? `"${rootName}" is never keyed` : `"${rootName}" keyed in: ${list([...keyedRoot])}`,
+    keyedRoot.size === 0
+      ? `"${rootName}" is never keyed`
+      : `"${rootName}" keyed in: ${list([...keyedRoot])}`,
     'Root motion is off: move the character with hips, never with the root bone.',
   )
 
@@ -456,7 +479,14 @@ Options:
 
 /** @param {string[]} argv */
 export function parseArgs(argv) {
-  const options = { file: null, tier: null, contract: null, strict: false, json: false, help: false }
+  const options = {
+    file: null,
+    tier: null,
+    contract: null,
+    strict: false,
+    json: false,
+    help: false,
+  }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     const value = () => {
@@ -480,7 +510,16 @@ export function parseArgs(argv) {
 
 function loadContract(path) {
   const contract = JSON.parse(readFileSync(path, 'utf8'))
-  const required = ['budgets', 'skeleton', 'meshes', 'materials', 'textures', 'clips', 'files', 'meta']
+  const required = [
+    'budgets',
+    'skeleton',
+    'meshes',
+    'materials',
+    'textures',
+    'clips',
+    'files',
+    'meta',
+  ]
   const missing = required.filter((key) => !(key in contract))
   if (missing.length) throw new Error(`missing sections: ${missing.join(', ')}`)
   return contract
@@ -511,7 +550,10 @@ export function formatReport(report, contract, { colour = false } = {}) {
   }
   const count = (s) => report.results.filter((r) => r.status === s).length
   const verdict = report.ok ? c.green('PASS') : c.red('FAIL')
-  lines.push('', `Result: ${verdict} · ${count('fail')} failed · ${count('warn')} warnings · ${count('pass')} passed`)
+  lines.push(
+    '',
+    `Result: ${verdict} · ${count('fail')} failed · ${count('warn')} warnings · ${count('pass')} passed`,
+  )
   return lines.filter((line, i) => line !== '' || i > 1).join('\n')
 }
 
@@ -541,12 +583,16 @@ export function main(argv, io = {}) {
     return 0
   }
 
-  const contractPath = options.contract ? resolve(cwd, options.contract) : resolve(REPO_ROOT, 'character.json')
+  const contractPath = options.contract
+    ? resolve(cwd, options.contract)
+    : resolve(REPO_ROOT, 'character.json')
   let contract
   try {
     contract = loadContract(contractPath)
   } catch (e) {
-    error(`Cannot read the contract at ${contractPath}: ${e.message}\nRun "corepack pnpm test" for a detailed schema report.`)
+    error(
+      `Cannot read the contract at ${contractPath}: ${e.message}\nRun "corepack pnpm test" for a detailed schema report.`,
+    )
     return 2
   }
 
@@ -561,7 +607,12 @@ export function main(argv, io = {}) {
     const display = (relative(cwd, path) || path).split(sep).join('/')
     if (!existsSync(path)) {
       if (options.file || options.strict) {
-        reports.push({ tier, file: display, ok: false, results: [{ id: 'file.exists', status: 'fail', message: `${display} not found` }] })
+        reports.push({
+          tier,
+          file: display,
+          ok: false,
+          results: [{ id: 'file.exists', status: 'fail', message: `${display} not found` }],
+        })
       } else {
         skipped.push({ tier, file: display })
       }
@@ -579,7 +630,10 @@ export function main(argv, io = {}) {
     for (const s of skipped) {
       log(`SKIP  ${s.tier}: ${s.file} not found (expected until phase 3 produces the model)`)
     }
-    for (const report of reports) log(`${skipped.length || reports.indexOf(report) ? '\n' : ''}${formatReport(report, contract, { colour: io.colour })}`)
+    for (const report of reports)
+      log(
+        `${skipped.length || reports.indexOf(report) ? '\n' : ''}${formatReport(report, contract, { colour: io.colour })}`,
+      )
     if (reports.length === 0) log('No model files yet. Nothing to validate.')
   }
 
@@ -587,14 +641,17 @@ export function main(argv, io = {}) {
     for (const report of reports) {
       for (const r of report.results.filter((x) => x.status !== 'pass')) {
         const level = r.status === 'fail' ? 'error' : 'warning'
-        log(`::${level} file=${report.file},title=${r.id} (${report.tier})::${r.message}${r.hint ? ` → ${r.hint}` : ''}`)
+        log(
+          `::${level} file=${report.file},title=${r.id} (${report.tier})::${r.message}${r.hint ? ` → ${r.hint}` : ''}`,
+        )
       }
     }
   }
   return ok ? 0 : 1
 }
 
-const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+const invokedDirectly =
+  process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href
 if (invokedDirectly) {
   const colour = Boolean(process.env.FORCE_COLOR) || (process.stdout.isTTY && !process.env.NO_COLOR)
   process.exitCode = main(process.argv.slice(2), {

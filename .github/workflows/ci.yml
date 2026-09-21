@@ -14,9 +14,9 @@ concurrency:
 
 jobs:
   check:
-    name: Typecheck, lint, test, validate, build
+    name: Typecheck, lint, test, validate, build, e2e
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       NEXT_TELEMETRY_DISABLED: 1
     steps:
@@ -48,8 +48,30 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
-      - name: Validate mascot models
+      - name: Validate mascot models (strict)
         run: pnpm validate:model
+
+      - name: Check placeholder models are up to date
+        run: pnpm build:placeholder --check
 
       - name: Build
         run: pnpm build
+
+      - name: Bundle budget
+        run: pnpm size
+
+      # ubuntu-latest ships Google Chrome, which Playwright uses (channel: chrome).
+      # Without a GPU the stage detects a software renderer and runs the low tier.
+      - name: End-to-end tests
+        run: pnpm e2e
+
+      - name: Upload review captures
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: review-captures
+          path: |
+            scripts/review/out/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -88,7 +88,8 @@ export function readImageSize(bytes) {
 
   if (bytes[0] === 0xff && bytes[1] === 0xd8) return readJpegSize(bytes, view)
 
-  if (ascii(bytes, 0, 4) === 'RIFF' && ascii(bytes, 8, 4) === 'WEBP') return readWebpSize(bytes, view)
+  if (ascii(bytes, 0, 4) === 'RIFF' && ascii(bytes, 8, 4) === 'WEBP')
+    return readWebpSize(bytes, view)
 
   return null
 }
@@ -158,8 +159,12 @@ export function getImageBytes(gltf, bin, image, readExternal) {
   }
   if (typeof image.uri === 'string') {
     const dataUri = /^data:[^;,]*;base64,(.*)$/s.exec(image.uri)
-    if (dataUri) return { bytes: new Uint8Array(Buffer.from(dataUri[1], 'base64')), source: 'data URI' }
-    return { bytes: readExternal(decodeURIComponent(image.uri)), source: `external file ${image.uri}` }
+    if (dataUri)
+      return { bytes: new Uint8Array(Buffer.from(dataUri[1], 'base64')), source: 'data URI' }
+    return {
+      bytes: readExternal(decodeURIComponent(image.uri)),
+      source: `external file ${image.uri}`,
+    }
   }
   return { bytes: null, source: 'none' }
 }

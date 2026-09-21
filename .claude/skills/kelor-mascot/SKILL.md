@@ -101,6 +101,10 @@ Compression: Meshopt geometry, KTX2 (UASTC for normals and the face atlas, ETC1S
 corepack pnpm validate:model --file path/to/model.glb --tier full
 ```
 
+## Placeholder (phase 2 until phase 3)
+
+`corepack pnpm build:placeholder` generates `mascot.lite.glb` and `mascot.full.glb` from `character.json`: primitive shapes on the real 28-bone rig, the six meshes and five materials, procedural textures, the 2x2 expression atlas and all six clips from `scripts/assets/placeholder-clips.mjs`. It passes every validator rule. The real model replaces the files at the same paths; reuse the clip spec in the Blender pipeline so timing stays identical. On stage the mascot stands in a 22 degree three-quarter turn so the tail reads, until phase 5 gaze turns the head to the viewer.
+
 ## Runtime behaviour (phases 5 and 6)
 
 - **Gaze** is a layer applied after `AnimationMixer.update`, added on top of the clip pose, never replacing it. Eyes are fast (λ 14, ±35° yaw, ±25° pitch). Neck and head share the slow rotation (λ 5, ±40° yaw, ±25° pitch; shares 0.2 / 0.2 / 0.6). Damping is frame-rate independent: `x += (target - x) * (1 - exp(-λ·dt))`.
