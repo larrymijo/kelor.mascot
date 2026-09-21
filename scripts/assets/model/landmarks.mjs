@@ -81,19 +81,27 @@ export function measureLandmarks(positions, heightM) {
   }
   const legX = mean(shin)
 
-  // Neck: narrowest body slice between the shoulders and the head.
-  const widthAt = (y0, y1) => {
+  // Neck: narrowest body slice between the shoulders and the head. Windows are
+  // thicker than the step and need enough points, so a sparse ring or a pole
+  // does not read as a thin neck.
+  const window = 0.012 * H
+  const widthAt = (y) => {
     let w = 0
-    for (let i = 0; i < n; i++) if (inSlice(i, y0, y1)) w = Math.max(w, Math.abs(X[i]))
-    return w
+    let count = 0
+    for (let i = 0; i < n; i++) {
+      if (!inSlice(i, y - window, y + window)) continue
+      w = Math.max(w, Math.abs(X[i]))
+      count += 1
+    }
+    return count >= 20 ? w : null
   }
   let neckY = null
   let neckWidth = Infinity
   for (let y = 0.55 * H; y < 0.85 * H; y += step) {
-    const w = widthAt(y, y + step)
-    if (w > 0 && w < neckWidth) {
+    const w = widthAt(y)
+    if (w !== null && w < neckWidth) {
       neckWidth = w
-      neckY = y + step / 2
+      neckY = y
     }
   }
   if (neckY === null) throw new Error('Could not find the neck')
@@ -112,10 +120,10 @@ export function measureLandmarks(positions, heightM) {
   let headCenterY = neckY
   let headHalfWidth = 0
   for (let y = neckY; y < top; y += step) {
-    const w = widthAt(y, y + step)
+    const w = widthAt(y) ?? 0
     if (w > headHalfWidth) {
       headHalfWidth = w
-      headCenterY = y + step / 2
+      headCenterY = y
     }
   }
   let snout = [0, neckY, -Infinity]
