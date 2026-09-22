@@ -8,6 +8,9 @@
  *
  * The same shape is meant to drive the Blender pipeline in phase 3, so keep
  * it free of three.js types. Never key `root` or the procedural eye bones.
+ *
+ * Arm raises stay at or below about 45 degrees: the contract has no clavicles,
+ * so bigger raises of these short arms stretch the shoulder skin.
  */
 
 /** Sine sway sampled into keys, closing the loop exactly at t = 1. */
@@ -71,8 +74,8 @@ const hatch = (() => {
     rot('spine_02', t, 'x', [20, 18, -6, 2, 0]),
     rot('neck_01', t, 'x', [15, 14, -10, 2, 0]),
     rot('head', t, 'x', [20, 18, -15, 4, 0]),
-    rot('upperarm_L', t, 'z', [-20, -15, 60, 10, 0]),
-    rot('upperarm_R', t, 'z', mirror([-20, -15, 60, 10, 0])),
+    rot('upperarm_L', t, 'z', [-15, -12, 45, 8, 0]),
+    rot('upperarm_R', t, 'z', mirror([-15, -12, 45, 8, 0])),
     rot('tail_01', t, 'x', [-25, -20, 15, -3, 0]),
     ...legs,
   ]
@@ -111,8 +114,8 @@ const roar = (() => {
     rot('chest', t, 'x', [0, 10, -12, -10, 0]),
     rot('neck_02', t, 'x', [0, 8, -10, -8, 0]),
     rot('head', t, 'x', [0, 12, -22, -20, 0]),
-    rot('upperarm_L', t, 'z', [0, 10, 50, 45, 0]),
-    rot('upperarm_R', t, 'z', mirror([0, 10, 50, 45, 0])),
+    rot('upperarm_L', t, 'z', [0, 8, 40, 36, 0]),
+    rot('upperarm_R', t, 'z', mirror([0, 8, 40, 36, 0])),
     rot('forearm_L', t, 'z', [0, 0, 20, 20, 0]),
     rot('forearm_R', t, 'z', mirror([0, 0, 20, 20, 0])),
     rot('tail_01', t, 'x', [0, -5, 20, 18, 0]),
@@ -130,8 +133,8 @@ const jump = (() => {
   return [
     lift('hips', t, [0, -0.06, 0.2, 0.02, -0.03, 0]),
     rot('spine_01', t, 'x', [0, 12, -6, 0, 8, 0]),
-    rot('upperarm_L', t, 'z', [0, -10, 40, 20, 0, 0]),
-    rot('upperarm_R', t, 'z', mirror([0, -10, 40, 20, 0, 0])),
+    rot('upperarm_L', t, 'z', [0, -8, 30, 15, 0, 0]),
+    rot('upperarm_R', t, 'z', mirror([0, -8, 30, 15, 0, 0])),
     rot('tail_01', t, 'x', [0, -10, 15, 5, -8, 0]),
     ...legs,
   ]
