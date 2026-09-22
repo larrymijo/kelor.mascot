@@ -32,7 +32,14 @@ export const fitSchema = z
       roughness: z.number().min(0).max(1),
       jpegQuality: z.int().min(50).max(100),
     }),
-    rig: z.strictObject({ ...docShape, overrides: z.record(boneName, vec3) }),
+    rig: z.strictObject({
+      ...docShape,
+      overrides: z.record(boneName, vec3),
+      influenceLimitsM: z.record(
+        z.enum(['spine', 'neck', 'head', 'tail', 'leg', 'arm']),
+        z.number().positive().max(1),
+      ),
+    }),
     eyes: z.strictObject({
       ...docShape,
       x: z.number().positive().max(0.3),

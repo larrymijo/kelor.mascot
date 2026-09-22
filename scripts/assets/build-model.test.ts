@@ -1,9 +1,10 @@
 import { Document, NodeIO } from '@gltf-transform/core'
+import { BufferAttribute } from 'three'
 import { beforeAll, describe, expect, it } from 'vitest'
 import contract from '../../character.json'
 import fit from '../../assets/model/fit.json'
 import { boneSegments, merge, skinByDistance } from './assembly/skinning.mjs'
-import { buildModel, readBody } from './build-model.mjs'
+import { buildModel, cleanWeights, readBody } from './build-model.mjs'
 import { parseGlb } from './glb.mjs'
 import { measureLandmarks } from './model/landmarks.mjs'
 import { bodyParts } from './placeholder/shapes.mjs'
@@ -136,5 +137,46 @@ describe('build-model', () => {
   it('marks the file as the real model with its source', () => {
     const { json } = parseGlb(built.bytes)
     expect(json.extras).toMatchObject({ kelorModel: true, source: fit.source })
+  })
+})
+
+describe('cleanWeights', () => {
+  it('takes arm influence off a torso that automatic weights handed to the arm', () => {
+    const torso = bodyParts(0.5).find((part) => part.name === 'torso')!.geometries[0]!
+    const count = torso.attributes.position.count
+    const arm = jointOf('upperarm_L')
+    torso.setAttribute(
+      'skinIndex',
+      new BufferAttribute(
+        Uint16Array.from({ length: count * 4 }, (_, i) => (i % 4 ? 0 : arm)),
+        4,
+      ),
+    )
+    torso.setAttribute(
+      'skinWeight',
+      new BufferAttribute(
+        Float32Array.from({ length: count * 4 }, (_, i) => (i % 4 ? 0 : 1)),
+        4,
+      ),
+    )
+    const { repaired, clamped } = cleanWeights(torso, bones, jointOf, fit.rig.influenceLimitsM)
+    expect(clamped).toBeGreaterThan(0)
+    expect(repaired).toBe(clamped)
+
+    // Belly-front vertices keep no arm weight; spine, neck or legs take over within their limits.
+    const pos = torso.attributes.position
+    const joints = torso.attributes.skinIndex.array
+    const weights = torso.attributes.skinWeight.array
+    const arms = new Set(bones.filter((b) => b.role === 'arm').map((b) => jointOf(b.name)))
+    for (let i = 0; i < count; i++) {
+      if (Math.abs(pos.getX(i)) > 0.05 || pos.getZ(i) < 0.15) continue
+      let total = 0
+      for (let k = 0; k < 4; k++) {
+        const w = weights[i * 4 + k]!
+        expect(arms.has(joints[i * 4 + k]!) && w > 0).toBe(false)
+        total += w
+      }
+      expect(total).toBeCloseTo(1, 5)
+    }
   })
 })

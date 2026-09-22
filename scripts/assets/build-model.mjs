@@ -20,9 +20,9 @@ import {
 import { EYE, eyeball, eyelid, highlights, plate, projectFaceUvs } from './assembly/features.mjs'
 import {
   boneSegments,
+  distanceToSegment,
   isProcedural,
   merge,
-  skinByDistance,
   skinRigid,
 } from './assembly/skinning.mjs'
 import { eyesBaseColor, faceAtlas } from './assembly/textures.mjs'
@@ -96,44 +96,87 @@ export async function readBody(bytes, contract) {
 }
 
 /**
- * Give vertices that automatic weights left (almost) empty distance-based
- * weights, and renormalise the rest. Returns how many were repaired.
+ * Clean automatic weights, which misbehave when short arms rest against the
+ * body: a bone loses any influence on vertices farther than its role's limit
+ * from its segment (fit.json rig.influenceLimitsM), and the rest is
+ * renormalised. Vertices left (almost) empty get inverse-distance weights
+ * from the bones allowed to reach them.
+ * @returns {{ repaired: number, clamped: number }}
  */
-export function repairWeights(geometry, bones, jointOf) {
-  const deform = bones.filter((b) => b.role !== 'root' && !isProcedural(b)).map((b) => b.name)
+export function cleanWeights(geometry, bones, jointOf, limits = {}) {
   const segments = boneSegments(bones)
-  const weights = geometry.attributes.skinWeight
-  const joints = geometry.attributes.skinIndex
-  const empty = []
-  for (let i = 0; i < weights.count; i++) {
-    const total = weights.getX(i) + weights.getY(i) + weights.getZ(i) + weights.getW(i)
-    if (total < 0.5) empty.push(i)
-    else {
-      weights.setXYZW(
-        i,
-        weights.getX(i) / total,
-        weights.getY(i) / total,
-        weights.getZ(i) / total,
-        weights.getW(i) / total,
-      )
+  const deform = bones.filter((b) => b.role !== 'root' && !isProcedural(b))
+  const limitOf = (bone) => limits[bone.role] ?? Infinity
+  const weights = geometry.attributes.skinWeight.array
+  const joints = geometry.attributes.skinIndex.array
+  const position = geometry.attributes.position
+  const p = new THREE.Vector3()
+  let repaired = 0
+  let clamped = 0
+
+  for (let i = 0; i < position.count; i++) {
+    p.fromBufferAttribute(position, i)
+    let total = 0
+    for (let k = 0; k < 4; k++) {
+      const w = weights[i * 4 + k]
+      if (w <= 0) continue
+      const bone = bones[joints[i * 4 + k]]
+      const segment = segments.get(bone.name)
+      if (segment && distanceToSegment(p, segment[0], segment[1]) > limitOf(bone)) {
+        weights[i * 4 + k] = 0
+        clamped += 1
+      } else total += w
+    }
+    if (total >= 0.5) {
+      for (let k = 0; k < 4; k++) weights[i * 4 + k] /= total
+      continue
+    }
+
+    // Rebuild from the bones allowed to reach this vertex (or the nearest one).
+    repaired += 1
+    const ranked = deform
+      .map((bone) => {
+        const [a, b] = segments.get(bone.name)
+        const d = distanceToSegment(p, a, b)
+        return { joint: jointOf(bone.name), d, allowed: d <= limitOf(bone) }
+      })
+      .sort((x, y) => x.d - y.d || x.joint - y.joint)
+    const pool = ranked.filter((r) => r.allowed)
+    const top = (pool.length ? pool : ranked.slice(0, 1)).slice(0, 4)
+    const raw = top.map((r) => 1 / (r.d + 0.01) ** 4)
+    const sum = raw.reduce((a, b) => a + b, 0)
+    for (let k = 0; k < 4; k++) {
+      joints[i * 4 + k] = top[k]?.joint ?? 0
+      weights[i * 4 + k] = top[k] ? raw[k] / sum : 0
     }
   }
-  if (empty.length) {
-    const scratch = new THREE.BufferGeometry()
-    const positions = new Float32Array(empty.length * 3)
-    empty.forEach((i, k) =>
-      positions.set(geometry.attributes.position.array.slice(i * 3, i * 3 + 3), k * 3),
-    )
-    scratch.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    skinByDistance(scratch, deform, segments, jointOf)
-    empty.forEach((i, k) => {
-      for (let c = 0; c < 4; c++) {
-        joints.array[i * 4 + c] = scratch.attributes.skinIndex.array[k * 4 + c]
-        weights.array[i * 4 + c] = scratch.attributes.skinWeight.array[k * 4 + c]
-      }
-    })
+  geometry.attributes.skinWeight.needsUpdate = true
+  geometry.attributes.skinIndex.needsUpdate = true
+  return { repaired, clamped }
+}
+
+/** UV of the body vertex nearest to a point: lets lids reuse the local skin colour. */
+function nearestUv(body, point) {
+  const pos = body.attributes.position
+  const uv = body.attributes.uv
+  const p = new THREE.Vector3(...point)
+  const q = new THREE.Vector3()
+  let best = 0
+  let bestDistance = Infinity
+  for (let i = 0; i < pos.count; i++) {
+    const d = q.fromBufferAttribute(pos, i).distanceToSquared(p)
+    if (d < bestDistance) {
+      bestDistance = d
+      best = i
+    }
   }
-  return empty.length
+  return [uv.getX(best), uv.getY(best)]
+}
+
+function paintUv(geometry, [u, v]) {
+  const uv = geometry.attributes.uv
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, u, v)
+  return geometry
 }
 
 function raycaster(geometry) {
@@ -251,7 +294,7 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
     extras: { kelorModel: true, source: fit.source, contractVersion: contract.contractVersion },
   })
   const { jointOf, restOf } = ctx
-  const repaired = repairWeights(geometry, bones, jointOf)
+  const weights = cleanWeights(geometry, bones, jointOf, fit.rig.influenceLimitsM)
 
   const { shell, patch, mouthY } = faceShellFromBody(geometry, fit, rig.landmarks)
   projectFaceUvs(shell, patch, 1 / contract.expressions.grid[0])
@@ -263,7 +306,12 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
   )
   const lidTilt = contract.gaze.blink.closedAngleDeg
   const lids = merge(
-    ['eyelid_L', 'eyelid_R'].map((b) => skinRigid(eyelid(restOf(b), lidTilt, detail), jointOf(b))),
+    ['eyelid_L', 'eyelid_R'].map((b) => {
+      // Lids take the colour of the skin just above the eye, not arbitrary atlas texels.
+      const [x, y, z] = restOf(b)
+      const skin = nearestUv(geometry, [x, y + EYE.lidRadius, z])
+      return skinRigid(paintUv(eyelid(restOf(b), lidTilt, detail), skin), jointOf(b))
+    }),
   )
   const catchlights = merge(
     ['eye_L', 'eye_R']
@@ -298,5 +346,8 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
   addSkinnedMesh(ctx, 'plates', plates, materials.plates)
   addContractClips(ctx, PLACEHOLDER_CLIPS)
 
-  return { bytes: await writeGlb(ctx.doc), report: { repairedVertices: repaired, eyes, mouthY } }
+  return {
+    bytes: await writeGlb(ctx.doc),
+    report: { repairedVertices: weights.repaired, clampedWeights: weights.clamped, eyes, mouthY },
+  }
 }
