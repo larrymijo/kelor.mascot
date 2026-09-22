@@ -70,7 +70,8 @@ describe('landmarks and skeleton fit', () => {
     expect(lm.crotchY).toBeCloseTo(NOMINAL.crotchY, 1)
     expect(lm.neckY).toBeCloseTo(NOMINAL.neckY, 1)
     expect(lm.legX).toBeCloseTo(NOMINAL.legX, 1)
-    expect(lm.hand[0]).toBeCloseTo(NOMINAL.handX, 1)
+    // A-pose: the hands reach further out than the nominal hands hanging at the sides.
+    expect(lm.hand[0]).toBeGreaterThan(NOMINAL.handX + 0.03)
     expect(lm.tailTip[2]).toBeLessThan(-0.55)
     expect(lm.snoutTip[2] - lm.torsoFrontZ).toBeGreaterThan(0.08)
     expect(lm.tailCurve.length).toBeGreaterThan(4)
@@ -83,6 +84,8 @@ describe('landmarks and skeleton fit', () => {
     const dz = lm.torsoFrontZ - NOMINAL.torsoFrontZ
     expect(dz).toBeLessThan(-0.03)
     for (const [i, bone] of fitted.entries()) {
+      // The stand-in's arms are in an A-pose, checked separately below.
+      if (bone.role === 'arm') continue
       const nominal = contract.skeleton.bones[i]!.restHead
       const distance = Math.hypot(
         ...bone.restHead.map((v, k) => v - nominal[k]! - (k === 2 ? dz : 0)),
@@ -90,6 +93,19 @@ describe('landmarks and skeleton fit', () => {
       // Tail bones land on the measured tail centreline, a few cm off the nominal heads.
       expect(distance, bone.name).toBeLessThan(0.05)
     }
+  })
+
+  it('ends each arm chain at the measured hand, elbow in between', () => {
+    const lm = measureLandmarks(positions, contract.meta.heightM)
+    const fitted = fitSkeleton(contract, lm)
+    const head = (name: string) => fitted.find((b) => b.name === name)!.restHead
+    expect(head('hand_L')).toEqual(lm.hand.map((v: number) => Math.round(v * 1e4) / 1e4))
+    expect(head('hand_R')[0]).toBeCloseTo(-head('hand_L')[0]!, 4)
+    const [s, e, h] = ['upperarm_L', 'forearm_L', 'hand_L'].map(head) as number[][]
+    // A-pose: the hand swings out past the shoulder and the elbow sits between them.
+    expect(h![0]).toBeGreaterThan(s![0]! + 0.08)
+    expect(e![0]).toBeGreaterThan(s![0]!)
+    expect(e![0]).toBeLessThan(h![0]!)
   })
 
   it('keeps hierarchy and names, and lets overrides win', () => {

@@ -140,11 +140,11 @@ export function measureLandmarks(positions, heightM) {
   for (let i = 0; i < n; i++) {
     if (Y[i] > crotchY && Y[i] < neckY && Math.abs(X[i]) > 0.88 * handReach) handPoints.push(i)
   }
-  const hand = [
-    mean(handPoints.map((i) => Math.abs(X[i]))),
-    mean(handPoints.map((i) => Y[i])),
-    mean(handPoints.map((i) => Z[i])),
-  ]
+  // Those points sit on the hand's outer surface; step in by the hand's radius,
+  // estimated from their vertical spread, to reach its centre.
+  const handYs = handPoints.map((i) => Y[i])
+  const handRadius = (Math.max(...handYs) - Math.min(...handYs)) / 2
+  const hand = [handReach - handRadius, mean(handYs), mean(handPoints.map((i) => Z[i]))]
 
   // Tail: back-most point, and the centreline height along its length.
   let tailTip = [0, 0, Infinity]
@@ -215,7 +215,7 @@ function tailHeightAt(landmarks, z, fallback) {
 export function fitSkeleton(contract, landmarks, overrides = {}) {
   const f = heightMap(landmarks)
   const legScale = landmarks.legX / NOMINAL.legX
-  const armScale = landmarks.hand[0] / NOMINAL.handX
+  const nominalHead = (name) => contract.skeleton.bones.find((b) => b.name === name).restHead
   const tailRoot = contract.skeleton.bones.find((b) => b.name === 'tail_01').restHead
   const tailSpan = NOMINAL.tailTipZ - tailRoot[2]
   // The measured body may sit deeper or shallower than the nominal one.
@@ -225,8 +225,25 @@ export function fitSkeleton(contract, landmarks, overrides = {}) {
     const [x0, y0, z0] = bone.restHead
     let head
     if (bone.role === 'leg') head = [x0 * legScale, f(y0), z0 + dz]
-    else if (bone.role === 'arm') head = [x0 * armScale, f(y0), z0 + dz]
-    else if (bone.role === 'tail' && bone.name !== 'tail_01') {
+    else if (bone.role === 'arm') {
+      // Shoulder from the nominal rig, hand at the measured hand centre, elbow
+      // in between at its nominal share of the chain: works for arms hanging
+      // against the body and for an A-pose alike.
+      const side = bone.name.slice(-1)
+      const sign = side === 'L' ? 1 : -1
+      const shoulderNominal = nominalHead(`upperarm_${side}`)
+      const shoulder = [shoulderNominal[0], f(shoulderNominal[1]), shoulderNominal[2] + dz]
+      const hand = [sign * landmarks.hand[0], landmarks.hand[1], landmarks.hand[2]]
+      if (bone.name.startsWith('upperarm')) head = shoulder
+      else if (bone.name.startsWith('hand')) head = hand
+      else {
+        const elbow = nominalHead(`forearm_${side}`)
+        const upper = Math.hypot(...elbow.map((v, i) => v - shoulderNominal[i]))
+        const lower = Math.hypot(...nominalHead(`hand_${side}`).map((v, i) => v - elbow[i]))
+        const t = upper / (upper + lower)
+        head = shoulder.map((v, i) => v + (hand[i] - v) * t)
+      }
+    } else if (bone.role === 'tail' && bone.name !== 'tail_01') {
       const u = (z0 - tailRoot[2]) / tailSpan
       const z = tailRoot[2] + dz + u * (landmarks.tailTip[2] - tailRoot[2] - dz)
       head = [0, tailHeightAt(landmarks, z, f(y0)), z]
