@@ -29,9 +29,9 @@
         ],
         "mouthY": 0.8662,
         "hand": [
-          0.2547,
-          0.4751,
-          0.1035
+          0.2807,
+          0.4994,
+          0.1091
         ],
         "tailTip": [
           0,
@@ -82,16 +82,16 @@
       "blender": "5.2.2 LTS",
       "tiers": {
         "full": {
-          "triangles": 11952,
+          "triangles": 11798,
           "textureSize": 1024,
-          "seconds": 6.5,
+          "seconds": 12.3,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
-          "triangles": 4464,
+          "triangles": 4156,
           "textureSize": 512,
-          "seconds": 3.5,
+          "seconds": 5.7,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -99,40 +99,40 @@
     },
     "assemble": {
       "full": {
-        "repairedVertices": 512,
-        "clampedWeights": 4548,
+        "repairedVertices": 650,
+        "clampedWeights": 4470,
         "eyes": {
           "L": [
             0.105,
             1.0008,
-            0.20274240096266025
+            0.20279558595641775
           ],
           "R": [
             -0.105,
             1.0008,
-            0.20273923109365474
+            0.20272633494423173
           ]
         },
         "mouthY": 0.8662,
-        "kB": 1133
+        "kB": 1190
       },
       "lite": {
-        "repairedVertices": 227,
-        "clampedWeights": 1922,
+        "repairedVertices": 221,
+        "clampedWeights": 1664,
         "eyes": {
           "L": [
             0.105,
             1.0008,
-            0.20267636991880086
+            0.20237692775505875
           ],
           "R": [
             -0.105,
             1.0008,
-            0.20221607502371616
+            0.202342640769504
           ]
         },
         "mouthY": 0.8662,
-        "kB": 436
+        "kB": 408
       }
     },
     "validate": {
