@@ -20,8 +20,8 @@
     "_doc": "Cycles CPU bakes from the source to the retopologised mesh. Sizes are pixels per tier; normal maps only on full.",
     "size": { "full": 1024, "lite": 512 },
     "samples": 16,
-    "cageExtrusionM": 0.02,
-    "maxRayDistanceM": 0.06,
+    "cageExtrusionM": 0.01,
+    "maxRayDistanceM": 0.025,
     "roughness": 0.6,
     "jpegQuality": 88
   },
