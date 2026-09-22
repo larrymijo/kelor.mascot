@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import contract from '../../character.json'
 import fit from '../../assets/model/fit.json'
 import { boneSegments, merge, skinByDistance } from './assembly/skinning.mjs'
-import { buildModel, cleanWeights, readBody } from './build-model.mjs'
+import { buildModel, cleanWeights, readBody, smoothWeights } from './build-model.mjs'
 import { parseGlb } from './glb.mjs'
 import { measureLandmarks } from './model/landmarks.mjs'
 import { bodyParts } from './placeholder/shapes.mjs'
@@ -196,5 +196,44 @@ describe('cleanWeights', () => {
       }
       expect(total).toBeCloseTo(1, 5)
     }
+  })
+})
+
+describe('smoothWeights', () => {
+  it('blurs a hard weight border, keeps four influences, unit sums and closed seams', () => {
+    const segments = boneSegments(bones)
+    const torso = merge([
+      skinByDistance(
+        bodyParts(0.5).find((part) => part.name === 'torso')!.geometries[0]!,
+        ['spine_01'],
+        segments,
+        jointOf,
+      ),
+    ])
+    const pos = torso.attributes.position
+    const joints = torso.attributes.skinIndex.array
+    const weights = torso.attributes.skinWeight.array
+    // A hard border: everything above y 0.5 belongs to the chest.
+    for (let i = 0; i < pos.count; i++) {
+      if (pos.getY(i) > 0.5) joints[i * 4] = jointOf('chest')
+    }
+    const groups = smoothWeights(torso, bones.length, 4, 0.5)
+    expect(groups).toBeLessThanOrEqual(pos.count)
+
+    let blended = 0
+    const byPosition = new Map<string, string>()
+    for (let i = 0; i < pos.count; i++) {
+      const w = [0, 1, 2, 3].map((k) => weights[i * 4 + k]!)
+      expect(w.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 5)
+      if (w.filter((x) => x > 0.05).length > 1) blended += 1
+      const key = [pos.getX(i), pos.getY(i), pos.getZ(i)].map((v) => v.toFixed(5)).join(',')
+      const value = [0, 1, 2, 3]
+        .map((k) => `${joints[i * 4 + k]}:${weights[i * 4 + k]!.toFixed(5)}`)
+        .join('|')
+      if (byPosition.has(key)) expect(byPosition.get(key)).toBe(value)
+      else byPosition.set(key, value)
+    }
+    // The border is no longer a single switch between neighbours.
+    expect(blended).toBeGreaterThan(20)
   })
 })

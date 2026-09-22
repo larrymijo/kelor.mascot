@@ -161,6 +161,96 @@ export function cleanWeights(geometry, bones, jointOf, limits = {}, armpitMargin
   return { repaired, clamped }
 }
 
+/**
+ * Laplacian smoothing of skin weights, so influence fades over several edge
+ * rings instead of switching between neighbours (which creases the skin when
+ * a limb rotates). Vertices are welded by position first: exporters split
+ * them at UV seams, and a seam must not open. Keeps the four strongest
+ * influences per vertex, renormalised.
+ * @returns {number} how many welded vertices were smoothed
+ */
+export function smoothWeights(geometry, boneCount, iterations = 3, factor = 0.5) {
+  if (iterations <= 0 || factor <= 0) return 0
+  const position = geometry.attributes.position
+  const joints = geometry.attributes.skinIndex.array
+  const weights = geometry.attributes.skinWeight.array
+  const count = position.count
+
+  // Weld: one group per distinct position.
+  const groupOf = new Int32Array(count)
+  const keys = new Map()
+  for (let i = 0; i < count; i++) {
+    const key = [position.getX(i), position.getY(i), position.getZ(i)]
+      .map((v) => Math.round(v * 1e5))
+      .join(',')
+    let group = keys.get(key)
+    if (group === undefined) {
+      group = keys.size
+      keys.set(key, group)
+    }
+    groupOf[i] = group
+  }
+  const groups = keys.size
+
+  // Neighbours between groups, from the triangles.
+  const neighbours = Array.from({ length: groups }, () => new Set())
+  const index = geometry.index.array
+  for (let t = 0; t < index.length; t += 3) {
+    const [a, b, c] = [groupOf[index[t]], groupOf[index[t + 1]], groupOf[index[t + 2]]]
+    neighbours[a].add(b).add(c)
+    neighbours[b].add(a).add(c)
+    neighbours[c].add(a).add(b)
+  }
+  const lists = neighbours.map((set, g) => [...set].filter((n) => n !== g))
+
+  // Dense per-bone weights per group (first vertex of each group is representative).
+  let dense = new Float32Array(groups * boneCount)
+  const seen = new Uint8Array(groups)
+  for (let i = 0; i < count; i++) {
+    const g = groupOf[i]
+    if (seen[g]) continue
+    seen[g] = 1
+    for (let k = 0; k < 4; k++) dense[g * boneCount + joints[i * 4 + k]] += weights[i * 4 + k]
+  }
+  for (let pass = 0; pass < iterations; pass++) {
+    const next = new Float32Array(dense.length)
+    for (let g = 0; g < groups; g++) {
+      const list = lists[g]
+      for (let b = 0; b < boneCount; b++) {
+        let sum = 0
+        for (const n of list) sum += dense[n * boneCount + b]
+        const mean = list.length ? sum / list.length : dense[g * boneCount + b]
+        next[g * boneCount + b] = dense[g * boneCount + b] * (1 - factor) + mean * factor
+      }
+    }
+    dense = next
+  }
+
+  // Top four per group, written back to every vertex of the group.
+  const top = new Array(groups)
+  for (let g = 0; g < groups; g++) {
+    const ranked = []
+    for (let b = 0; b < boneCount; b++) {
+      const w = dense[g * boneCount + b]
+      if (w > 1e-4) ranked.push([b, w])
+    }
+    ranked.sort((x, y) => y[1] - x[1] || x[0] - y[0])
+    const kept = ranked.slice(0, 4)
+    const total = kept.reduce((n, [, w]) => n + w, 0)
+    top[g] = kept.map(([b, w]) => [b, w / total])
+  }
+  for (let i = 0; i < count; i++) {
+    const kept = top[groupOf[i]]
+    for (let k = 0; k < 4; k++) {
+      joints[i * 4 + k] = kept[k]?.[0] ?? 0
+      weights[i * 4 + k] = kept[k]?.[1] ?? 0
+    }
+  }
+  geometry.attributes.skinIndex.needsUpdate = true
+  geometry.attributes.skinWeight.needsUpdate = true
+  return groups
+}
+
 /** UV of the body vertex nearest to a point: lets lids reuse the local skin colour. */
 function nearestUv(body, point) {
   const pos = body.attributes.position
@@ -306,6 +396,12 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
     jointOf,
     fit.rig.influenceLimitsM,
     fit.rig.armpitMarginM,
+  )
+  smoothWeights(
+    geometry,
+    bones.length,
+    fit.rig.weightSmoothing.iterations,
+    fit.rig.weightSmoothing.factor,
   )
 
   const { shell, patch, mouthY } = faceShellFromBody(geometry, fit, rig.landmarks)

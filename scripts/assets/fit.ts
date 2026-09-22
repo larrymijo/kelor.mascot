@@ -40,6 +40,10 @@ export const fitSchema = z
         z.number().positive().max(1),
       ),
       armpitMarginM: z.number().min(0).max(0.2),
+      weightSmoothing: z.strictObject({
+        iterations: z.int().min(0).max(20),
+        factor: z.number().min(0).max(1),
+      }),
     }),
     eyes: z.strictObject({
       ...docShape,
