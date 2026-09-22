@@ -27,9 +27,10 @@
   },
 
   "rig": {
-    "_doc": "Bone rest heads come from landmarks measured on the normalised mesh. Overrides replace a bone's measured head (metres, contract axes). influenceLimitsM caps how far (metres) from its segment a bone of each role may deform the skin, so arms resting on the body do not drag the chest.",
+    "_doc": "Bone rest heads come from landmarks measured on the normalised mesh. Overrides replace a bone's measured head (metres, contract axes). influenceLimitsM caps how far (metres) from its segment a bone of each role may deform the skin, so arms resting on the body do not drag the chest. armpitMarginM lets an arm bone reach only this far inside its shoulder, since the contract has no clavicles.",
     "overrides": {},
-    "influenceLimitsM": { "arm": 0.1, "leg": 0.16, "tail": 0.18, "neck": 0.22, "head": 0.45, "spine": 0.45 }
+    "influenceLimitsM": { "arm": 0.1, "leg": 0.16, "tail": 0.18, "neck": 0.22, "head": 0.45, "spine": 0.45 },
+    "armpitMarginM": 0.02
   },
 
   "eyes": {

@@ -98,15 +98,21 @@ export async function readBody(bytes, contract) {
 /**
  * Clean automatic weights, which misbehave when short arms rest against the
  * body: a bone loses any influence on vertices farther than its role's limit
- * from its segment (fit.json rig.influenceLimitsM), and the rest is
- * renormalised. Vertices left (almost) empty get inverse-distance weights
- * from the bones allowed to reach them.
+ * from its segment (fit.json rig.influenceLimitsM), and an arm bone also on
+ * vertices nearer the body's centre line than its shoulder minus
+ * armpitMarginM (the contract has no clavicles, so the upper arm starts
+ * inside the chest). The rest is renormalised; vertices left (almost) empty
+ * get inverse-distance weights from the bones allowed to reach them.
  * @returns {{ repaired: number, clamped: number }}
  */
-export function cleanWeights(geometry, bones, jointOf, limits = {}) {
+export function cleanWeights(geometry, bones, jointOf, limits = {}, armpitMarginM = Infinity) {
   const segments = boneSegments(bones)
   const deform = bones.filter((b) => b.role !== 'root' && !isProcedural(b))
-  const limitOf = (bone) => limits[bone.role] ?? Infinity
+  const shoulderX = (bone) =>
+    Math.abs(bones.find((b) => b.name === `upperarm_${bone.name.slice(-1)}`).restHead[0])
+  const reaches = (bone, p, distance) =>
+    distance <= (limits[bone.role] ?? Infinity) &&
+    (bone.role !== 'arm' || Math.abs(p.x) >= shoulderX(bone) - armpitMarginM)
   const weights = geometry.attributes.skinWeight.array
   const joints = geometry.attributes.skinIndex.array
   const position = geometry.attributes.position
@@ -122,7 +128,7 @@ export function cleanWeights(geometry, bones, jointOf, limits = {}) {
       if (w <= 0) continue
       const bone = bones[joints[i * 4 + k]]
       const segment = segments.get(bone.name)
-      if (segment && distanceToSegment(p, segment[0], segment[1]) > limitOf(bone)) {
+      if (segment && !reaches(bone, p, distanceToSegment(p, segment[0], segment[1]))) {
         weights[i * 4 + k] = 0
         clamped += 1
       } else total += w
@@ -138,7 +144,7 @@ export function cleanWeights(geometry, bones, jointOf, limits = {}) {
       .map((bone) => {
         const [a, b] = segments.get(bone.name)
         const d = distanceToSegment(p, a, b)
-        return { joint: jointOf(bone.name), d, allowed: d <= limitOf(bone) }
+        return { joint: jointOf(bone.name), d, allowed: reaches(bone, p, d) }
       })
       .sort((x, y) => x.d - y.d || x.joint - y.joint)
     const pool = ranked.filter((r) => r.allowed)
@@ -294,7 +300,13 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
     extras: { kelorModel: true, source: fit.source, contractVersion: contract.contractVersion },
   })
   const { jointOf, restOf } = ctx
-  const weights = cleanWeights(geometry, bones, jointOf, fit.rig.influenceLimitsM)
+  const weights = cleanWeights(
+    geometry,
+    bones,
+    jointOf,
+    fit.rig.influenceLimitsM,
+    fit.rig.armpitMarginM,
+  )
 
   const { shell, patch, mouthY } = faceShellFromBody(geometry, fit, rig.landmarks)
   projectFaceUvs(shell, patch, 1 / contract.expressions.grid[0])

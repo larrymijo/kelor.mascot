@@ -109,7 +109,8 @@ describe('build-model', () => {
   })
 
   it('repairs vertices that automatic weights left empty', () => {
-    expect(built.report.repairedVertices).toBe(ZEROED)
+    // At least the zeroed ones; the armpit cut can empty a few inner arm vertices too.
+    expect(built.report.repairedVertices).toBeGreaterThanOrEqual(ZEROED)
   })
 
   it('produces a contract GLB with no validator failures or warnings', () => {
@@ -159,15 +160,32 @@ describe('cleanWeights', () => {
         4,
       ),
     )
-    const { repaired, clamped } = cleanWeights(torso, bones, jointOf, fit.rig.influenceLimitsM)
+    const { repaired, clamped } = cleanWeights(
+      torso,
+      bones,
+      jointOf,
+      fit.rig.influenceLimitsM,
+      fit.rig.armpitMarginM,
+    )
     expect(clamped).toBeGreaterThan(0)
     expect(repaired).toBe(clamped)
 
-    // Belly-front vertices keep no arm weight; spine, neck or legs take over within their limits.
     const pos = torso.attributes.position
     const joints = torso.attributes.skinIndex.array
     const weights = torso.attributes.skinWeight.array
     const arms = new Set(bones.filter((b) => b.role === 'arm').map((b) => jointOf(b.name)))
+
+    // Nothing inside the shoulders keeps arm weight (armpit cut).
+    const shoulder = Math.abs(bones.find((b) => b.name === 'upperarm_L')!.restHead[0])
+    for (let i = 0; i < count; i++) {
+      if (Math.abs(pos.getX(i)) >= shoulder - fit.rig.armpitMarginM) continue
+      for (let k = 0; k < 4; k++) {
+        const armWeight = arms.has(joints[i * 4 + k]!) ? weights[i * 4 + k]! : 0
+        expect(armWeight).toBe(0)
+      }
+    }
+
+    // Belly-front vertices keep no arm weight; spine, neck or legs take over within their limits.
     for (let i = 0; i < count; i++) {
       if (Math.abs(pos.getX(i)) > 0.05 || pos.getZ(i) < 0.15) continue
       let total = 0

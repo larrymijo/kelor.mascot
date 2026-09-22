@@ -39,6 +39,7 @@ export const fitSchema = z
         z.enum(['spine', 'neck', 'head', 'tail', 'leg', 'arm']),
         z.number().positive().max(1),
       ),
+      armpitMarginM: z.number().min(0).max(0.2),
     }),
     eyes: z.strictObject({
       ...docShape,
