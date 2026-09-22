@@ -7,7 +7,7 @@
  *
  * It mimics what image-to-3D services return: one dense, unrigged, textured
  * mesh made of overlapping, unwelded shells, with a blank face and no plates,
- * in an arbitrary scale, position and facing. Deterministic output.
+ * in an arbitrary scale, position and facing, arms in an A-pose. Deterministic output.
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -41,9 +41,27 @@ function shade(geometry, belly) {
   return geometry
 }
 
+/** Arms swing out from the shoulder by this much: the A-pose the concept brief asks for. */
+export const STANDIN_ARM_SPREAD_DEG = 25
+const SHOULDER = [0.16, 0.585, 0.06]
+
+function aPose(geometry, side) {
+  const sign = side === 'L' ? 1 : -1
+  const [x, y, z] = SHOULDER
+  geometry.translate(-sign * x, -y, -z)
+  geometry.rotateZ(THREE.MathUtils.degToRad(sign * STANDIN_ARM_SPREAD_DEG))
+  geometry.translate(sign * x, y, z)
+  return geometry
+}
+
 export async function buildStandin(contract) {
   const body = merge(
-    bodyParts(2.2).flatMap((part) => part.geometries.map((g) => shade(g, part.belly))),
+    bodyParts(2.2).flatMap((part) =>
+      part.geometries.map((g) => {
+        const arm = /^(arm|hand)_([LR])$/.exec(part.name)
+        return shade(arm ? aPose(g, arm[2]) : g, part.belly)
+      }),
+    ),
   )
   // merge() keeps skin attributes when present; the stand-in has none.
   const { rotateYDeg, scale, offset } = STANDIN_TRANSFORM
