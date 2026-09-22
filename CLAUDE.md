@@ -94,7 +94,10 @@ scripts/blender         headless Blender pipeline (Python, phase 3)
 scripts/review          capture and review tooling
 assets/concept          concept art chosen by the owner (input to phase 3)
 docs/                   scroll script, decisions log
-public/models           GLBs validated against character.json (generated placeholders until phase 3)
+assets/source           image-to-3D sources (stand-in until the owner delivers kelo-raw.glb)
+assets/model            fit.json: how the pipeline turns a source into the contract model
+assets/review           committed review renders and pipeline logs
+public/models           GLBs built by the model pipeline, validated against character.json
 ```
 
 ## Stage architecture (phase 2)
@@ -106,13 +109,22 @@ public/models           GLBs validated against character.json (generated placeho
 - React Compiler lint rules forbid mutating hook values: keep three.js mutations inside classes like `MascotRig` or read objects with `get()` inside effects.
 - `?debug` opens the leva panel and FPS meter on local and preview builds, never on production.
 
+## Model pipeline (phase 3)
+
+- `assets/model/fit.json` names the image-to-3D source (`assets/source/*.glb`) and every model-specific knob; `scripts/assets/fit.ts` validates it.
+- `corepack pnpm build:model` runs normalise and skeleton fit (Node), retopology, UVs, bakes and weights (Blender 5.2 LTS), assembly with the shared placeholder code (Node), strict validation and review renders (Blender).
+- Blender never runs locally. The Model workflow runs on feature-branch pushes that touch the source, fit, pipeline or contract, and commits `public/models` plus `assets/review/phase-3` (renders, `pipeline.log`, `summary.json`) back to the branch: `git pull` before pushing again.
+- Review every run through the committed renders: rest views, face close-up, topology, bone heads and each clip at mid-pose.
+- Locally, `node scripts/assets/model/run.mjs --until rig` runs the Node steps into `build/model`.
+
 ## Commands
 
 ```bash
 corepack pnpm dev              # local dev server
 corepack pnpm check            # typecheck, lint, format, tests, strict model validation, placeholder freshness, build, bundle budget
 corepack pnpm validate:model   # validate GLBs in public/models against character.json (strict)
-corepack pnpm build:placeholder # regenerate the placeholder GLBs (add --check to verify)
+corepack pnpm build:model      # full model pipeline (CI; needs Blender)
+corepack pnpm build:placeholder # placeholder GLBs into build/placeholder (--public to overwrite the model)
 corepack pnpm size             # bundle report and JS budgets (after build)
 corepack pnpm e2e              # Playwright: 3D hero, reduced motion, keyboard, debug panel, captures (after build)
 ```

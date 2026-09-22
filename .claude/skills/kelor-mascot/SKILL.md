@@ -101,9 +101,9 @@ Compression: Meshopt geometry, KTX2 (UASTC for normals and the face atlas, ETC1S
 corepack pnpm validate:model --file path/to/model.glb --tier full
 ```
 
-## Placeholder (phase 2 until phase 3)
+## Model pipeline (phase 3)
 
-`corepack pnpm build:placeholder` generates `mascot.lite.glb` and `mascot.full.glb` from `character.json`: primitive shapes on the real 28-bone rig, the six meshes and five materials, procedural textures, the 2x2 expression atlas and all six clips from `scripts/assets/placeholder-clips.mjs`. It passes every validator rule. The real model replaces the files at the same paths; reuse the clip spec in the Blender pipeline so timing stays identical. On stage the mascot stands in a 22 degree three-quarter turn so the tail reads, until phase 5 gaze turns the head to the viewer.
+The real Kelo comes from the owner's image-to-3D source through `corepack pnpm build:model` (see `scripts/blender/README.md`): normalise, fit the 28-bone rig to measured landmarks, retopologise with Quadriflow, bake base colour, AO and normals, bind with automatic weights capped per role, then add the procedural eyes, lids, catchlights, plates and face shell with the same code as the phase 2 placeholder. Tune it through `assets/model/fit.json`, never by hand-editing GLBs. The review renders in `assets/review/phase-3` are the acceptance evidence. The placeholder generator stays as a fallback (`build:placeholder --public`). On stage the mascot stands in a 22 degree three-quarter turn until phase 5 gaze turns the head to the viewer.
 
 ## Runtime behaviour (phases 5 and 6)
 
