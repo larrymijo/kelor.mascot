@@ -102,6 +102,26 @@ def emissive(name, color, strength=4.0):
     return material
 
 
+def see_through(name, color, alpha):
+    """Emission mixed with transparency, so objects inside stay visible."""
+    material = bpy.data.materials.new(name)
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    nodes.clear()
+    emission = nodes.new("ShaderNodeEmission")
+    emission.inputs[0].default_value = (*color, 1)
+    emission.inputs[1].default_value = 0.6
+    transparent = nodes.new("ShaderNodeBsdfTransparent")
+    mix = nodes.new("ShaderNodeMixShader")
+    mix.inputs[0].default_value = alpha
+    output = nodes.new("ShaderNodeOutputMaterial")
+    links = material.node_tree.links
+    links.new(transparent.outputs[0], mix.inputs[1])
+    links.new(emission.outputs[0], mix.inputs[2])
+    links.new(mix.outputs[0], output.inputs[0])
+    return material
+
+
 def assign_action(armature, action):
     armature.animation_data_create()
     armature.animation_data.action = action
@@ -172,7 +192,7 @@ def main():
     marker = emissive("bone", (1.0, 0.8, 0.2), 6.0)
     spheres = []
     for bone in armature.data.bones:
-        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.014, location=armature.matrix_world @ bone.head_local)
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.018, location=armature.matrix_world @ bone.head_local)
         sphere = bpy.context.active_object
         sphere.data.materials.append(marker)
         spheres.append(sphere)
@@ -181,7 +201,7 @@ def main():
     ghost.hide_render = False
     scene.collection.objects.link(ghost)
     ghost.data.materials.clear()
-    ghost.data.materials.append(emissive("ghost", (0.3, 0.22, 0.55), 0.35))
+    ghost.data.materials.append(see_through("ghost", (0.45, 0.35, 0.8), 0.18))
     ghost.visible_shadow = False
     for name, azimuth in (("front", 0), ("side", 90)):
         aim(camera, target, distance, azimuth, 4)
