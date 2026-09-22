@@ -1,4 +1,4 @@
-Kelo model pipeline, 2026-09-22T00:04:17.759Z
+Kelo model pipeline, 2026-09-22T00:06:23.351Z
 
 == 1. normalize
 {"sourceHeight":1.007,"scale":1.1914,"feetCentre":[-0.101,0.251],"triangles":75832,"meshes":1}
@@ -6,59 +6,59 @@ Kelo model pipeline, 2026-09-22T00:04:17.759Z
 
 == 2. rig
 {"heightM":1.2,"feetBackZ":-0.1105,"crotchY":0.204,"legX":0.1165,"neckY":0.702,"neckHalfWidth":0.1321,"torsoFrontZ":0.1612,"headCenterY":0.936,"headHalfWidth":0.2844,"snoutTip":[0,0.8962,0.2829],"mouthY":0.8662,"hand":[0.2547,0.4751,0.1035],"tailTip":[0,0.1632,-0.6739],"tailCurve":[[-0.1605,0.4538],[-0.2247,0.4611],[-0.2888,0.3936],[-0.353,0.3375],[-0.4172,0.2954],[-0.4814,0.2548],[-0.5456,0.2181],[-0.6097,0.1837],[-0.6739,0.162]]}
-== rig done in 0.1s
+== rig done in 0.0s
 
 == 3. body
 $ /home/runner/blender/blender -b --factory-startup --python-exit-code 1 -P scripts/blender/body.py -- --root /home/runner/work/kelor.mascot/kelor.mascot --out build/model
-00:04:20 | INFO: Data are loaded, start creating Blender stuff
-00:04:20 | INFO: Blender create Mesh node standin
-00:04:20 | INFO: glTF import finished in 0.13s
-[body     0.4s] source: 75832 faces, 1 material(s)
-[body     1.5s] volume: 86966 faces at 0.006 m voxels, 0 non-manifold edges, symmetric=True
+00:06:24 | INFO: Data are loaded, start creating Blender stuff
+00:06:24 | INFO: Blender create Mesh node standin
+00:06:24 | INFO: glTF import finished in 0.07s
+[body     0.2s] source: 75832 faces, 1 material(s)
+[body     0.8s] volume: 86966 faces at 0.006 m voxels, 0 non-manifold edges, symmetric=True
 Info: QuadriFlow: Remeshing completed
-[body     5.3s] body_full: 5976 faces, 11952 triangles (target 6500 quads)
+[body     3.0s] body_full: 5976 faces, 11952 triangles (target 6500 quads)
 /home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py:211: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
   material.use_nodes = True
 Info: Baking map saved to internal image, save it externally or pack it
-[body     7.7s] baked DIFFUSE 1024px on body_full in 1.1s
+[body     4.5s] baked DIFFUSE 1024px on body_full in 0.6s
 Info: Baking map saved to internal image, save it externally or pack it
-[body    11.6s] baked AO 1024px on body_full in 3.9s
+[body     6.7s] baked AO 1024px on body_full in 2.2s
 Info: Baking map saved to internal image, save it externally or pack it
-[body    12.0s] baked NORMAL 1024px on body_full in 0.5s
+[body     7.0s] baked NORMAL 1024px on body_full in 0.3s
 Info: 4426 vertex weights limited
-[body    12.5s] weights: 0 unweighted vertices, 0 empty bone groups
+[body     7.2s] weights: 0 unweighted vertices, 0 empty bone groups
 INFO Draco is available, use library at /home/runner/blender/lib/libbf_intern_draco_bridge.so
 INFO MeshOptimizer is available, use library at /home/runner/blender/lib/libbf_intern_meshopt_bridge.so
-00:04:32 | INFO: Starting glTF 2.0 export
-00:04:32 | INFO: Extracting primitive: body
-00:04:32 | INFO: Primitives created: 1
-00:04:32 | INFO: Finished glTF 2.0 export in 0.0462641716003418 s
+00:06:32 | INFO: Starting glTF 2.0 export
+00:06:32 | INFO: Extracting primitive: body
+00:06:32 | INFO: Primitives created: 1
+00:06:32 | INFO: Finished glTF 2.0 export in 0.025870800018310547 s
 
-[body    12.7s] full done in 11.2s
+[body     7.4s] full done in 6.5s
 Info: QuadriFlow: Remeshing completed
-[body    15.7s] body_lite: 2232 faces, 4464 triangles (target 2400 quads)
+[body     9.1s] body_lite: 2232 faces, 4464 triangles (target 2400 quads)
 Info: Baking map saved to internal image, save it externally or pack it
-[body    17.0s] baked DIFFUSE 512px on body_lite in 0.3s
+[body     9.9s] baked DIFFUSE 512px on body_lite in 0.2s
 Info: Baking map saved to internal image, save it externally or pack it
-[body    18.0s] baked AO 512px on body_lite in 1.0s
+[body    10.7s] baked AO 512px on body_lite in 0.7s
 Info: 1764 vertex weights limited
-[body    18.1s] weights: 0 unweighted vertices, 0 empty bone groups
-00:04:38 | INFO: Starting glTF 2.0 export
-00:04:38 | INFO: Extracting primitive: body.001
-00:04:38 | INFO: Primitives created: 1
-00:04:38 | INFO: Finished glTF 2.0 export in 0.022443056106567383 s
+[body    10.8s] weights: 0 unweighted vertices, 0 empty bone groups
+00:06:35 | INFO: Starting glTF 2.0 export
+00:06:35 | INFO: Extracting primitive: body.001
+00:06:35 | INFO: Primitives created: 1
+00:06:35 | INFO: Finished glTF 2.0 export in 0.01910853385925293 s
 
-[body    18.1s] lite done in 5.5s
-[body    18.1s] body step finished
+[body    10.8s] lite done in 3.5s
+[body    10.8s] body step finished
 Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:34:58)
 
 Blender quit
-== body done in 20.5s
+== body done in 12.2s
 
 == 4. assemble
 full: 1133 kB, 512 repaired vertices
 lite: 436 kB, 227 repaired vertices
-== assemble done in 1.5s
+== assemble done in 0.8s
 
 == 5. validate
   PASS full glb.container: glTF 2.0 binary, generator: glTF-Transform v4.5.0
@@ -109,52 +109,52 @@ lite: 436 kB, 227 repaired vertices
 
 == 6. review
 $ /home/runner/blender/blender -b --factory-startup --python-exit-code 1 -P scripts/blender/review.py -- --root /home/runner/work/kelor.mascot/kelor.mascot --model public/models/mascot.full.glb --out assets/review/phase-3
-00:04:40 | INFO: Data are loaded, start creating Blender stuff
-00:04:40 | INFO: Blender create Mesh node body
-00:04:40 | INFO: Blender create Mesh node face
-00:04:40 | INFO: Blender create Mesh node eyes
-00:04:40 | INFO: Blender create Mesh node eyelids
-00:04:40 | INFO: Blender create Mesh node eye_highlights
-00:04:40 | INFO: Blender create Mesh node plates
-00:04:40 | INFO: glTF import finished in 0.11s
+00:06:36 | INFO: Data are loaded, start creating Blender stuff
+00:06:36 | INFO: Blender create Mesh node body
+00:06:36 | INFO: Blender create Mesh node face
+00:06:36 | INFO: Blender create Mesh node eyes
+00:06:36 | INFO: Blender create Mesh node eyelids
+00:06:36 | INFO: Blender create Mesh node eye_highlights
+00:06:36 | INFO: Blender create Mesh node plates
+00:06:36 | INFO: glTF import finished in 0.06s
 /home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/review.py:48: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
   world.use_nodes = True
-00:03.732  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/rest-front.png'
-[review     3.3s] rendered rest-front.png in 3.1s
-00:06.593  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/rest-three-quarter.png'
-[review     6.2s] rendered rest-three-quarter.png in 2.9s
-00:09.236  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/rest-side.png'
-[review     8.8s] rendered rest-side.png in 2.6s
-00:11.730  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/rest-back.png'
-[review    11.3s] rendered rest-back.png in 2.5s
-00:18.923  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/face-closeup.png'
-[review    18.5s] rendered face-closeup.png in 7.2s
+00:02.034  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/rest-front.png'
+[review     1.8s] rendered rest-front.png in 1.7s
+00:03.626  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/rest-three-quarter.png'
+[review     3.4s] rendered rest-three-quarter.png in 1.6s
+00:05.086  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/rest-side.png'
+[review     4.9s] rendered rest-side.png in 1.5s
+00:06.479  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/rest-back.png'
+[review     6.2s] rendered rest-back.png in 1.4s
+00:10.213  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/face-closeup.png'
+[review    10.0s] rendered face-closeup.png in 3.7s
 /home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/review.py:94: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
   material.use_nodes = True
-00:22.452  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/topology-front.png'
-[review    22.0s] rendered topology-front.png in 3.5s
-00:25.648  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/topology-side.png'
-[review    25.2s] rendered topology-side.png in 3.2s
+00:12.131  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/topology-front.png'
+[review    11.9s] rendered topology-front.png in 1.9s
+00:13.957  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/topology-side.png'
+[review    13.7s] rendered topology-side.png in 1.8s
 /home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/review.py:108: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
   material.use_nodes = True
-00:27.419  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/bones-front.png'
-[review    27.0s] rendered bones-front.png in 1.5s
-00:28.897  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/bones-side.png'
-[review    28.5s] rendered bones-side.png in 1.5s
-00:31.800  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-hatch.png'
-[review    31.4s] rendered clip-hatch.png in 2.9s
-00:34.687  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-idle.png'
-[review    34.3s] rendered clip-idle.png in 2.9s
-00:37.689  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-jump.png'
-[review    37.3s] rendered clip-jump.png in 3.0s
-00:40.542  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-look_around.png'
-[review    40.1s] rendered clip-look_around.png in 2.9s
-00:43.360  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-roar.png'
-[review    43.0s] rendered clip-roar.png in 2.8s
-00:46.366  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-wave.png'
-[review    46.0s] rendered clip-wave.png in 3.0s
-[review    46.0s] review renders in /home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3
+00:15.000  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/bones-front.png'
+[review    14.8s] rendered bones-front.png in 0.9s
+00:15.846  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/bones-side.png'
+[review    15.6s] rendered bones-side.png in 0.8s
+00:17.430  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-hatch.png'
+[review    17.2s] rendered clip-hatch.png in 1.6s
+00:19.005  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-idle.png'
+[review    18.8s] rendered clip-idle.png in 1.6s
+00:20.610  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-jump.png'
+[review    20.4s] rendered clip-jump.png in 1.6s
+00:22.127  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-look_around.png'
+[review    21.9s] rendered clip-look_around.png in 1.5s
+00:23.635  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-roar.png'
+[review    23.4s] rendered clip-roar.png in 1.5s
+00:25.253  render           | Saved: '/home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3/clip-wave.png'
+[review    25.0s] rendered clip-wave.png in 1.6s
+[review    25.0s] review renders in /home/runner/work/kelor.mascot/kelor.mascot/assets/review/phase-3
 Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:34:58)
 
 Blender quit
-== review done in 46.6s
+== review done in 25.4s
