@@ -84,14 +84,14 @@
         "full": {
           "triangles": 11952,
           "textureSize": 1024,
-          "seconds": 11.8,
+          "seconds": 11.2,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 4464,
           "textureSize": 512,
-          "seconds": 5.6,
+          "seconds": 5.5,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -99,7 +99,8 @@
     },
     "assemble": {
       "full": {
-        "repairedVertices": 0,
+        "repairedVertices": 512,
+        "clampedWeights": 4548,
         "eyes": {
           "L": [
             0.105,
@@ -116,7 +117,8 @@
         "kB": 1133
       },
       "lite": {
-        "repairedVertices": 0,
+        "repairedVertices": 227,
+        "clampedWeights": 1922,
         "eyes": {
           "L": [
             0.105,
