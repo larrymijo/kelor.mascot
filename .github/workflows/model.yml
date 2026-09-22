@@ -84,7 +84,7 @@ jobs:
             libxi6 libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libsm6 libgl1 libegl1
 
       - name: Build the model
-        run: BLENDER="$HOME/blender/blender" pnpm build:model
+        run: BLENDER="$HOME/blender/blender" pnpm build:model --review assets/review/phase-3
 
       - name: Commit results to the branch
         if: always()

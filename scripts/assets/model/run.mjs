@@ -11,9 +11,11 @@
  *
  *   node scripts/assets/model/run.mjs                  everything (Blender from $BLENDER or PATH)
  *   node scripts/assets/model/run.mjs --until rig      stop after a step; steps 1-2 need no Blender
+ *   node scripts/assets/model/run.mjs --review <dir>   where the log, summary and renders go
+ *                                                     (default build/model/review; CI: assets/review/phase-3)
  *
- * Output of every step is mirrored to assets/review/phase-3/pipeline.log and
- * a machine-readable summary.json, which CI commits back to the branch.
+ * Output of every step is mirrored to <review>/pipeline.log and a
+ * machine-readable summary.json, which CI commits back to the branch.
  */
 import { spawn } from 'node:child_process'
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -27,7 +29,11 @@ import { normalizeSource, readPositions } from './normalize.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const BUILD = join(ROOT, 'build', 'model')
-const REVIEW = join(ROOT, 'assets', 'review', 'phase-3')
+const argValue = (name) =>
+  process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : undefined
+// CI passes --review assets/review/phase-3 so the results get committed; local runs stay in build/.
+const REVIEW_REL = argValue('--review') ?? 'build/model/review'
+const REVIEW = join(ROOT, REVIEW_REL)
 const LOG = join(REVIEW, 'pipeline.log')
 const STEPS = ['normalize', 'rig', 'body', 'assemble', 'validate', 'review']
 const TIERS = ['full', 'lite']
@@ -171,9 +177,9 @@ async function main(argv) {
         '--model',
         'public/models/mascot.full.glb',
         '--out',
-        'assets/review/phase-3',
+        REVIEW_REL,
       ])
-      return { folder: 'assets/review/phase-3' }
+      return { folder: REVIEW_REL }
     })
     summary.ok = true
   } catch (error) {
