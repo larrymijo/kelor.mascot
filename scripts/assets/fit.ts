@@ -32,6 +32,10 @@ export const fitSchema = z
       roughness: z.number().min(0).max(1),
       jpegQuality: z.int().min(50).max(100),
     }),
+    compress: z.strictObject({
+      ...docShape,
+      meshoptLevel: z.enum(['medium', 'high']),
+    }),
     rig: z.strictObject({
       ...docShape,
       overrides: z.record(boneName, vec3),

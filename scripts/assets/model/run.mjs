@@ -6,8 +6,9 @@
  *   2 rig        Node     landmarks + fitted skeleton -> build/model/rig.json
  *   3 body       Blender  retopology, UVs, bakes, weights -> build/model/<tier>/
  *   4 assemble   Node     contract GLBs -> public/models/mascot.<tier>.glb
- *   5 validate   Node     strict validator on both tiers
- *   6 review     Blender  renders -> assets/review/phase-3/*.png
+ *   5 compress   Node     Meshopt geometry, in place
+ *   6 validate   Node     strict validator on both tiers
+ *   7 review     Blender  renders -> assets/review/phase-3/*.png
  *
  *   node scripts/assets/model/run.mjs                  everything (Blender from $BLENDER or PATH)
  *   node scripts/assets/model/run.mjs --until rig      stop after a step; steps 1-2 need no Blender
@@ -25,6 +26,7 @@ import { boneSegments, isProcedural } from '../assembly/skinning.mjs'
 import { buildModel } from '../build-model.mjs'
 import { validateGlb } from '../validate.mjs'
 import { fitSkeleton, measureLandmarks } from './landmarks.mjs'
+import { compressModel } from './compress.mjs'
 import { normalizeSource, readPositions } from './normalize.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
@@ -35,7 +37,7 @@ const argValue = (name) =>
 const REVIEW_REL = argValue('--review') ?? 'build/model/review'
 const REVIEW = join(ROOT, REVIEW_REL)
 const LOG = join(REVIEW, 'pipeline.log')
-const STEPS = ['normalize', 'rig', 'body', 'assemble', 'validate', 'review']
+const STEPS = ['normalize', 'rig', 'body', 'assemble', 'compress', 'validate', 'review']
 const TIERS = ['full', 'lite']
 
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'))
@@ -151,7 +153,22 @@ async function main(argv) {
       return reports
     })
 
-    await step(4, 'validate', async () => {
+    await step(4, 'compress', async () => {
+      const reports = {}
+      for (const tier of TIERS) {
+        const file = join(ROOT, contract.files[tier])
+        const { bytes, report } = await compressModel({
+          bytes: new Uint8Array(readFileSync(file)),
+          level: fit.compress.meshoptLevel,
+        })
+        writeFileSync(file, bytes)
+        reports[tier] = report
+        log(`${tier}: ${report.beforeKB} -> ${report.afterKB} kB (${report.savedPercent}% smaller)`)
+      }
+      return reports
+    })
+
+    await step(5, 'validate', async () => {
       const results = {}
       for (const tier of TIERS) {
         const bytes = new Uint8Array(readFileSync(join(ROOT, contract.files[tier])))
@@ -170,7 +187,7 @@ async function main(argv) {
       return results
     })
 
-    await step(5, 'review', async () => {
+    await step(6, 'review', async () => {
       await blender('scripts/blender/review.py', [
         '--root',
         ROOT,

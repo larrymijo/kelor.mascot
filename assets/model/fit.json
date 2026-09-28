@@ -26,6 +26,11 @@
     "jpegQuality": 88
   },
 
+  "compress": {
+    "_doc": "Applied to both tiers after assembly. Meshopt quantises the attributes and stores them with EXT_meshopt_compression, whose decoder ships inside three-stdlib. The quantisation volume is scene-wide so the contract's single skin is not split one per mesh.",
+    "meshoptLevel": "high"
+  },
+
   "rig": {
     "_doc": "Bone rest heads come from landmarks measured on the normalised mesh. Overrides replace a bone's measured head (metres, contract axes). influenceLimitsM caps how far (metres) from its segment a bone of each role may deform the skin, so arms resting on the body do not drag the chest. armpitMarginM lets an arm bone reach only this far inside its shoulder, since the contract has no clavicles. weightSmoothing blurs weights over neighbouring vertices so limbs bend without creases.",
     "overrides": {},
