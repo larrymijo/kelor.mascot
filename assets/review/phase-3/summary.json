@@ -84,14 +84,14 @@
         "full": {
           "triangles": 10786,
           "textureSize": 1024,
-          "seconds": 14.1,
+          "seconds": 11.5,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 4600,
           "textureSize": 512,
-          "seconds": 7.7,
+          "seconds": 6.2,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -138,8 +138,8 @@
     "compress": {
       "full": {
         "beforeKB": 1280,
-        "afterKB": 1381,
-        "savedPercent": 26,
+        "afterKB": 1005,
+        "savedPercent": 33,
         "textures": [
           {
             "name": "body_orm",
@@ -157,13 +157,13 @@
             "name": "body_normal",
             "encode": "uastc",
             "beforeKB": 263,
-            "afterKB": 914
+            "afterKB": 539
           },
           {
             "name": "face_atlas",
             "encode": "uastc",
             "beforeKB": 21,
-            "afterKB": 36
+            "afterKB": 35
           },
           {
             "name": "eyes_basecolor",
@@ -188,8 +188,10 @@
         "ok": true,
         "notPassing": []
       }
+    },
+    "review": {
+      "folder": "assets/review/phase-3"
     }
   },
-  "ok": false,
-  "error": "scripts/blender/review.py exited with 1"
+  "ok": true
 }
