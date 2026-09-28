@@ -51,9 +51,6 @@ jobs:
       - name: Validate mascot models (strict)
         run: pnpm validate:model
 
-      - name: Check placeholder models are up to date
-        run: pnpm build:placeholder --check
-
       - name: Build
         run: pnpm build
 

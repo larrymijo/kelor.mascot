@@ -1,0 +1,153 @@
+{
+  "source": "assets/source/kelo-raw.glb",
+  "steps": {
+    "normalize": {
+      "sourceHeight": 1.903,
+      "scale": 0.6307,
+      "feetCentre": [
+        0.006,
+        0.219
+      ],
+      "triangles": 145814,
+      "meshes": 1
+    },
+    "rig": {
+      "landmarks": {
+        "heightM": 1.2,
+        "feetBackZ": -0.1426,
+        "crotchY": 0.12,
+        "legX": 0.1184,
+        "neckY": 0.66,
+        "neckHalfWidth": 0.2208,
+        "torsoFrontZ": 0.1797,
+        "headCenterY": 0.852,
+        "headHalfWidth": 0.3203,
+        "snoutTip": [
+          0,
+          0.831,
+          0.406
+        ],
+        "mouthY": 0.801,
+        "hand": [
+          0.338,
+          0.4032,
+          -0.0335
+        ],
+        "tailTip": [
+          0,
+          0.1686,
+          -0.6863
+        ],
+        "tailCurve": [
+          [
+            -0.1926,
+            0.3872
+          ],
+          [
+            -0.2544,
+            0.2408
+          ],
+          [
+            -0.3161,
+            0.1911
+          ],
+          [
+            -0.3778,
+            0.161
+          ],
+          [
+            -0.4395,
+            0.1415
+          ],
+          [
+            -0.5012,
+            0.1305
+          ],
+          [
+            -0.5629,
+            0.1397
+          ],
+          [
+            -0.6246,
+            0.1525
+          ],
+          [
+            -0.6863,
+            0.1628
+          ]
+        ]
+      }
+    },
+    "body": {
+      "blender": "5.2.2 LTS",
+      "tiers": {
+        "full": {
+          "triangles": 10786,
+          "textureSize": 1024,
+          "seconds": 14.7,
+          "unweightedVertices": 0,
+          "emptyGroups": []
+        },
+        "lite": {
+          "triangles": 4600,
+          "textureSize": 512,
+          "seconds": 7.1,
+          "unweightedVertices": 0,
+          "emptyGroups": []
+        }
+      }
+    },
+    "assemble": {
+      "full": {
+        "repairedVertices": 556,
+        "clampedWeights": 4313,
+        "eyes": {
+          "L": [
+            0.105,
+            0.93,
+            0.18622841162272408
+          ],
+          "R": [
+            -0.105,
+            0.93,
+            0.18588122682805064
+          ]
+        },
+        "mouthY": 0.801,
+        "kB": 1280
+      },
+      "lite": {
+        "repairedVertices": 233,
+        "clampedWeights": 2089,
+        "eyes": {
+          "L": [
+            0.105,
+            0.93,
+            0.18760010345031908
+          ],
+          "R": [
+            -0.105,
+            0.93,
+            0.18806659278690574
+          ]
+        },
+        "mouthY": 0.801,
+        "kB": 446
+      }
+    },
+    "validate": {
+      "full": {
+        "ok": true,
+        "notPassing": []
+      },
+      "lite": {
+        "ok": true,
+        "notPassing": []
+      }
+    },
+    "review": {
+      "folder": "assets/review/phase-3"
+    }
+  },
+  "ok": true
+}

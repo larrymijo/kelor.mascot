@@ -1,0 +1,72 @@
+{
+  "_doc": "How the Blender pipeline and scripts/assets/build-model.mjs turn one image-to-3D source into the contract model. Model-specific knobs live here; the contract stays in character.json. Validated by scripts/assets/fit.ts in tests; the Python side reads it as plain JSON.",
+  "source": "assets/source/kelo-raw.glb",
+
+  "orientation": {
+    "_doc": "Where the source's character faces and which axis is up, in glTF axes. The pipeline rotates it to +Y up, facing +Z.",
+    "forward": "+Z",
+    "up": "+Y"
+  },
+  "symmetrize": true,
+
+  "retopo": {
+    "_doc": "Voxel remesh makes the source one manifold volume; Quadriflow then builds quads. Face counts are quads (about twice as many triangles).",
+    "voxelSizeM": 0.006,
+    "targetQuads": { "full": 6500, "lite": 2400 },
+    "smoothIterations": 2
+  },
+
+  "bake": {
+    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. Sizes are pixels per tier; normal maps only on full.",
+    "size": { "full": 1024, "lite": 512 },
+    "samples": 16,
+    "cageExtrusionM": 0.01,
+    "maxRayDistanceM": 0.025,
+    "roughness": 0.6,
+    "jpegQuality": 88
+  },
+
+  "rig": {
+    "_doc": "Bone rest heads come from landmarks measured on the normalised mesh. Overrides replace a bone's measured head (metres, contract axes). influenceLimitsM caps how far (metres) from its segment a bone of each role may deform the skin, so arms resting on the body do not drag the chest. armpitMarginM lets an arm bone reach only this far inside its shoulder, since the contract has no clavicles. weightSmoothing blurs weights over neighbouring vertices so limbs bend without creases.",
+    "overrides": {},
+    "influenceLimitsM": { "arm": 0.1, "leg": 0.16, "tail": 0.18, "neck": 0.22, "head": 0.45, "spine": 0.45 },
+    "armpitMarginM": 0.02,
+    "weightSmoothing": { "iterations": 4, "factor": 0.5 }
+  },
+
+  "eyes": {
+    "_doc": "Eyeballs sit at ±x on a front ray at height y (null: measured from the head), sunk so that protrude × radius stays outside the skin.",
+    "x": 0.105,
+    "y": 0.93,
+    "protrude": 0.45
+  },
+
+  "face": {
+    "_doc": "Front patch of the snout that carries the expression atlas. mouthY null: measured from the snout. Half extents are in metres around the mouth anchor.",
+    "mouthY": null,
+    "halfWidth": 0.2,
+    "up": 0.125,
+    "down": 0.092,
+    "offsetM": 0.0015
+  },
+
+  "plates": {
+    "_doc": "Hexagonal plates cast onto the back and tail from these bones, outward along dir (y, z). size in metres, embed is the share of the plate below the skin.",
+    "embed": 0.6,
+    "items": [
+      { "bone": "neck_02", "t": 0.7, "size": 0.045, "dir": [0.2, -1] },
+      { "bone": "chest", "t": 0.5, "size": 0.062, "dir": [0.3, -1] },
+      { "bone": "spine_02", "t": 0.5, "size": 0.07, "dir": [0.15, -1] },
+      { "bone": "spine_01", "t": 0.3, "size": 0.064, "dir": [0.05, -1] },
+      { "bone": "tail_02", "t": 0.3, "size": 0.052, "dir": [1, -0.2] },
+      { "bone": "tail_03", "t": 0.4, "size": 0.04, "dir": [1, -0.15] },
+      { "bone": "tail_04", "t": 0.3, "size": 0.03, "dir": [1, -0.1] }
+    ]
+  },
+
+  "review": {
+    "_doc": "Cycles CPU review renders committed to assets/review/phase-3.",
+    "resolution": 640,
+    "samples": 24
+  }
+}

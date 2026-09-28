@@ -5,7 +5,7 @@
   "meta": {
     "_doc": "Coordinate system follows glTF: metres, +Y up, the character faces +Z (towards the default camera). Left side (_L) is +X. Origin sits between the feet on the ground plane.",
     "id": "kelor-mascot",
-    "name": null,
+    "name": "Kelo",
     "version": "0.1.0",
     "units": "meters",
     "upAxis": "+Y",
