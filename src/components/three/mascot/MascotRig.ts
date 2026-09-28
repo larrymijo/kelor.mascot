@@ -26,6 +26,13 @@ const { cells, grid } = character.expressions
 
 export type ExpressionName = keyof typeof cells
 
+/** What a rig hands over when the model under it is replaced. */
+export interface RigSnapshot {
+  clip: string | null
+  time: number
+  expression: ExpressionName | null
+}
+
 function findMaterial(root: Object3D, name: string) {
   let found: Material | undefined
   root.traverse((object) => {
@@ -86,6 +93,20 @@ export class MascotRig {
     action.play()
     this.current = action
     return true
+  }
+
+  snapshot(): RigSnapshot {
+    return { clip: this.currentClip, time: this.current?.time ?? 0, expression: this.expression }
+  }
+
+  /**
+   * Continue exactly where another rig left off: same clip at the same time,
+   * same expression. Plate glow needs no handover, the component sets it
+   * every frame. This is what makes the lite to full swap invisible.
+   */
+  restore(snapshot: RigSnapshot) {
+    if (snapshot.expression) this.setExpression(snapshot.expression)
+    if (snapshot.clip && this.play(snapshot.clip) && this.current) this.current.time = snapshot.time
   }
 
   update(dt: number) {

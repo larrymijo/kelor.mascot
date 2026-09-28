@@ -1,7 +1,7 @@
 'use client'
 
 import { useProgress } from '@react-three/drei'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AgXToneMapping } from 'three'
 import { character } from '@/lib/character'
@@ -10,6 +10,7 @@ import { bootTimings, stepBoot, type BootPhase } from '@/lib/scene/boot'
 import { CameraRig, FOV } from './CameraRig'
 import { Effects } from './Effects'
 import { Floor } from './Floor'
+import { disposeKtx2Loader } from './loaders'
 import { QualityController } from './quality/QualityController'
 import { readDeviceSignals } from './quality/signals'
 import { useScene } from './store'
@@ -18,6 +19,10 @@ import { StudioLights } from './StudioLights'
 export interface StageProps {
   /** Called on every boot phase change (egg, hatching, ready). */
   onPhaseChange?: (phase: BootPhase) => void
+  /** Called when the live model changes: lite paints first, full may replace it. */
+  onModelChange?: (model: 'lite' | 'full') => void
+  /** Called once with the quality tier detected at boot. */
+  onBootTier?: (tier: QualityTier) => void
   /** Called once the first frame has been drawn, to fade the canvas in. */
   onFirstFrame?: () => void
   /** Called when WebGL 2 is not available; the HTML fallback stays. */
@@ -54,6 +59,13 @@ function LoadingTracker() {
   return null
 }
 
+/** The KTX2 loader keeps a pool of transcoder workers alive; end them with the canvas. */
+function LoaderLifetime() {
+  const gl = useThree((s) => s.gl)
+  useEffect(() => () => disposeKtx2Loader(gl), [gl])
+  return null
+}
+
 function FirstFrame({ onFirstFrame }: { onFirstFrame?: () => void }) {
   const done = useRef(false)
   useFrame(() => {
@@ -71,6 +83,8 @@ function FirstFrame({ onFirstFrame }: { onFirstFrame?: () => void }) {
  */
 export default function Stage({
   onPhaseChange,
+  onModelChange,
+  onBootTier,
   onFirstFrame,
   onUnavailable,
   children,
@@ -91,7 +105,8 @@ export default function Stage({
 
   useEffect(() => {
     if (bootTier === 'unavailable') onUnavailable?.()
-  }, [bootTier, onUnavailable])
+    else onBootTier?.(bootTier)
+  }, [bootTier, onUnavailable, onBootTier])
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -124,8 +139,9 @@ export default function Stage({
     () =>
       useScene.subscribe((state, previous) => {
         if (state.boot.phase !== previous.boot.phase) onPhaseChange?.(state.boot.phase)
+        if (state.modelQuality !== previous.modelQuality) onModelChange?.(state.modelQuality)
       }),
-    [onPhaseChange],
+    [onPhaseChange, onModelChange],
   )
 
   if (bootTier === 'unavailable') return null
@@ -134,7 +150,7 @@ export default function Stage({
   const current = character.quality.tiers[tier]
 
   return (
-    <div ref={wrapper} className="absolute inset-0">
+    <div ref={wrapper} className="absolute inset-0" data-quality={tier}>
       <Canvas
         shadows={boot.shadows ? 'percentage' : false}
         dpr={[1, current.dprMax]}
@@ -153,6 +169,7 @@ export default function Stage({
         <Effects tier={tier} />
         <QualityController />
         <LoadingTracker />
+        <LoaderLifetime />
         <BootDriver />
         <FirstFrame onFirstFrame={onFirstFrame} />
       </Canvas>
