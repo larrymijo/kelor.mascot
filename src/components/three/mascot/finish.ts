@@ -29,10 +29,11 @@ export interface Finish {
   skinSheen: number
 }
 
-export const DEFAULT_FINISH: Finish = { skinCoat: 0.3, skinSheen: 0.5 }
+export const DEFAULT_FINISH: Finish = { skinCoat: 0.2, skinSheen: 0.25 }
 
 const SKIN = new Set(['body', 'face'])
-const SHEEN_COLOR = new Color(character.colors.mascot['300'])
+// A deep violet sheen: a pale one veils every grazing angle and washes the skin out.
+const SHEEN_COLOR = new Color(character.colors.mascot['500'])
 
 function upgrade(source: MeshStandardMaterial) {
   const material = new MeshPhysicalMaterial()
@@ -54,6 +55,11 @@ function upgrade(source: MeshStandardMaterial) {
     material.clearcoat = 1
     material.clearcoatRoughness = 0.04
     material.roughness = Math.min(material.roughness, 0.3)
+    // Tone mapping and the shaded underside turn a white sclera grey. Glowing by
+    // the eye's own texture lifts the white while the dark iris stays dark.
+    material.emissive.set(0xffffff)
+    material.emissiveMap = material.map
+    material.emissiveIntensity = 0.28
   }
   return material
 }
