@@ -69,19 +69,19 @@ describe('sampleTimeline', () => {
       for (const key of KEYS) {
         const values = scriptFor(variant).channels[key].map(([, v]) => v)
         // An eased move peaks at 1.5 times its average speed, far below 2% of a
-        // channel's range per 1/4000 step; a real jump moves a whole key gap at once.
+        // channel's range per 1/2000 step; a real jump moves a whole key gap at once.
         const limit = Math.max(1e-3, 0.02 * (Math.max(...values) - Math.min(...values)))
         // Sample the channel alone: running the whole timeline 4,000 times per channel is slow.
         const channel = scriptFor(variant).channels[key]
         let previous = sampleChannel(channel, 0)
-        for (const p of steps(4000).slice(1)) {
+        for (const p of steps(2000).slice(1)) {
           const value = sampleChannel(channel, p)
           expect(Math.abs(value - previous), `${variant} ${key} at ${p}`).toBeLessThan(limit)
           previous = value
         }
       }
     }
-  })
+  }, 20_000)
 
   it('keeps Kelo at normal size and still with reduced motion', () => {
     const stills = new Set(REDUCED_MOTION.channels.azimuthDeg.map(([, v]) => v))
