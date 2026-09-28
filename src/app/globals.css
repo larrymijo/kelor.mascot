@@ -89,3 +89,75 @@
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Cinematic mode. Without it the page is a short, readable document: the
+ * first screen, then the words in normal flow. The lazy engine adds
+ * html.cinematic once the stage is drawing; the scroll track then grows, the
+ * words become fixed overlays, and the frame loop drives them through CSS
+ * variables set on #cinematic-ui (docs/scroll-script.md).
+ */
+.cinematic-track {
+  height: 0;
+}
+
+.cinematic-overlay,
+.cinematic-cue {
+  display: none;
+}
+
+html.cinematic .cinematic-track {
+  height: 500svh;
+}
+
+html.cinematic .cinematic-overlay {
+  display: block;
+  position: fixed;
+  pointer-events: none;
+}
+
+html.cinematic .cinematic-cue {
+  display: block;
+  position: fixed;
+  opacity: var(--cue, 0);
+}
+
+html.cinematic .cinematic-text {
+  position: fixed;
+}
+
+html.cinematic .cinematic-meet {
+  opacity: var(--meet, 0);
+}
+
+html.cinematic .cinematic-contact {
+  opacity: var(--contact, 0);
+}
+
+/* A faded-out link must not catch clicks; keyboard focus still reaches it and
+   brings the finale into view. */
+html.cinematic .cinematic-contact:not([data-shown]) {
+  pointer-events: none;
+}
+
+.letterbox {
+  inset-inline: 0;
+  height: calc(var(--letterbox, 0) * 100svh);
+  background-color: var(--color-black);
+}
+
+.iris {
+  inset: 0;
+  opacity: var(--iris-on, 0);
+  background: radial-gradient(
+    circle at var(--iris-x, 50%) var(--iris-y, 50%),
+    transparent var(--iris-r, 150vmax),
+    var(--color-black) calc(var(--iris-r, 150vmax) + 3vmax)
+  );
+}
+
+.fade {
+  inset: 0;
+  opacity: var(--fade, 0);
+  background-color: var(--color-black);
+}

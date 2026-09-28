@@ -9,6 +9,7 @@ import { detectQualityTier, type QualityTier } from '@/lib/quality/detect'
 import { bootTimings, stepBoot, type BootPhase } from '@/lib/scene/boot'
 import { CameraRig, FOV } from './CameraRig'
 import { CinematicDriver } from './cinematic/CinematicDriver'
+import { OverlayDriver } from './cinematic/OverlayDriver'
 import { Effects } from './Effects'
 import { Floor } from './Floor'
 import { disposeKtx2Loader } from './loaders'
@@ -181,6 +182,7 @@ export default function Stage({
         <LoadingTracker />
         <LoaderLifetime />
         <BootDriver />
+        <OverlayDriver />
         <FirstFrame onFirstFrame={onFirstFrame} />
       </Canvas>
     </div>

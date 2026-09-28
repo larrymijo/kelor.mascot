@@ -1,25 +1,33 @@
 /**
  * Site copy (Spanish). Kept in one place so a future translation or copy
- * review touches a single file.
+ * review touches a single file. The page is deliberately almost wordless:
+ * the mascot carries it (docs/scroll-script.md).
  */
 export const copy = {
   meta: {
-    title: 'KELOR Interactive',
+    title: 'KELOR Interactive · Conoce a Kelo',
     description:
-      'Estudio de software en Ecuador. Muy pronto, una experiencia 3D con nuestra nueva mascota.',
+      'Conoce a Kelo, la mascota 3D de KELOR Interactive, estudio de desarrollo web en Ecuador.',
   },
+  brand: 'KELOR Interactive',
+  /** The studio's site; switch to the final domain once it exists. */
+  studioHref: 'https://kelor-interactive.vercel.app',
   hero: {
-    eyebrow: 'Próximamente',
-    title: 'Algo está por eclosionar.',
-    body: 'Estamos preparando una experiencia 3D protagonizada por la nueva mascota del estudio.',
+    /** Small scroll cue under the hatched mascot. */
+    cue: 'Desliza',
     /** Accessible description of the decorative 3D scene. */
     sceneLabel:
-      'Escena 3D: un huevo hexagonal con los colores del logo de KELOR se agrieta y de él nace un pequeño dinosaurio morado.',
-    cta: {
-      label: 'Conoce KELOR Interactive',
-      // Current studio site; switch to the final domain once it exists.
-      href: 'https://kelor-interactive.vercel.app',
-    },
+      'Escena 3D: de un huevo hexagonal con los colores del logo de KELOR nace Kelo, un pequeño dinosaurio morado que te sigue con la mirada, crece hasta tragarse la pantalla y vuelve a su tamaño.',
+  },
+  meet: {
+    title: 'Conoce a Kelo',
+    line: 'la mascota de KELOR Interactive',
+  },
+  contact: {
+    question: '¿Quieres una web a medida?',
+    link: 'Escríbenos',
+    // The studio's contact page; switch to the final domain once it exists.
+    href: 'https://kelor-interactive.vercel.app/contacto',
   },
   footer: {
     owner: 'KELOR Interactive',

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const stage = (page: Page) => page.locator('[data-scene-state]')
-const CTA = /Conoce KELOR Interactive/
+const CTA = /Escríbenos/
 
 /** Console errors and uncaught exceptions. */
 function collectErrors(page: Page) {
@@ -63,6 +63,8 @@ test.describe('behaviour', () => {
     await page.mouse.move(5, 5)
     await expect(stage(page)).toHaveAttribute('data-attention', 'pointer')
 
+    // The brand mark comes first, then the contact link.
+    await page.keyboard.press('Tab')
     await page.keyboard.press('Tab')
     await expect(cta).toBeFocused()
     await expect(stage(page)).toHaveAttribute('data-attention', 'cta')

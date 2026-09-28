@@ -1,6 +1,6 @@
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test'
 
-const CTA = /Conoce KELOR Interactive/
+const CTA = /Escríbenos/
 const scene = (page: Page) => page.locator('[data-scene-state]')
 
 /** Console errors, ignoring GPU driver shader-compiler chatter. */
@@ -44,11 +44,16 @@ test.describe('3D hero', () => {
     expect(errors).toEqual([])
   })
 
-  test('keyboard users reach the CTA with a visible focus ring', async ({ page }, testInfo) => {
+  test('keyboard users reach the brand mark, then the contact link, with a visible focus ring', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name === 'mobile', 'No hardware keyboard on the phone profile')
     await page.goto('/')
     await page.keyboard.press('Tab')
     const focused = page.locator(':focus')
+    await expect(focused).toHaveAccessibleName(/KELOR Interactive/)
+    expect(await focused.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe('none')
+    await page.keyboard.press('Tab')
     await expect(focused).toHaveAccessibleName(CTA)
     expect(await focused.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe('none')
   })
