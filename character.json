@@ -237,6 +237,19 @@
     }
   },
 
+  "life": {
+    "_doc": "Secondary motion layered after the gaze. The tail is a damped spring per link, pushed by the hips: turning swings it the other way, rising drops it. Frequency in rad/s, gains in seconds of lag per rad/s (yaw) and per m/s of vertical speed (pitch).",
+    "tail": {
+      "bones": ["tail_01", "tail_02", "tail_03", "tail_04"],
+      "frequency": 9,
+      "dampingRatio": 0.45,
+      "yawGain": 0.12,
+      "pitchGain": 0.2,
+      "falloff": 1.35,
+      "maxAngleDeg": 25
+    }
+  },
+
   "colors": {
     "_doc": "Purple is the accent for the mascot, glows and the CTA only. The UI stays on the monochrome logo palette. Mirrored as Tailwind tokens in src/app/globals.css.",
     "mascot": {

@@ -185,6 +185,19 @@ export const characterSchema = z
       }),
     }),
 
+    life: z.strictObject({
+      ...docShape,
+      tail: z.strictObject({
+        bones: z.array(boneName).min(1),
+        frequency: z.number().positive().max(60),
+        dampingRatio: z.number().positive().max(2),
+        yawGain: z.number().min(0).max(1),
+        pitchGain: z.number().min(0).max(1),
+        falloff: z.number().min(1).max(3),
+        maxAngleDeg: degrees(90),
+      }),
+    }),
+
     colors: z.strictObject({
       ...docShape,
       mascot: z.record(z.string(), hexColor),
@@ -307,6 +320,7 @@ export const characterSchema = z
     if (Math.abs(shareSum - 1) > 1e-6) {
       issue(['gaze', 'headChain', 'links'], `Shares must add up to 1 (got ${shareSum})`)
     }
+    c.life.tail.bones.forEach((b, i) => requireBone(['life', 'tail', 'bones', i], b))
 
     // Meshes -> materials -> textures.
     const materials = new Set(c.materials.required.map((m) => m.name))
