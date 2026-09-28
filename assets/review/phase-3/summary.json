@@ -84,14 +84,14 @@
         "full": {
           "triangles": 10786,
           "textureSize": 1024,
-          "seconds": 14.7,
+          "seconds": 11.2,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 4600,
           "textureSize": 512,
-          "seconds": 7.1,
+          "seconds": 5.7,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -132,22 +132,10 @@
           ]
         },
         "mouthY": 0.801,
-        "kB": 446
+        "kB": 426
       }
-    },
-    "validate": {
-      "full": {
-        "ok": true,
-        "notPassing": []
-      },
-      "lite": {
-        "ok": true,
-        "notPassing": []
-      }
-    },
-    "review": {
-      "folder": "assets/review/phase-3"
     }
   },
-  "ok": true
+  "ok": false,
+  "error": "ktx failed on body_normal: ktx create fatal: Invalid encode codec: \"uastc-ldr-4x4\". See 'ktx create --help'.. Set KTX to the KTX-Software binary."
 }
