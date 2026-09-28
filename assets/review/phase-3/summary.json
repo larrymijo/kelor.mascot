@@ -84,14 +84,14 @@
         "full": {
           "triangles": 10786,
           "textureSize": 1024,
-          "seconds": 11.2,
+          "seconds": 14.1,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 4600,
           "textureSize": 512,
-          "seconds": 5.7,
+          "seconds": 7.7,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -134,8 +134,62 @@
         "mouthY": 0.801,
         "kB": 426
       }
+    },
+    "compress": {
+      "full": {
+        "beforeKB": 1280,
+        "afterKB": 1381,
+        "savedPercent": 26,
+        "textures": [
+          {
+            "name": "body_orm",
+            "encode": "basis-lz",
+            "beforeKB": 207,
+            "afterKB": 134
+          },
+          {
+            "name": "body_basecolor",
+            "encode": "basis-lz",
+            "beforeKB": 118,
+            "afterKB": 121
+          },
+          {
+            "name": "body_normal",
+            "encode": "uastc",
+            "beforeKB": 263,
+            "afterKB": 914
+          },
+          {
+            "name": "face_atlas",
+            "encode": "uastc",
+            "beforeKB": 21,
+            "afterKB": 36
+          },
+          {
+            "name": "eyes_basecolor",
+            "encode": "basis-lz",
+            "beforeKB": 3,
+            "afterKB": 3
+          }
+        ]
+      },
+      "lite": {
+        "beforeKB": 426,
+        "afterKB": 183,
+        "savedPercent": 57
+      }
+    },
+    "validate": {
+      "full": {
+        "ok": true,
+        "notPassing": []
+      },
+      "lite": {
+        "ok": true,
+        "notPassing": []
+      }
     }
   },
   "ok": false,
-  "error": "ktx failed on body_normal: ktx create fatal: Invalid encode codec: \"uastc-ldr-4x4\". See 'ktx create --help'.. Set KTX to the KTX-Software binary."
+  "error": "scripts/blender/review.py exited with 1"
 }
