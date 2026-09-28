@@ -1,3 +1,4 @@
+import { CinematicMount } from '@/components/cinematic/CinematicMount'
 import { CinematicUI } from '@/components/sections/CinematicUI'
 import { Hero } from '@/components/sections/Hero'
 import { StageMount } from '@/components/sections/StageMount'
@@ -17,6 +18,7 @@ export default function Home() {
       <Hero />
       <div aria-hidden="true" className="cinematic-track" />
       <CinematicUI />
+      <CinematicMount />
     </main>
   )
 }
