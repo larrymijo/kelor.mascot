@@ -17,14 +17,17 @@ type SceneState = 'loading' | BootPhase | 'unavailable'
 /**
  * Client boundary of the hero scene. Shows the static brand mark until the
  * canvas draws its first frame, then cross-fades to it. Without WebGL the
- * mark simply stays. `data-scene-state`, `data-model` and `data-tier` expose
- * the boot phase, the live model and the detected quality tier to tests.
+ * mark simply stays. `data-scene-state`, `data-model`, `data-tier`,
+ * `data-attention` and `data-clip` expose the boot phase, the live model, the
+ * detected quality tier, where Kelo looks and what he plays to tests.
  */
 export function StageMount() {
   const [state, setState] = useState<SceneState>('loading')
   const [shown, setShown] = useState(false)
   const [model, setModel] = useState<'lite' | 'full'>('lite')
   const [tier, setTier] = useState<string>('')
+  const [attention, setAttention] = useState('camera')
+  const [clip, setClip] = useState<string | null>(null)
 
   const onFirstFrame = useCallback(() => {
     setShown(true)
@@ -39,6 +42,8 @@ export function StageMount() {
       data-scene-state={state}
       data-model={model}
       data-tier={tier}
+      data-attention={attention}
+      data-clip={clip ?? ''}
       role="img"
       aria-label={copy.hero.sceneLabel}
     >
@@ -64,6 +69,8 @@ export function StageMount() {
             onPhaseChange={onPhaseChange}
             onModelChange={setModel}
             onBootTier={setTier}
+            onAttentionChange={setAttention}
+            onClipChange={setClip}
             onUnavailable={onUnavailable}
           />
         </div>

@@ -23,6 +23,10 @@ export interface StageProps {
   onModelChange?: (model: 'lite' | 'full') => void
   /** Called once with the quality tier detected at boot. */
   onBootTier?: (tier: QualityTier) => void
+  /** Called when the director moves Kelo's attention (camera, pointer, cta, glance). */
+  onAttentionChange?: (attention: string) => void
+  /** Called when the clip playing on the rig changes. */
+  onClipChange?: (clip: string | null) => void
   /** Called once the first frame has been drawn, to fade the canvas in. */
   onFirstFrame?: () => void
   /** Called when WebGL 2 is not available; the HTML fallback stays. */
@@ -85,6 +89,8 @@ export default function Stage({
   onPhaseChange,
   onModelChange,
   onBootTier,
+  onAttentionChange,
+  onClipChange,
   onFirstFrame,
   onUnavailable,
   children,
@@ -140,8 +146,10 @@ export default function Stage({
       useScene.subscribe((state, previous) => {
         if (state.boot.phase !== previous.boot.phase) onPhaseChange?.(state.boot.phase)
         if (state.modelQuality !== previous.modelQuality) onModelChange?.(state.modelQuality)
+        if (state.attention !== previous.attention) onAttentionChange?.(state.attention)
+        if (state.clip !== previous.clip) onClipChange?.(state.clip)
       }),
-    [onPhaseChange, onModelChange],
+    [onPhaseChange, onModelChange, onAttentionChange, onClipChange],
   )
 
   if (bootTier === 'unavailable') return null

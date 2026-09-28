@@ -35,6 +35,7 @@ export function Hero() {
         </p>
         <a
           href={hero.cta.href}
+          data-gaze-target="cta"
           className="mt-7 inline-flex min-h-12 items-center justify-center rounded-md bg-mascot-500 px-7 font-display text-base font-semibold text-white transition-colors duration-200 ease-out-quart hover:bg-mascot-300 hover:text-ink-950"
         >
           {hero.cta.label}
