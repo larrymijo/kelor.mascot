@@ -7,6 +7,7 @@ import { create } from 'zustand'
 import type { Attention, DirectorState } from '@/lib/behaviour/director'
 import type { QualityTier } from '@/lib/quality/detect'
 import { initialBootState, type BootState } from '@/lib/scene/boot'
+import { DEFAULT_FINISH } from './mascot/finish'
 import type { ExpressionName } from './mascot/MascotRig'
 
 export type { ExpressionName }
@@ -20,6 +21,9 @@ export interface Tweaks {
   bloomIntensity: number
   plateGlow: number
   grain: number
+  /** Vinyl finish on the skin (medium and high tiers). */
+  skinCoat: number
+  skinSheen: number
 }
 
 export const defaultTweaks: Tweaks = {
@@ -30,6 +34,8 @@ export const defaultTweaks: Tweaks = {
   bloomIntensity: 0.9,
   plateGlow: 1.6,
   grain: 0.035,
+  skinCoat: DEFAULT_FINISH.skinCoat,
+  skinSheen: DEFAULT_FINISH.skinSheen,
 }
 
 interface SceneState {

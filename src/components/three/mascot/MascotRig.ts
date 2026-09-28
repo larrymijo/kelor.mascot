@@ -24,6 +24,7 @@ import {
   type Bone,
   type Material,
   type Mesh,
+  type MeshPhysicalMaterial,
   type MeshStandardMaterial,
   type Object3D,
   type Texture,
@@ -32,6 +33,7 @@ import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import { aimAngles, clampAngles, dampAngles, chainShares, type Angles } from '@/lib/behaviour/gaze'
 import { createTail, stepTail, type TailLink } from '@/lib/behaviour/tail'
 import { character } from '@/lib/character'
+import { applyFinish, tuneFinish, type Finish } from './finish'
 import { damp, degToRad } from '@/lib/math/damp'
 
 const CROSS_FADE_S = 0.25
@@ -120,11 +122,19 @@ export class MascotRig {
   private eyeAngles: Angles[]
   private weight = 0
   private tail: TailLink[]
+  private readonly finish: MeshPhysicalMaterial[]
   private hipsYaw = 0
   private hipsY = 0
   private hipsMeasured = false
 
-  constructor(gltf: { scene: Object3D; animations: AnimationClip[] }) {
+  /**
+   * @param options.finish swap in the physical skin and eye finish (medium and
+   *   high tiers); the low tier keeps the GLB's standard materials.
+   */
+  constructor(
+    gltf: { scene: Object3D; animations: AnimationClip[] },
+    options: { finish?: boolean } = {},
+  ) {
     this.scene = cloneSkinned(gltf.scene)
     this.scene.traverse((object) => {
       if ((object as Bone).isBone) this.bones.set(object.name, object as Bone)
@@ -158,6 +168,8 @@ export class MascotRig {
 
     this.mixer = new AnimationMixer(this.scene)
     this.actions = new Map(gltf.animations.map((clip) => [clip.name, this.mixer.clipAction(clip)]))
+    // Before the face lookup: the physical face keeps the same atlas texture.
+    this.finish = options.finish ? applyFinish(this.scene) : []
     this.faceMap =
       (findMaterial(this.scene, 'face') as MeshStandardMaterial | undefined)?.map ?? undefined
     this.plates = findMaterial(this.scene, 'plates') as MeshStandardMaterial | undefined
@@ -266,7 +278,13 @@ export class MascotRig {
     if (this.plates) this.plates.emissiveIntensity = intensity
   }
 
+  /** Live-tune the vinyl finish from the debug panel. */
+  setFinish(finish: Finish) {
+    tuneFinish(this.finish, finish)
+  }
+
   dispose() {
+    for (const material of this.finish) material.dispose()
     this.mixer.removeEventListener('finished', this.onFinished)
     this.mixer.stopAllAction()
   }

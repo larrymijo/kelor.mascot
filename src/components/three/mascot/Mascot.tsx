@@ -64,12 +64,13 @@ export function Mascot() {
   const lite = useGLTF(firstPaintUrl(character), false, true)
   const [full, setFull] = useState<{ model: LoadedModel; snapshot: RigSnapshot } | null>(null)
   const rig = useMemo(() => {
-    const next = new MascotRig(full?.model ?? lite)
+    // The physical finish costs fragment work; the low tier keeps plain materials.
+    const next = new MascotRig(full?.model ?? lite, { finish: bootTier !== 'low' })
     // A swap continues exactly where the previous model stopped, from its very
     // first frame: restoring later, in an effect, left a frame with no clip.
     if (full) next.restore(full.snapshot)
     return next
-  }, [full, lite])
+  }, [full, lite, bootTier])
   const adoptFull = useCallback(
     (model: LoadedModel) => setFull({ model, snapshot: rig.snapshot() }),
     [rig],
@@ -157,6 +158,7 @@ export function Mascot() {
     rig.setExpression(scene.expression)
     const breathe = scene.reducedMotion ? 1 : 0.75 + 0.25 * Math.sin(time.current * 2.2)
     rig.setPlateGlow(scene.tweaks.plateGlow * breathe)
+    rig.setFinish(scene.tweaks)
   })
 
   return (
