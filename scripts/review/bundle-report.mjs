@@ -4,8 +4,12 @@
  *
  *   initial      scripts in the prerendered HTML (every visitor, before interaction)
  *   deferred 3D  chunks of the page's dynamic import (the stage, fetched after hydration)
- *   on demand    other lazy chunks (for example the ?debug panel)
+ *   on demand    other lazy chunks: the ?debug panel, and the KTX2 loader that
+ *                only medium and high tiers fetch with the full model
  *   legacy       nomodule polyfills that modern browsers never download
+ *
+ * The mascot models are checked against character.json budgets, and the
+ * Basis transcoder in public/basis is listed as the cost the full model adds.
  *
  * Sizes are gzip level 9, a conservative proxy for the Brotli Vercel serves.
  * Exits 1 when a budget is exceeded. Run after `next build`.
@@ -78,13 +82,28 @@ export function measureBundle(nextDir) {
   return { chunks, totals, checks, ok: checks.every((c) => c.ok) }
 }
 
-function modelSizes() {
+/** Model files against their contract budgets. GLBs are already compressed, so raw bytes. */
+function modelChecks() {
   const contract = JSON.parse(readFileSync(join(REPO_ROOT, 'character.json'), 'utf8'))
   return ['lite', 'full'].map((tier) => {
     const path = join(REPO_ROOT, contract.files[tier])
-    const bytes = existsSync(path) ? readFileSync(path) : null
-    return { tier, file: contract.files[tier], kB: bytes ? round(bytes.length / 1024) : null }
+    const actual = existsSync(path) ? round(readFileSync(path).length / 1024) : null
+    const budget = contract.budgets[tier].maxFileKB
+    return {
+      id: `model ${tier}`,
+      file: contract.files[tier],
+      actual,
+      budget,
+      ok: actual !== null && actual <= budget,
+    }
   })
+}
+
+/** The Basis transcoder the full model needs, as served (gzip). */
+function transcoderKB() {
+  const dir = join(REPO_ROOT, 'public', 'basis')
+  if (!existsSync(dir)) return null
+  return round(readdirSync(dir).reduce((n, f) => n + gzipKB(readFileSync(join(dir, f))), 0))
 }
 
 export function main(argv, io = {}) {
@@ -94,7 +113,14 @@ export function main(argv, io = {}) {
     log('No production build found. Run "corepack pnpm build" first.')
     return 2
   }
-  const report = { ...measureBundle(nextDir), models: modelSizes() }
+  const bundle = measureBundle(nextDir)
+  const models = modelChecks()
+  const report = {
+    ...bundle,
+    models,
+    transcoderKB: transcoderKB(),
+    ok: bundle.ok && models.every((m) => m.ok),
+  }
 
   if (argv.includes('--json')) {
     log(JSON.stringify(report, null, 2))
@@ -106,14 +132,20 @@ export function main(argv, io = {}) {
     for (const c of report.checks) {
       log(`  ${c.ok ? 'PASS' : 'FAIL'}  ${c.id.padEnd(16)} ${c.actual} kB (budget ${c.budget} kB)`)
     }
+    for (const m of report.models) {
+      log(
+        `  ${m.ok ? 'PASS' : 'FAIL'}  ${m.id.padEnd(16)} ${m.actual ?? 'missing'} kB (budget ${m.budget} kB)`,
+      )
+    }
     log(
-      `  info  on demand        ${report.totals.onDemand} kB (debug tooling, never on production)`,
+      `  info  on demand        ${report.totals.onDemand} kB (?debug panel; KTX2 loader on medium and high)`,
     )
+    if (report.transcoderKB !== null) {
+      log(`  info  basis transcoder ${report.transcoderKB} kB (fetched with the full model)`)
+    }
     log(
       `  info  legacy only      ${report.totals.legacy} kB (nomodule, skipped by modern browsers)`,
     )
-    for (const m of report.models)
-      log(`  info  model ${m.tier.padEnd(10)} ${m.kB ?? 'missing'} kB  ${m.file}`)
   }
   return report.ok ? 0 : 1
 }

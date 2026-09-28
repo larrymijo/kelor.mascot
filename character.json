@@ -32,9 +32,9 @@
   },
 
   "budgets": {
-    "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. Draw calls = mesh primitives rendered once (shadow passes excluded).",
+    "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. File sizes are compressed (Meshopt geometry; WebP on lite, KTX2 on full) and set in phase 4 about 10 per cent above the measured build. Draw calls = mesh primitives rendered once (shadow passes excluded).",
     "full": {
-      "maxFileKB": 1500,
+      "maxFileKB": 700,
       "maxTriangles": 24000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
@@ -46,7 +46,7 @@
       "maxAnimationSeconds": 30
     },
     "lite": {
-      "maxFileKB": 500,
+      "maxFileKB": 250,
       "maxTriangles": 8000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
