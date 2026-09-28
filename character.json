@@ -17,7 +17,7 @@
   },
 
   "files": {
-    "_doc": "Output paths of the asset pipeline, relative to the repo root. Hosting (public/ vs R2/Blob) is decided in phase 4.",
+    "_doc": "Output paths of the asset pipeline, relative to the repo root. Served from public/ on Vercel's CDN (D-052).",
     "full": "public/models/mascot.full.glb",
     "lite": "public/models/mascot.lite.glb",
     "allowedExtensions": [
