@@ -157,8 +157,11 @@ async function main(argv) {
       const reports = {}
       for (const tier of TIERS) {
         const file = join(ROOT, contract.files[tier])
-        const originalKB = Math.round(readFileSync(file).byteLength / 1024)
         let bytes = new Uint8Array(readFileSync(file))
+        const originalKB = Math.round(bytes.byteLength / 1024)
+        // Blender's importer reads Meshopt but not KTX2, so the review renders
+        // use this uncompressed copy of the same assembly.
+        writeFileSync(join(BUILD, tier, 'assembled.glb'), bytes)
         let textures
         // Textures first, so the Meshopt writer lays out the final buffers.
         if (fit.compress.textures[tier] === 'ktx2') {
@@ -204,7 +207,7 @@ async function main(argv) {
         '--root',
         ROOT,
         '--model',
-        'public/models/mascot.full.glb',
+        'build/model/full/assembled.glb',
         '--out',
         REVIEW_REL,
       ])

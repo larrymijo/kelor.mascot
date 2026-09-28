@@ -51,7 +51,11 @@ export function ktxArgs({ encode, srgb }, input, output) {
   if (!srgb) args.push('--assign-tf', 'linear')
   args.push('--generate-mipmap')
   if (encode === 'uastc') {
-    args.push('--encode', 'uastc', '--uastc-quality', '2', '--zstd', '18')
+    // RDO trades a little precision for far better zstd ratios (run 13 saw a
+    // plain UASTC normal map grow from 263 to 914 kB); -m keeps it deterministic
+    // so rebuilding the same model does not churn the committed file.
+    args.push('--encode', 'uastc', '--uastc-quality', '2')
+    args.push('--uastc-rdo', '--uastc-rdo-l', '4', '--uastc-rdo-m', '--zstd', '18')
   } else {
     args.push('--encode', 'basis-lz', '--clevel', '4', '--qlevel', '200')
   }
