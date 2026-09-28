@@ -17,8 +17,9 @@
   },
 
   "bake": {
-    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. Sizes are pixels per tier; normal maps only on full.",
+    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. Sizes are pixels per tier; the normal map exists only on full and has its own size, because as KTX2 UASTC it costs about four times the bytes of a colour map (run 14: 539 kB at 1024 px).",
     "size": { "full": 1024, "lite": 512 },
+    "normalSize": 512,
     "samples": 16,
     "cageExtrusionM": 0.01,
     "maxRayDistanceM": 0.025,

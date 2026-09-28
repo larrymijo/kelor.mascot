@@ -372,7 +372,7 @@ def main():
         save_image(orm, os.path.join(folder, f"orm.{ext}"), fmt, 92)
 
         if tier == "full":
-            normal = new_image(f"normal_{tier}", size, non_color=True)
+            normal = new_image(f"normal_{tier}", fit["bake"]["normalSize"], non_color=True)
             bake("NORMAL", low, normal, high=volume, samples=4, fit=fit)
             save_image(normal, os.path.join(folder, f"normal.{ext}"), fmt, 95)
 
