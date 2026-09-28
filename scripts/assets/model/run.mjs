@@ -128,9 +128,11 @@ async function main(argv) {
       const reports = {}
       for (const tier of TIERS) {
         const folder = join(BUILD, tier)
-        const image = (file, mimeType) => ({
-          data: new Uint8Array(readFileSync(join(folder, file))),
-          mimeType,
+        // Blender writes WebP or JPEG per tier (fit.compress.textures).
+        const ext = fit.compress.textures[tier] === 'webp' ? 'webp' : 'jpg'
+        const image = (name) => ({
+          data: new Uint8Array(readFileSync(join(folder, `${name}.${ext}`))),
+          mimeType: ext === 'webp' ? 'image/webp' : 'image/jpeg',
         })
         const { bytes, report } = await buildModel({
           contract,
@@ -139,11 +141,9 @@ async function main(argv) {
           body: new Uint8Array(readFileSync(join(folder, 'body.glb'))),
           rig,
           textures: {
-            baseColor: image('basecolor.jpg', 'image/jpeg'),
-            orm: image('orm.jpg', 'image/jpeg'),
-            normal: existsSync(join(folder, 'normal.jpg'))
-              ? image('normal.jpg', 'image/jpeg')
-              : undefined,
+            baseColor: image('basecolor'),
+            orm: image('orm'),
+            normal: existsSync(join(folder, `normal.${ext}`)) ? image('normal') : undefined,
           },
         })
         writeFileSync(join(ROOT, contract.files[tier]), bytes)

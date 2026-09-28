@@ -6,7 +6,8 @@ map (from a clean voxel volume), builds the contract armature from
 build/model/rig.json and binds the body with automatic weights.
 
 Outputs, per tier, in <out>/<tier>/: body.glb (skinned mesh, no materials),
-basecolor.jpg, orm.jpg (R: AO, G: roughness, B: 0) and normal.jpg (full).
+basecolor, orm (R: AO, G: roughness, B: 0) and normal (full), as WebP or
+JPEG depending on fit.compress.textures for the tier.
 A JSON report goes to <out>/body-report.json.
 
 Run (Blender 5.2 LTS):
@@ -243,6 +244,12 @@ def bake(kind, low, image, high=None, samples=4, fit=None):
     log(f"baked {kind} {image.size[0]}px on {low.name} in {time.time() - started:.1f}s")
 
 
+def map_format(fit, tier):
+    """Container for this tier's baked maps: WebP ships as is, JPEG is the
+    input the KTX2 conversion reads later."""
+    return "WEBP" if fit["compress"]["textures"][tier] == "webp" else "JPEG"
+
+
 def save_image(image, path, file_format, quality=90):
     image.filepath_raw = path
     image.file_format = file_format
@@ -352,20 +359,22 @@ def main():
         )
         unwrap(low)
 
+        fmt = map_format(fit, tier)
+        ext = "webp" if fmt == "WEBP" else "jpg"
+
         base = new_image(f"basecolor_{tier}", size, non_color=False)
         bake("DIFFUSE", low, base, high=source, samples=4, fit=fit)
-        save_image(base, os.path.join(folder, "basecolor.jpg"), "JPEG", fit["bake"]["jpegQuality"])
+        save_image(base, os.path.join(folder, f"basecolor.{ext}"), fmt, fit["bake"]["jpegQuality"])
 
         ao = new_image(f"ao_{tier}", size, non_color=True)
         bake("AO", low, ao, samples=fit["bake"]["samples"])
         orm = compose_orm(ao, size, fit["bake"]["roughness"])
-        save_image(orm, os.path.join(folder, "orm.jpg"), "JPEG", 92)
+        save_image(orm, os.path.join(folder, f"orm.{ext}"), fmt, 92)
 
         if tier == "full":
             normal = new_image(f"normal_{tier}", size, non_color=True)
             bake("NORMAL", low, normal, high=volume, samples=4, fit=fit)
-            # JPEG keeps the uncompressed budget until KTX2 arrives in phase 4.
-            save_image(normal, os.path.join(folder, "normal.jpg"), "JPEG", 95)
+            save_image(normal, os.path.join(folder, f"normal.{ext}"), fmt, 95)
 
         armature = build_armature(rig)
         weights = bind(low, armature, deform_names)

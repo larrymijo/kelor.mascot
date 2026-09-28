@@ -35,6 +35,7 @@ export const fitSchema = z
     compress: z.strictObject({
       ...docShape,
       meshoptLevel: z.enum(['medium', 'high']),
+      textures: tiers(z.enum(['jpeg', 'webp', 'ktx2'])),
     }),
     rig: z.strictObject({
       ...docShape,

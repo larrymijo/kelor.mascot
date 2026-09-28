@@ -22,6 +22,7 @@
     "lite": "public/models/mascot.lite.glb",
     "allowedExtensions": [
       "EXT_meshopt_compression",
+      "EXT_texture_webp",
       "KHR_mesh_quantization",
       "KHR_texture_basisu",
       "KHR_texture_transform",
