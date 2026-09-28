@@ -174,6 +174,7 @@ export const characterSchema = z
       idle: z.strictObject({
         returnToCameraAfterS: z.number().positive(),
         lookAroundIntervalS: range,
+        glanceHoldS: z.number().positive().max(5),
       }),
       blink: z.strictObject({
         ...docShape,

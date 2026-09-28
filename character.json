@@ -226,7 +226,7 @@
       "maxPitchDeg": 25,
       "lambda": 5
     },
-    "idle": { "returnToCameraAfterS": 4, "lookAroundIntervalS": [2.5, 5] },
+    "idle": { "returnToCameraAfterS": 4, "lookAroundIntervalS": [2.5, 5], "glanceHoldS": 0.8 },
     "blink": {
       "_doc": "Eyelid geometry is authored open in the bind pose. A positive rotation of closedAngleDeg about the eyelid bone local +X closes it.",
       "bones": ["eyelid_L", "eyelid_R"],
