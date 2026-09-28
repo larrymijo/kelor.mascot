@@ -37,6 +37,13 @@ export interface StageProps {
   children?: ReactNode
 }
 
+/** A tier pinned with ?tier= on local and preview builds, never on production. */
+function forcedTier(): QualityTier | null {
+  if (process.env.NEXT_PUBLIC_VERCEL_ENV === 'production') return null
+  const value = new URLSearchParams(window.location.search).get('tier')
+  return value === 'low' || value === 'medium' || value === 'high' ? value : null
+}
+
 /** Advances the pure boot machine with accumulated frame time (pauses with the loop). */
 function BootDriver() {
   const elapsed = useRef(0)
@@ -103,8 +110,11 @@ export default function Stage({
   const [bootTier] = useState<QualityTier | 'unavailable'>(() => {
     const signals = readDeviceSignals()
     if (!signals.webgl2) return 'unavailable'
-    const detected = detectQualityTier(signals)
+    // ?tier=low|medium|high pins the tier on local and preview builds, for measuring.
+    const forced = forcedTier()
+    const detected = forced ?? detectQualityTier(signals)
     useScene.getState().initTier(detected)
+    if (forced) useScene.getState().lockTier()
     return detected
   })
   const [inView, setInView] = useState(true)
