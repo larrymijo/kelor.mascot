@@ -1,10 +1,10 @@
 {
   "_doc": "How the Blender pipeline and scripts/assets/build-model.mjs turn one image-to-3D source into the contract model. Model-specific knobs live here; the contract stays in character.json. Validated by scripts/assets/fit.ts in tests; the Python side reads it as plain JSON.",
-  "source": "assets/source/standin-raw.glb",
+  "source": "assets/source/kelo-raw.glb",
 
   "orientation": {
     "_doc": "Where the source's character faces and which axis is up, in glTF axes. The pipeline rotates it to +Y up, facing +Z.",
-    "forward": "-Z",
+    "forward": "+Z",
     "up": "+Y"
   },
   "symmetrize": true,
