@@ -73,28 +73,16 @@ export function faceAtlas(colors, expressions, size, layout) {
           1,
           bounds,
         ),
-      // Out on the cheeks at mouth height, clear of the eyes, built from nested
-      // ellipses so it fades at the edge instead of ending in a hard patch.
+      // Out on the cheeks at mouth height, clear of the eyes, as one soft spot
+      // that fades to nothing: stacked ellipses showed their rings up close.
       blush: (alpha) => {
         for (const side of [-1, 1]) {
-          for (const [r, a] of [
-            [1, 0.25],
-            [0.78, 0.3],
-            [0.56, 0.35],
-            [0.34, 0.4],
-          ]) {
-            canvas.paint(
-              sdf.ellipse(
-                px(0.145 * side * k),
-                py(0.852 + oy),
-                0.03 * r * k * sx,
-                0.018 * r * k * sy,
-              ),
-              blush,
-              alpha * a,
-              bounds,
-            )
-          }
+          canvas.paint(
+            sdf.softEllipse(px(0.145 * side * k), py(0.852 + oy), 0.03 * k * sx, 0.018 * k * sy),
+            blush,
+            alpha,
+            bounds,
+          )
         }
       },
     })

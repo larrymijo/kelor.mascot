@@ -138,6 +138,16 @@ export const sdf = {
     const k = Math.hypot((x - cx) / rx, (y - cy) / ry)
     return (k - 1) * Math.min(rx, ry)
   },
+  /**
+   * Not a distance: a soft elliptical spot for `paint`, full in the middle and
+   * fading smoothly (smoothstep) to nothing just past the rim, so it has no
+   * rings or edge. `paint` turns 0.5 minus this value into coverage.
+   */
+  softEllipse: (cx, cy, rx, ry) => (x, y) => {
+    const k = Math.hypot((x - cx) / rx, (y - cy) / ry)
+    const t = Math.min(1, Math.max(0, (k - 0.15) / 0.95))
+    return t * t * (3 - 2 * t) - 0.5
+  },
   /** Stroke of an elliptical arc between angles a0 and a1 (radians, y down). */
   arc: (cx, cy, rx, ry, a0, a1, width) => (x, y) => {
     let best = Infinity

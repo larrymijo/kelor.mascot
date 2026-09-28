@@ -66,8 +66,9 @@ export function eyelid(center, openTiltDeg, detail) {
 
 /**
  * Catchlights: a main and a small secondary disc on the viewer's upper left.
- * The main one sits low enough that the open upper lid never clips it into a
- * white flake at the rim.
+ * Both sit on the iris of an eye looking at the viewer, where a catchlight
+ * reads: on the white sclera the main one was invisible, and next to the
+ * nose the lid clipped it into a grey flake. It stays clear of the open lid.
  */
 export function highlights(center, detail) {
   const onSurface = (dx, dy) => Math.sqrt(EYE.radius ** 2 - dx ** 2 - dy ** 2) + 0.004
@@ -76,7 +77,7 @@ export function highlights(center, detail) {
     g.translate(center[0] + dx, center[1] + dy, center[2] + onSurface(dx, dy))
     return g
   }
-  return [disc(-0.03, 0.018, 0.018), disc(0.02, -0.024, 0.008)]
+  return [disc(-0.018, 0.016, 0.014), disc(0.02, -0.024, 0.008)]
 }
 
 /**
