@@ -60,6 +60,9 @@ function upgrade(source: MeshStandardMaterial) {
     material.emissive.set(0xffffff)
     material.emissiveMap = material.map
     material.emissiveIntensity = 0.28
+    // The glossy cornea mirrored the studio's big overhead softbox as a white
+    // shape cut by the lid; the painted catchlights are the highlight we want.
+    material.envMapIntensity = 0.3
   }
   return material
 }

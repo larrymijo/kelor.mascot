@@ -183,7 +183,10 @@ export class MascotRig {
     this.plates = findMaterial(this.scene, 'plates') as MeshStandardMaterial | undefined
     // The contract's pale glow colour burns out to white under bloom and AgX;
     // a saturated violet keeps the plates reading as purple crystals.
-    this.plates?.emissive.set(character.colors.mascot['300'])
+    this.plates?.emissive.set(character.colors.mascot['500'])
+    // Catchlights are the brightest thing on screen: AgX would tone pure white down to grey.
+    const highlight = findMaterial(this.scene, 'highlight')
+    if (highlight) highlight.toneMapped = false
     this.mixer.addEventListener('finished', this.onFinished)
   }
 
