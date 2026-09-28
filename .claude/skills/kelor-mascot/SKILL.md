@@ -103,13 +103,13 @@ corepack pnpm validate:model --file path/to/model.glb --tier full
 
 ## Model pipeline (phase 3)
 
-The real Kelo comes from the owner's image-to-3D source through `corepack pnpm build:model` (see `scripts/blender/README.md`): normalise, fit the 28-bone rig to measured landmarks, retopologise with Quadriflow, bake base colour, AO and normals, bind with automatic weights capped per role, then add the procedural eyes, lids, catchlights, plates and face shell with the same code as the phase 2 placeholder. Tune it through `assets/model/fit.json`, never by hand-editing GLBs. The review renders in `assets/review/phase-3` are the acceptance evidence. The placeholder generator stays as a fallback (`build:placeholder --public`). On stage the mascot stands in a 22 degree three-quarter turn until phase 5 gaze turns the head to the viewer.
+The real Kelo comes from the owner's image-to-3D source through `corepack pnpm build:model` (see `scripts/blender/README.md`): normalise, fit the 28-bone rig to measured landmarks, retopologise with Quadriflow, bake base colour, AO and normals, bind with automatic weights capped per role, then add the procedural eyes, lids, catchlights, plates and face shell with the same code as the phase 2 placeholder. Tune it through `assets/model/fit.json`, never by hand-editing GLBs. The review renders in `assets/review/phase-3` are the acceptance evidence. The placeholder generator stays as a fallback (`build:placeholder --public`). On stage the body stands in a 22 degree three-quarter turn and the gaze layer turns the head back to the viewer.
 
 ## Runtime behaviour (phases 5 and 6)
 
 - **Gaze** is a layer applied after `AnimationMixer.update`, added on top of the clip pose, never replacing it. Eyes are fast (λ 14, ±35° yaw, ±25° pitch). Neck and head share the slow rotation (λ 5, ±40° yaw, ±25° pitch; shares 0.2 / 0.2 / 0.6). Damping is frame-rate independent: `x += (target - x) * (1 - exp(-λ·dt))`.
 - **Life**: breathing (`idle`), tail inertia, random blinks every 2 to 6 s, return to camera after 4 s without a pointer, look at the CTA on hover, hop (`jump`) on click. On touch devices it follows the finger and runs `look_around` when idle.
-- **Director**: state machine `egg → hatch → tracking → scroll pose`, blending clip weights.
+- **Director**: state machine `egg → hatch → tracking → scroll pose`, blending clip weights. Implemented in phase 5 (`src/lib/behaviour/director.ts`); the scroll state waits for phase 6. The hop plays only when a click or tap lands on Kelo, and `data-gaze-target` elements draw his look on hover and keyboard focus.
 - **Reduced motion**: no camera orbit, no particles or grain, the hatch is a cut, gaze is calmer (λ × 0.5). Content never depends on the animation.
 
 ## Originality guardrails

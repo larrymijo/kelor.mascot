@@ -13,7 +13,7 @@ The site copy is **Spanish** (`lang="es"`). Code, file names, commits, PRs and r
 | Framework         | Next.js 16.3 (App Router, Turbopack), React 19.2.x, TypeScript 5.9                                   |
 | Styling           | Tailwind CSS v4 (tokens in `src/app/globals.css`)                                                    |
 | 3D (phase 2+)     | three r186, @react-three/fiber 9, @react-three/drei 10, @react-three/postprocessing 3 (bundles N8AO) |
-| Motion (phase 5+) | GSAP 3.15 (ScrollTrigger, SplitText), Lenis                                                          |
+| Motion (phase 6+) | GSAP 3.15 (ScrollTrigger, SplitText), Lenis                                                          |
 | Debug             | leva (dev only, never in production bundles)                                                         |
 | Tests             | Vitest 5 for pure logic, Playwright for captures (uses installed Chrome)                             |
 | Assets (phase 3+) | gltf-transform, KTX-Software 4.4+, sharp, headless Blender (CPU)                                     |
@@ -88,7 +88,7 @@ src/app                 routes, layout, global CSS tokens
 src/components/sections page sections (scroll acts)
 src/components/three    R3F scene, mascot, egg, effects (client only)
 src/components/ui       monochrome UI primitives
-src/lib                 pure logic (character contract, copy, math); unit tested
+src/lib                 pure logic (character contract, copy, math, behaviour); unit tested
 scripts/assets          GLB validation and asset processing (Node)
 scripts/blender         headless Blender pipeline (Python, phase 3)
 scripts/review          capture and review tooling
@@ -109,6 +109,14 @@ public/basis            three's Basis transcoder for KTX2, served locally (kept 
 - The mascot is wrapped by `MascotRig` (clips, expressions, plate glow); all lookups use contract names.
 - React Compiler lint rules forbid mutating hook values: keep three.js mutations inside classes like `MascotRig` or read objects with `get()` inside effects.
 - `?debug` opens the leva panel and FPS meter on local and preview builds, never on production.
+
+## Behaviour and director (phase 5)
+
+- Pure logic lives in `src/lib/behaviour`: gaze angles and soft limits, the blink scheduler, the tail spring and the director state machine (`egg → hatch → tracking → scroll`, scroll reserved for phase 6). All of it is unit tested and reads its numbers from `character.json` (`gaze`, `life`, `accessibility.reducedMotion`).
+- `MascotRig` layers the behaviour: `update()` resets the layered bones to their bind pose and runs the mixer, then `behave()` multiplies gaze, blink and tail offsets on top. Never set layered bones anywhere else.
+- `BehaviourController` runs the director each frame and turns attention into a world target; `useBehaviourInput` feeds it from window events. It outlives model swaps.
+- Mark any element with `data-gaze-target` to draw Kelo's look on hover and keyboard focus.
+- `StageMount` also exposes `data-attention` and `data-clip` for tests; `?debug` has a gaze switch, a blink button and an attention readout.
 
 ## Progressive loading (phase 4)
 

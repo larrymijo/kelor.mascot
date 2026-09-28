@@ -15,7 +15,7 @@ import { BehaviourController } from './BehaviourController'
 import { MascotRig, type RigSnapshot } from './MascotRig'
 import { useBehaviourInput } from './useBehaviourInput'
 
-/** Three-quarter turn towards the key light, so the tail and plates read. Phase 5 turns the head back to the viewer. */
+/** Three-quarter turn towards the key light, so the tail and plates read; the gaze layer turns the head back to the viewer. */
 const POSE_YAW = degToRad(22)
 
 const easeOutBack = (t: number) => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2
