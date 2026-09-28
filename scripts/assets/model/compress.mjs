@@ -123,8 +123,13 @@ export async function compressModel({ bytes, level = 'high' }) {
   // A scene-wide quantisation volume keeps one dequantisation transform for
   // every mesh, so the contract's single skin is not split one-per-mesh.
   await doc.transform(
-    dedup(),
-    prune(),
+    // The contract names every material and image, so differently named
+    // duplicates must survive: the placeholder's flat ORM and normal maps have
+    // identical pixels, and dedup ignores names unless told otherwise.
+    dedup({ keepUniqueNames: true }),
+    // Solid-colour maps would otherwise be folded into material factors, and
+    // the contract expects every named map to exist.
+    prune({ keepSolidTextures: true }),
     meshopt({ encoder: MeshoptEncoder, level, quantizationVolume: 'scene' }),
   )
   const out = await io.writeBinary(doc)
