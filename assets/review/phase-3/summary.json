@@ -1,79 +1,79 @@
 {
-  "source": "assets/source/standin-raw.glb",
+  "source": "assets/source/kelo-raw.glb",
   "steps": {
     "normalize": {
-      "sourceHeight": 1.007,
-      "scale": 1.1914,
+      "sourceHeight": 1.903,
+      "scale": 0.6307,
       "feetCentre": [
-        -0.101,
-        0.251
+        0.006,
+        0.219
       ],
-      "triangles": 75832,
+      "triangles": 145814,
       "meshes": 1
     },
     "rig": {
       "landmarks": {
         "heightM": 1.2,
-        "feetBackZ": -0.1105,
-        "crotchY": 0.204,
-        "legX": 0.1165,
-        "neckY": 0.702,
-        "neckHalfWidth": 0.1321,
-        "torsoFrontZ": 0.1612,
-        "headCenterY": 0.936,
-        "headHalfWidth": 0.2844,
+        "feetBackZ": -0.1426,
+        "crotchY": 0.12,
+        "legX": 0.1184,
+        "neckY": 0.66,
+        "neckHalfWidth": 0.2208,
+        "torsoFrontZ": 0.1797,
+        "headCenterY": 0.852,
+        "headHalfWidth": 0.3203,
         "snoutTip": [
           0,
-          0.8962,
-          0.2829
+          0.831,
+          0.406
         ],
-        "mouthY": 0.8662,
+        "mouthY": 0.801,
         "hand": [
-          0.2807,
-          0.4994,
-          0.1091
+          0.338,
+          0.4032,
+          -0.0335
         ],
         "tailTip": [
           0,
-          0.1632,
-          -0.6739
+          0.1686,
+          -0.6863
         ],
         "tailCurve": [
           [
-            -0.1605,
-            0.4538
+            -0.1926,
+            0.3872
           ],
           [
-            -0.2247,
-            0.4611
+            -0.2544,
+            0.2408
           ],
           [
-            -0.2888,
-            0.3936
+            -0.3161,
+            0.1911
           ],
           [
-            -0.353,
-            0.3375
+            -0.3778,
+            0.161
           ],
           [
-            -0.4172,
-            0.2954
+            -0.4395,
+            0.1415
           ],
           [
-            -0.4814,
-            0.2548
+            -0.5012,
+            0.1305
           ],
           [
-            -0.5456,
-            0.2181
+            -0.5629,
+            0.1397
           ],
           [
-            -0.6097,
-            0.1837
+            -0.6246,
+            0.1525
           ],
           [
-            -0.6739,
-            0.162
+            -0.6863,
+            0.1628
           ]
         ]
       }
@@ -82,16 +82,16 @@
       "blender": "5.2.2 LTS",
       "tiers": {
         "full": {
-          "triangles": 11798,
+          "triangles": 10786,
           "textureSize": 1024,
-          "seconds": 12.1,
+          "seconds": 13.7,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
-          "triangles": 4156,
+          "triangles": 4600,
           "textureSize": 512,
-          "seconds": 5.4,
+          "seconds": 7.2,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -99,40 +99,40 @@
     },
     "assemble": {
       "full": {
-        "repairedVertices": 687,
-        "clampedWeights": 4507,
+        "repairedVertices": 556,
+        "clampedWeights": 4313,
         "eyes": {
           "L": [
             0.105,
-            1.0008,
-            0.20279558595641775
+            0.984,
+            0.221586490315529
           ],
           "R": [
             -0.105,
-            1.0008,
-            0.20272633494423173
+            0.984,
+            0.2211384808069968
           ]
         },
-        "mouthY": 0.8662,
-        "kB": 1190
+        "mouthY": 0.801,
+        "kB": 1253
       },
       "lite": {
-        "repairedVertices": 232,
-        "clampedWeights": 1675,
+        "repairedVertices": 233,
+        "clampedWeights": 2089,
         "eyes": {
           "L": [
             0.105,
-            1.0008,
-            0.20237692775505875
+            0.984,
+            0.22144951241009467
           ],
           "R": [
             -0.105,
-            1.0008,
-            0.202342640769504
+            0.984,
+            0.2207943181672035
           ]
         },
-        "mouthY": 0.8662,
-        "kB": 408
+        "mouthY": 0.801,
+        "kB": 435
       }
     },
     "validate": {
