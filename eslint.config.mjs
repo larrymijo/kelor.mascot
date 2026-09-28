@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     '.next/**',
     'out/**',
     'build/**',
+    // Vendored Basis transcoder, copied verbatim from three (see scripts/assets/transcoder.test.ts).
+    'public/basis/**',
     'coverage/**',
     'playwright-report/**',
     'test-results/**',

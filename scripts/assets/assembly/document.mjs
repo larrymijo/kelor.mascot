@@ -8,7 +8,7 @@
  * must stay byte-identical. Keep call order stable.
  */
 import { Document, NodeIO } from '@gltf-transform/core'
-import { KHRMaterialsUnlit } from '@gltf-transform/extensions'
+import { EXTTextureWebP, KHRMaterialsUnlit } from '@gltf-transform/extensions'
 import * as THREE from 'three'
 
 /** sRGB hex to linear RGB for glTF colour factors. */
@@ -77,8 +77,12 @@ export function createContractDocument({ contract, bones = contract.skeleton.bon
 export function addContractMaterials(ctx, textures) {
   const { doc, contract } = ctx
   const { colors } = contract
-  const texture = (name, { data, mimeType }) =>
-    doc.createTexture(name).setImage(data).setMimeType(mimeType)
+  // WebP images need their extension declared, or the glTF is invalid.
+  let webp = null
+  const texture = (name, { data, mimeType }) => {
+    if (mimeType === 'image/webp' && !webp) webp = doc.createExtension(EXTTextureWebP)
+    return doc.createTexture(name).setImage(data).setMimeType(mimeType)
+  }
 
   const orm = texture('body_orm', textures.bodyOrm)
   const body = doc
@@ -206,5 +210,5 @@ export function addContractClips(ctx, clipSpec) {
 }
 
 export function writeGlb(doc) {
-  return new NodeIO().registerExtensions([KHRMaterialsUnlit]).writeBinary(doc)
+  return new NodeIO().registerExtensions([EXTTextureWebP, KHRMaterialsUnlit]).writeBinary(doc)
 }

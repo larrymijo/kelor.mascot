@@ -85,7 +85,7 @@ Use these names exactly, in Blender, in the GLB and in code.
 
 |                       | lite             | full             |
 | --------------------- | ---------------- | ---------------- |
-| File size             | ≤ 500 kB         | ≤ 1.5 MB         |
+| File size             | ≤ 250 kB         | ≤ 700 kB         |
 | Triangles             | ≤ 8 000          | ≤ 24 000         |
 | Bones                 | ≤ 32             | ≤ 32             |
 | Influences per vertex | ≤ 4              | ≤ 4              |

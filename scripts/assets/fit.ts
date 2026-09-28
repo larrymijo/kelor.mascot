@@ -26,11 +26,17 @@ export const fitSchema = z
     bake: z.strictObject({
       ...docShape,
       size: tiers(z.int().refine((n) => n > 0 && (n & (n - 1)) === 0, 'Power of two')),
+      normalSize: z.int().refine((n) => n > 0 && (n & (n - 1)) === 0, 'Power of two'),
       samples: z.int().min(1).max(256),
       cageExtrusionM: z.number().positive().max(0.2),
       maxRayDistanceM: z.number().positive().max(0.5),
       roughness: z.number().min(0).max(1),
       jpegQuality: z.int().min(50).max(100),
+    }),
+    compress: z.strictObject({
+      ...docShape,
+      meshoptLevel: z.enum(['medium', 'high']),
+      textures: tiers(z.enum(['jpeg', 'webp', 'ktx2'])),
     }),
     rig: z.strictObject({
       ...docShape,

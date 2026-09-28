@@ -17,13 +17,20 @@
   },
 
   "bake": {
-    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. Sizes are pixels per tier; normal maps only on full.",
+    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. Sizes are pixels per tier; the normal map exists only on full and has its own size, because as KTX2 UASTC it costs about four times the bytes of a colour map (run 14: 539 kB at 1024 px).",
     "size": { "full": 1024, "lite": 512 },
+    "normalSize": 512,
     "samples": 16,
     "cageExtrusionM": 0.01,
     "maxRayDistanceM": 0.025,
     "roughness": 0.6,
     "jpegQuality": 88
+  },
+
+  "compress": {
+    "_doc": "Applied to both tiers after assembly. Meshopt quantises the attributes and stores them with EXT_meshopt_compression, whose decoder ships inside three-stdlib. The quantisation volume is scene-wide so the contract's single skin is not split one per mesh. textures picks the container Blender bakes into per tier: the lite tier paints first, so it carries WebP and never waits on a transcoder.",
+    "meshoptLevel": "high",
+    "textures": { "full": "ktx2", "lite": "webp" }
   },
 
   "rig": {

@@ -39,6 +39,8 @@ interface SceneState {
   tierLocked: boolean
   reducedMotion: boolean
   modelReady: boolean
+  /** Which model is on screen: lite paints first, full may replace it after the hatch. */
+  modelQuality: 'lite' | 'full'
   /** 0 to 1 while the GLB downloads. */
   loadProgress: number
   boot: BootState
@@ -52,6 +54,7 @@ interface SceneState {
   lockTier: () => void
   setReducedMotion: (value: boolean) => void
   setModelReady: (value: boolean) => void
+  setModelQuality: (value: 'lite' | 'full') => void
   setLoadProgress: (value: number) => void
   setBoot: (boot: BootState) => void
   setExpression: (expression: ExpressionName) => void
@@ -65,6 +68,7 @@ export const useScene = create<SceneState>()((set) => ({
   tierLocked: false,
   reducedMotion: false,
   modelReady: false,
+  modelQuality: 'lite',
   loadProgress: 0,
   boot: initialBootState,
   expression: 'neutral',
@@ -76,6 +80,7 @@ export const useScene = create<SceneState>()((set) => ({
   lockTier: () => set({ tierLocked: true }),
   setReducedMotion: (reducedMotion) => set({ reducedMotion }),
   setModelReady: (modelReady) => set({ modelReady }),
+  setModelQuality: (modelQuality) => set({ modelQuality }),
   setLoadProgress: (loadProgress) => set({ loadProgress }),
   setBoot: (boot) => set({ boot }),
   setExpression: (expression) => set({ expression }),

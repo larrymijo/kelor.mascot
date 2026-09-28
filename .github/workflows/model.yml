@@ -29,6 +29,8 @@ concurrency:
 env:
   BLENDER_VERSION: 5.2.2
   BLENDER_SHA256: 84098912789dc450e95697c4184fb8a90acbe5111c2ba4aede3fecb57806a168
+  KTX_VERSION: 4.4.2
+  KTX_SHA256: a8781bad05f9624edbf910b7f258cd0a4ba7d3e63b49ecc0a0ab440bf6a0a245
 
 jobs:
   build:
@@ -83,8 +85,33 @@ jobs:
           sudo apt-get install -y -qq --no-install-recommends \
             libxi6 libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libsm6 libgl1 libegl1
 
+      - name: Restore cached KTX-Software
+        id: ktx-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/ktx
+          key: ktx-${{ env.KTX_VERSION }}-linux-x64
+
+      - name: Download KTX-Software (checksum verified)
+        if: steps.ktx-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL -o ktx.tar.bz2 "https://github.com/KhronosGroup/KTX-Software/releases/download/v${KTX_VERSION}/KTX-Software-${KTX_VERSION}-Linux-x86_64.tar.bz2"
+          echo "${KTX_SHA256}  ktx.tar.bz2" | sha256sum -c -
+          mkdir -p ~/ktx
+          tar -xf ktx.tar.bz2 -C ~/ktx --strip-components=1
+          rm ktx.tar.bz2
+          ~/ktx/bin/ktx --version
+
+      - name: Save KTX-Software to the cache
+        if: steps.ktx-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/ktx
+          key: ktx-${{ env.KTX_VERSION }}-linux-x64
+
       - name: Build the model
-        run: BLENDER="$HOME/blender/blender" pnpm build:model --review assets/review/phase-3
+        run: |
+          BLENDER="$HOME/blender/blender" KTX="$HOME/ktx/bin/ktx" LD_LIBRARY_PATH="$HOME/ktx/lib:$LD_LIBRARY_PATH" pnpm build:model --review assets/review/phase-3
 
       - name: Commit results to the branch
         if: always()

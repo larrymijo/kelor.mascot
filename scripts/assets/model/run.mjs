@@ -6,8 +6,9 @@
  *   2 rig        Node     landmarks + fitted skeleton -> build/model/rig.json
  *   3 body       Blender  retopology, UVs, bakes, weights -> build/model/<tier>/
  *   4 assemble   Node     contract GLBs -> public/models/mascot.<tier>.glb
- *   5 validate   Node     strict validator on both tiers
- *   6 review     Blender  renders -> assets/review/phase-3/*.png
+ *   5 compress   Node     Meshopt geometry, in place
+ *   6 validate   Node     strict validator on both tiers
+ *   7 review     Blender  renders -> assets/review/phase-3/*.png
  *
  *   node scripts/assets/model/run.mjs                  everything (Blender from $BLENDER or PATH)
  *   node scripts/assets/model/run.mjs --until rig      stop after a step; steps 1-2 need no Blender
@@ -25,6 +26,7 @@ import { boneSegments, isProcedural } from '../assembly/skinning.mjs'
 import { buildModel } from '../build-model.mjs'
 import { validateGlb } from '../validate.mjs'
 import { fitSkeleton, measureLandmarks } from './landmarks.mjs'
+import { compressModel, compressTextures } from './compress.mjs'
 import { normalizeSource, readPositions } from './normalize.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
@@ -35,7 +37,7 @@ const argValue = (name) =>
 const REVIEW_REL = argValue('--review') ?? 'build/model/review'
 const REVIEW = join(ROOT, REVIEW_REL)
 const LOG = join(REVIEW, 'pipeline.log')
-const STEPS = ['normalize', 'rig', 'body', 'assemble', 'validate', 'review']
+const STEPS = ['normalize', 'rig', 'body', 'assemble', 'compress', 'validate', 'review']
 const TIERS = ['full', 'lite']
 
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'))
@@ -126,9 +128,11 @@ async function main(argv) {
       const reports = {}
       for (const tier of TIERS) {
         const folder = join(BUILD, tier)
-        const image = (file, mimeType) => ({
-          data: new Uint8Array(readFileSync(join(folder, file))),
-          mimeType,
+        // Blender writes WebP or JPEG per tier (fit.compress.textures).
+        const ext = fit.compress.textures[tier] === 'webp' ? 'webp' : 'jpg'
+        const image = (name) => ({
+          data: new Uint8Array(readFileSync(join(folder, `${name}.${ext}`))),
+          mimeType: ext === 'webp' ? 'image/webp' : 'image/jpeg',
         })
         const { bytes, report } = await buildModel({
           contract,
@@ -137,11 +141,9 @@ async function main(argv) {
           body: new Uint8Array(readFileSync(join(folder, 'body.glb'))),
           rig,
           textures: {
-            baseColor: image('basecolor.jpg', 'image/jpeg'),
-            orm: image('orm.jpg', 'image/jpeg'),
-            normal: existsSync(join(folder, 'normal.jpg'))
-              ? image('normal.jpg', 'image/jpeg')
-              : undefined,
+            baseColor: image('basecolor'),
+            orm: image('orm'),
+            normal: existsSync(join(folder, `normal.${ext}`)) ? image('normal') : undefined,
           },
         })
         writeFileSync(join(ROOT, contract.files[tier]), bytes)
@@ -151,7 +153,37 @@ async function main(argv) {
       return reports
     })
 
-    await step(4, 'validate', async () => {
+    await step(4, 'compress', async () => {
+      const reports = {}
+      for (const tier of TIERS) {
+        const file = join(ROOT, contract.files[tier])
+        let bytes = new Uint8Array(readFileSync(file))
+        const originalKB = Math.round(bytes.byteLength / 1024)
+        // Blender's importer reads Meshopt but not KTX2, so the review renders
+        // use this uncompressed copy of the same assembly.
+        writeFileSync(join(BUILD, tier, 'assembled.glb'), bytes)
+        let textures
+        // Textures first, so the Meshopt writer lays out the final buffers.
+        if (fit.compress.textures[tier] === 'ktx2') {
+          const result = await compressTextures({ bytes, log })
+          bytes = result.bytes
+          textures = result.report.textures
+          for (const t of textures)
+            log(`  ${t.name}: ${t.beforeKB} -> ${t.afterKB} kB (${t.encode})`)
+        }
+        const { bytes: out, report } = await compressModel({
+          bytes,
+          level: fit.compress.meshoptLevel,
+        })
+        writeFileSync(file, out)
+        reports[tier] = { ...report, beforeKB: originalKB, textures }
+        const saved = Math.round((1 - report.afterKB / originalKB) * 100)
+        log(`${tier}: ${originalKB} -> ${report.afterKB} kB (${saved}% smaller)`)
+      }
+      return reports
+    })
+
+    await step(5, 'validate', async () => {
       const results = {}
       for (const tier of TIERS) {
         const bytes = new Uint8Array(readFileSync(join(ROOT, contract.files[tier])))
@@ -170,12 +202,12 @@ async function main(argv) {
       return results
     })
 
-    await step(5, 'review', async () => {
+    await step(6, 'review', async () => {
       await blender('scripts/blender/review.py', [
         '--root',
         ROOT,
         '--model',
-        'public/models/mascot.full.glb',
+        'build/model/full/assembled.glb',
         '--out',
         REVIEW_REL,
       ])

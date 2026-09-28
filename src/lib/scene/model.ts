@@ -18,3 +18,13 @@ export function tierSettings(character: Pick<Character, 'quality'>, tier: Qualit
 export function modelUrl(character: Pick<Character, 'quality' | 'files'>, tier: QualityTier) {
   return publicUrl(character.files[tierSettings(character, tier).model])
 }
+
+/** The lite model paints first on every tier: it decodes with no transcoder. */
+export function firstPaintUrl(character: Pick<Character, 'files'>) {
+  return publicUrl(character.files.lite)
+}
+
+/** The model to stream in after first paint, or null when the tier stays on lite. */
+export function upgradeUrl(character: Pick<Character, 'quality' | 'files'>, tier: QualityTier) {
+  return tierSettings(character, tier).model === 'lite' ? null : modelUrl(character, tier)
+}

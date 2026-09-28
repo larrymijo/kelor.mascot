@@ -24,6 +24,7 @@ import {
 import { eyeball, eyelid, highlights, plate, projectFaceUvs } from './assembly/features.mjs'
 import { boneSegments, merge, skinByDistance, skinRigid } from './assembly/skinning.mjs'
 import { eyesBaseColor, faceAtlas } from './assembly/textures.mjs'
+import { compressModel } from './model/compress.mjs'
 import { PLACEHOLDER_CLIPS } from './placeholder-clips.mjs'
 import { bodyParts, FACE_PATCH, faceShell, PLATES } from './placeholder/shapes.mjs'
 import { bodyBaseColor, bodyNormal, bodyOrm } from './placeholder/textures.mjs'
@@ -111,7 +112,10 @@ export async function buildPlaceholder({ contract, tier }) {
   addSkinnedMesh(ctx, 'plates', plates, materials.plates)
   addContractClips(ctx, PLACEHOLDER_CLIPS)
 
-  return writeGlb(ctx.doc)
+  // Ship-ready like the real model: the same Meshopt step keeps it inside the
+  // same compressed budgets, since --public puts it on the site.
+  const { bytes } = await compressModel({ bytes: await writeGlb(ctx.doc) })
+  return bytes
 }
 
 // ---------------------------------------------------------------------------

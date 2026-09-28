@@ -18,7 +18,7 @@ The site copy is **Spanish** (`lang="es"`). Code, file names, commits, PRs and r
 | Tests             | Vitest 5 for pure logic, Playwright for captures (uses installed Chrome)                             |
 | Assets (phase 3+) | gltf-transform, KTX-Software 4.4+, sharp, headless Blender (CPU)                                     |
 | Tooling           | pnpm 12 via corepack, ESLint 9 flat config, Prettier 3                                               |
-| Hosting           | Vercel; heavy media on Cloudflare R2 or Vercel Blob (decided in phase 4)                             |
+| Hosting           | Vercel; the models ship from `public/` on Vercel's CDN                                               |
 
 Version constraints that matter:
 
@@ -45,16 +45,16 @@ Version constraints that matter:
 
 ## Budgets
 
-| Metric                                            | Budget                                             |
-| ------------------------------------------------- | -------------------------------------------------- |
-| Initial JS (excluding the lazily loaded 3D chunk) | ≤ 150 kB gzip                                      |
-| Deferred 3D JS (the stage chunk)                  | ≤ 420 kB gzip                                      |
-| LCP (4G, mid-range phone)                         | < 2.0 s                                            |
-| CLS                                               | 0                                                  |
-| TBT                                               | < 200 ms                                           |
-| Mascot GLB                                        | lite ≤ 500 kB, full ≤ 1.5 MB (Meshopt + KTX2)      |
-| Frame rate                                        | 60 fps on Intel integrated GPU at quality `medium` |
-| Lighthouse accessibility                          | ≥ 95                                               |
+| Metric                                            | Budget                                                         |
+| ------------------------------------------------- | -------------------------------------------------------------- |
+| Initial JS (excluding the lazily loaded 3D chunk) | ≤ 150 kB gzip                                                  |
+| Deferred 3D JS (the stage chunk)                  | ≤ 420 kB gzip                                                  |
+| LCP (4G, mid-range phone)                         | < 2.0 s                                                        |
+| CLS                                               | 0                                                              |
+| TBT                                               | < 200 ms                                                       |
+| Mascot GLB                                        | lite ≤ 250 kB (Meshopt + WebP), full ≤ 700 kB (Meshopt + KTX2) |
+| Frame rate                                        | 60 fps on Intel integrated GPU at quality `medium`             |
+| Lighthouse accessibility                          | ≥ 95                                                           |
 
 Model budgets (triangles, bones, textures, draw calls, clips) live in `character.json` and are enforced by `pnpm validate:model`. JS budgets are enforced by `pnpm size` after a build.
 
@@ -97,7 +97,8 @@ docs/                   scroll script, decisions log
 assets/source           image-to-3D sources: kelo-raw.glb is the real one, standin-raw.glb exercises the pipeline
 assets/model            fit.json: how the pipeline turns a source into the contract model
 assets/review           committed review renders and pipeline logs
-public/models           GLBs built by the model pipeline, validated against character.json
+public/models           compressed GLBs built by the model pipeline, validated against character.json
+public/basis            three's Basis transcoder for KTX2, served locally (kept in sync by a test)
 ```
 
 ## Stage architecture (phase 2)
@@ -109,10 +110,18 @@ public/models           GLBs built by the model pipeline, validated against char
 - React Compiler lint rules forbid mutating hook values: keep three.js mutations inside classes like `MascotRig` or read objects with `get()` inside effects.
 - `?debug` opens the leva panel and FPS meter on local and preview builds, never on production.
 
+## Progressive loading (phase 4)
+
+- Every tier paints the lite model first (`firstPaintUrl` in `src/lib/scene/model.ts`). Its shaders compile while the egg is still up, and `modelReady` waits for that.
+- After the hatch, `shouldUpgrade` in `src/lib/scene/upgrade.ts` decides whether to stream the full model: never on the low tier, with save-data, or on 2G-class connections.
+- `Mascot.tsx` loads the full model inside its own Suspense boundary, compiles it, and swaps it in; `MascotRig.snapshot` and `restore` carry the clip, its time and the expression across.
+- `src/components/three/loaders.ts` owns decoding without a CDN: Meshopt comes with drei, the KTX2 loader is a lazy chunk, and the Basis transcoder is served from `public/basis`.
+- `StageMount` exposes `data-scene-state`, `data-model` and `data-tier` for tests; `Stage` exposes the live tier as `data-quality`.
+
 ## Model pipeline (phase 3)
 
 - `assets/model/fit.json` names the image-to-3D source (`assets/source/*.glb`) and every model-specific knob; `scripts/assets/fit.ts` validates it.
-- `corepack pnpm build:model` runs normalise and skeleton fit (Node), retopology, UVs, bakes and weights (Blender 5.2 LTS), assembly with the shared placeholder code (Node), strict validation and review renders (Blender).
+- `corepack pnpm build:model` runs normalise and skeleton fit (Node), retopology, UVs, bakes and weights (Blender 5.2 LTS), assembly with the shared placeholder code (Node), compression (Meshopt on both tiers, KTX2 on full through KTX-Software 4.4.2), strict validation and review renders (Blender, from the uncompressed assembly, because its importer cannot read KTX2).
 - Blender never runs locally. The Model workflow runs on feature-branch pushes that touch the source, fit, pipeline or contract, and commits `public/models` plus `assets/review/phase-3` (renders, `pipeline.log`, `summary.json`) back to the branch: `git pull` before pushing again.
 - Review every run through the committed renders: rest views, face close-up, topology, bone heads and each clip at mid-pose.
 - Locally, `node scripts/assets/model/run.mjs --until rig` runs the Node steps into `build/model`.

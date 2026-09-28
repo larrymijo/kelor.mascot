@@ -33,4 +33,4 @@ corepack pnpm build:placeholder             # build/placeholder/mascot.{lite,ful
 corepack pnpm build:placeholder --public    # overwrite public/models (fallback only)
 ```
 
-Phase 4 adds the gltf-transform, KTX-Software and sharp compression steps here.
+`model/compress.mjs` is the compression step both generators share: Meshopt geometry with a scene-wide quantisation volume, and, for the full tier in the model pipeline, KTX2 textures through the KTX-Software CLI (CI only, `KTX` points at the binary). The lite tier's WebP maps come straight from Blender's bake, so no image encoder runs in Node.

@@ -87,6 +87,18 @@ export function validateGlb({ bytes, contract, tier, baseDir = process.cwd() }) 
       : `Allowed: ${list([...allowed], 20)}. Update character.json files.allowedExtensions if intended.`,
   )
 
+  // The lite tier paints first, so it must decode with nothing but the browser:
+  // a Basis transcoder is a few hundred kilobytes in front of the first frame.
+  if (tier === 'lite') {
+    const transcoded = used.includes('KHR_texture_basisu')
+    add(
+      'extensions.firstPaint',
+      transcoded ? 'fail' : 'pass',
+      transcoded ? 'lite uses KHR_texture_basisu' : 'no transcoder needed for the first paint',
+      'Keep KTX2 for the tier that streams in later; bake the lite maps as WebP.',
+    )
+  }
+
   // Scene graph ---------------------------------------------------------------
   const nodes = gltf.nodes ?? []
   const meshes = gltf.meshes ?? []
