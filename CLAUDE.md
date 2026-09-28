@@ -94,7 +94,7 @@ scripts/blender         headless Blender pipeline (Python, phase 3)
 scripts/review          capture and review tooling
 assets/concept          concept art chosen by the owner (input to phase 3)
 docs/                   scroll script, decisions log
-assets/source           image-to-3D sources (stand-in until the owner delivers kelo-raw.glb)
+assets/source           image-to-3D sources: kelo-raw.glb is the real one, standin-raw.glb exercises the pipeline
 assets/model            fit.json: how the pipeline turns a source into the contract model
 assets/review           committed review renders and pipeline logs
 public/models           GLBs built by the model pipeline, validated against character.json
