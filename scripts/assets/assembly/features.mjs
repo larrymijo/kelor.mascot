@@ -8,8 +8,8 @@ import * as THREE from 'three'
 
 /** Eye construction, relative to the eye bone (the eyeball centre). */
 export const EYE = {
-  radius: 0.085,
-  lidRadius: 0.092,
+  radius: 0.095,
+  lidRadius: 0.102,
   lidCapDeg: 115,
   irisRatio: 0.42,
   pupilRatio: 0.3,
