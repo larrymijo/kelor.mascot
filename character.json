@@ -298,7 +298,7 @@
         "model": "full",
         "dprMax": 1.5,
         "shadows": true,
-        "ao": "half",
+        "ao": "off",
         "bloom": true,
         "depthOfField": false,
         "particles": 250,

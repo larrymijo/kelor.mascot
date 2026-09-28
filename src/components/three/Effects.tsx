@@ -11,6 +11,8 @@ import {
 } from '@react-three/postprocessing'
 import {
   DepthOfFieldEffect,
+  EffectPass,
+  FXAAEffect,
   ToneMappingMode,
   type BloomEffect,
   type VignetteEffect,
@@ -65,9 +67,11 @@ class ScriptedDepthOfField extends DepthOfFieldEffect {
  * tier skips the composer entirely and relies on renderer tone mapping; the
  * others finish with an AgX tone-mapping pass so every tier looks alike.
  *
- * Antialiasing is MSAA on the composer: 4x on high, 2x on medium. SMAA was
- * tried and dropped: postprocessing embeds its lookup texture as a 67 kB
- * base64 image, which broke the deferred 3D budget on its own.
+ * Antialiasing is MSAA 4x on high and FXAA on medium. MSAA 2x cost medium a
+ * fifth of its frame rate on integrated graphics, and SMAA embeds its lookup
+ * texture as a 67 kB base64 image, which broke the deferred 3D budget on its
+ * own. FXAA runs in its own pass after tone mapping, where it expects its
+ * input: merged into the effects pass it would read the scene before them.
  *
  * The cinematic drives the effects each frame, never through React:
  * vignette darkness per act, a bloom flare when the egg bursts, and, where
@@ -90,7 +94,14 @@ export function Effects({ tier }: { tier: QualityTier }) {
     () => (settings.depthOfField ? new ScriptedDepthOfField(camera, 0.75) : null),
     [camera, settings.depthOfField],
   )
+  // The composer disposes every pass it holds when it is rebuilt, and it is
+  // rebuilt when the tier changes its multisampling: a new tier, a new pass.
+  const fxaa = useMemo(
+    () => (tier === 'medium' ? new EffectPass(camera, new FXAAEffect()) : null),
+    [camera, tier],
+  )
   useEffect(() => () => dof?.dispose(), [dof])
+  useEffect(() => () => fxaa?.dispose(), [fxaa])
 
   useFrame(() => {
     const { sample } = cinematic
@@ -144,9 +155,10 @@ export function Effects({ tier }: { tier: QualityTier }) {
   if (settings.filmGrain && !reducedMotion) {
     effects.push(<Noise key="grain" premultiply opacity={tweaks.grain} />)
   }
+  if (fxaa) effects.push(<primitive key="fxaa" object={fxaa} />)
 
   return (
-    <EffectComposer multisampling={tier === 'high' ? 4 : 2} enableNormalPass={false}>
+    <EffectComposer multisampling={tier === 'high' ? 4 : 0} enableNormalPass={false}>
       {effects}
     </EffectComposer>
   )
