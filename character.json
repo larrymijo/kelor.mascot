@@ -226,7 +226,7 @@
       "maxPitchDeg": 25,
       "lambda": 5
     },
-    "idle": { "returnToCameraAfterS": 4, "lookAroundIntervalS": [2.5, 5] },
+    "idle": { "returnToCameraAfterS": 4, "lookAroundIntervalS": [2.5, 5], "glanceHoldS": 0.8 },
     "blink": {
       "_doc": "Eyelid geometry is authored open in the bind pose. A positive rotation of closedAngleDeg about the eyelid bone local +X closes it.",
       "bones": ["eyelid_L", "eyelid_R"],
@@ -234,6 +234,19 @@
       "durationS": 0.15,
       "doubleBlinkChance": 0.15,
       "closedAngleDeg": 72
+    }
+  },
+
+  "life": {
+    "_doc": "Secondary motion layered after the gaze. The tail is a damped spring per link, pushed by the hips: turning swings it the other way, rising drops it. Frequency in rad/s, gains in seconds of lag per rad/s (yaw) and per m/s of vertical speed (pitch).",
+    "tail": {
+      "bones": ["tail_01", "tail_02", "tail_03", "tail_04"],
+      "frequency": 9,
+      "dampingRatio": 0.45,
+      "yawGain": 0.12,
+      "pitchGain": 0.2,
+      "falloff": 1.35,
+      "maxAngleDeg": 25
     }
   },
 

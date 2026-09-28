@@ -1,6 +1,7 @@
 'use client'
 
 import { button, Leva, useControls } from 'leva'
+import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { character } from '@/lib/character'
 import { QUALITY_TIERS, type QualityTier } from '@/lib/quality/detect'
@@ -50,6 +51,22 @@ export default function DebugPanel() {
       ]),
     ),
   })
+
+  const [, setBehaviour] = useControls('Behaviour', () => ({
+    attention: { value: useScene.getState().attention, editable: false },
+    gaze: {
+      value: useScene.getState().gazeEnabled,
+      onChange: (value: boolean) => useScene.getState().setGazeEnabled(value),
+    },
+    blink: button(() => useScene.getState().requestBlink()),
+  }))
+  useEffect(
+    () =>
+      useScene.subscribe((state, previous) => {
+        if (state.attention !== previous.attention) setBehaviour({ attention: state.attention })
+      }),
+    [setBehaviour],
+  )
 
   // Portal to <body>: the stage wrapper is pointer-events-none and sits under the hero text.
   return createPortal(<Leva collapsed={false} titleBar={{ title: 'KELOR debug' }} />, document.body)

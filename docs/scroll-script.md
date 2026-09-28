@@ -9,6 +9,7 @@ The cinematic, scroll-driven experience, act by act. This is a **template**: eve
 - **Copy** is Spanish and lives in real HTML in `src/components/sections`, never inside the canvas.
 - Every act needs a **reduced-motion** variant and a **mobile** variant, even if it is "same as desktop".
 - Every act ends with a **checkpoint**: a scroll position that the review tooling captures and a pass/fail criterion.
+- **Director state** is one of the states in `src/lib/behaviour/director.ts`: `egg`, `hatch`, `tracking` or `scroll`. Phase 5 implements the first three; acts that pose Kelo for the camera use `scroll`, which phase 6 adds. **Gaze** names the attention to use: `camera`, `pointer`, `cta` or a fixed point.
 
 ## Global settings
 

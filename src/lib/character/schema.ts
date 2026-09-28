@@ -174,6 +174,7 @@ export const characterSchema = z
       idle: z.strictObject({
         returnToCameraAfterS: z.number().positive(),
         lookAroundIntervalS: range,
+        glanceHoldS: z.number().positive().max(5),
       }),
       blink: z.strictObject({
         ...docShape,
@@ -182,6 +183,19 @@ export const characterSchema = z
         durationS: z.number().positive().max(1),
         doubleBlinkChance: z.number().min(0).max(1),
         closedAngleDeg: degrees(90),
+      }),
+    }),
+
+    life: z.strictObject({
+      ...docShape,
+      tail: z.strictObject({
+        bones: z.array(boneName).min(1),
+        frequency: z.number().positive().max(60),
+        dampingRatio: z.number().positive().max(2),
+        yawGain: z.number().min(0).max(1),
+        pitchGain: z.number().min(0).max(1),
+        falloff: z.number().min(1).max(3),
+        maxAngleDeg: degrees(90),
       }),
     }),
 
@@ -307,6 +321,7 @@ export const characterSchema = z
     if (Math.abs(shareSum - 1) > 1e-6) {
       issue(['gaze', 'headChain', 'links'], `Shares must add up to 1 (got ${shareSum})`)
     }
+    c.life.tail.bones.forEach((b, i) => requireBone(['life', 'tail', 'bones', i], b))
 
     // Meshes -> materials -> textures.
     const materials = new Set(c.materials.required.map((m) => m.name))

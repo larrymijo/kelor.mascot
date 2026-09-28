@@ -1,9 +1,10 @@
 /**
  * Scene state shared by the stage components. Lives in the lazily loaded 3D
- * chunk only; the HTML side talks to the stage through callbacks. This is the
- * seed of the phase 5 director.
+ * chunk only; the HTML side talks to the stage through callbacks. The
+ * director's decisions are mirrored here for the debug panel and the tests.
  */
 import { create } from 'zustand'
+import type { Attention, DirectorState } from '@/lib/behaviour/director'
 import type { QualityTier } from '@/lib/quality/detect'
 import { initialBootState, type BootState } from '@/lib/scene/boot'
 import type { ExpressionName } from './mascot/MascotRig'
@@ -45,9 +46,18 @@ interface SceneState {
   loadProgress: number
   boot: BootState
   expression: ExpressionName
-  /** Clip requested from outside the boot sequence (debug panel, later the director). */
+  /** Clip requested from outside the boot sequence (the debug panel). */
   clipRequest: { name: string; id: number } | null
   tweaks: Tweaks
+  /** Mirror of the director: where Kelo looks and which state it is in. */
+  attention: Attention
+  directorState: DirectorState
+  /** Clip currently playing on the rig. */
+  clip: string | null
+  /** Debug switch for the gaze layer. */
+  gazeEnabled: boolean
+  /** Bumped by the debug panel to ask for a blink. */
+  blinkRequest: number
 
   initTier: (tier: QualityTier) => void
   setTier: (tier: QualityTier) => void
@@ -60,6 +70,10 @@ interface SceneState {
   setExpression: (expression: ExpressionName) => void
   playClip: (name: string) => void
   setTweaks: (tweaks: Partial<Tweaks>) => void
+  setDirector: (attention: Attention, directorState: DirectorState) => void
+  setClip: (clip: string | null) => void
+  setGazeEnabled: (value: boolean) => void
+  requestBlink: () => void
 }
 
 export const useScene = create<SceneState>()((set) => ({
@@ -74,6 +88,11 @@ export const useScene = create<SceneState>()((set) => ({
   expression: 'neutral',
   clipRequest: null,
   tweaks: defaultTweaks,
+  attention: 'camera',
+  directorState: 'egg',
+  clip: null,
+  gazeEnabled: true,
+  blinkRequest: 0,
 
   initTier: (tier) => set({ bootTier: tier, tier, tierLocked: false }),
   setTier: (tier) => set((s) => (s.tierLocked ? s : { tier })),
@@ -86,4 +105,13 @@ export const useScene = create<SceneState>()((set) => ({
   setExpression: (expression) => set({ expression }),
   playClip: (name) => set((s) => ({ clipRequest: { name, id: (s.clipRequest?.id ?? 0) + 1 } })),
   setTweaks: (tweaks) => set((s) => ({ tweaks: { ...s.tweaks, ...tweaks } })),
+  setDirector: (attention, directorState) =>
+    set((s) =>
+      s.attention === attention && s.directorState === directorState
+        ? s
+        : { attention, directorState },
+    ),
+  setClip: (clip) => set((s) => (s.clip === clip ? s : { clip })),
+  setGazeEnabled: (gazeEnabled) => set({ gazeEnabled }),
+  requestBlink: () => set((s) => ({ blinkRequest: s.blinkRequest + 1 })),
 }))
