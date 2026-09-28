@@ -26,7 +26,7 @@ import { boneSegments, isProcedural } from '../assembly/skinning.mjs'
 import { buildModel } from '../build-model.mjs'
 import { validateGlb } from '../validate.mjs'
 import { fitSkeleton, measureLandmarks } from './landmarks.mjs'
-import { compressModel } from './compress.mjs'
+import { compressModel, compressTextures } from './compress.mjs'
 import { normalizeSource, readPositions } from './normalize.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
@@ -157,13 +157,25 @@ async function main(argv) {
       const reports = {}
       for (const tier of TIERS) {
         const file = join(ROOT, contract.files[tier])
-        const { bytes, report } = await compressModel({
-          bytes: new Uint8Array(readFileSync(file)),
+        const originalKB = Math.round(readFileSync(file).byteLength / 1024)
+        let bytes = new Uint8Array(readFileSync(file))
+        let textures
+        // Textures first, so the Meshopt writer lays out the final buffers.
+        if (fit.compress.textures[tier] === 'ktx2') {
+          const result = await compressTextures({ bytes, log })
+          bytes = result.bytes
+          textures = result.report.textures
+          for (const t of textures)
+            log(`  ${t.name}: ${t.beforeKB} -> ${t.afterKB} kB (${t.encode})`)
+        }
+        const { bytes: out, report } = await compressModel({
+          bytes,
           level: fit.compress.meshoptLevel,
         })
-        writeFileSync(file, bytes)
-        reports[tier] = report
-        log(`${tier}: ${report.beforeKB} -> ${report.afterKB} kB (${report.savedPercent}% smaller)`)
+        writeFileSync(file, out)
+        reports[tier] = { ...report, beforeKB: originalKB, textures }
+        const saved = Math.round((1 - report.afterKB / originalKB) * 100)
+        log(`${tier}: ${originalKB} -> ${report.afterKB} kB (${saved}% smaller)`)
       }
       return reports
     })

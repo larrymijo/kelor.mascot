@@ -29,7 +29,7 @@
   "compress": {
     "_doc": "Applied to both tiers after assembly. Meshopt quantises the attributes and stores them with EXT_meshopt_compression, whose decoder ships inside three-stdlib. The quantisation volume is scene-wide so the contract's single skin is not split one per mesh. textures picks the container Blender bakes into per tier: the lite tier paints first, so it carries WebP and never waits on a transcoder.",
     "meshoptLevel": "high",
-    "textures": { "full": "jpeg", "lite": "webp" }
+    "textures": { "full": "ktx2", "lite": "webp" }
   },
 
   "rig": {
