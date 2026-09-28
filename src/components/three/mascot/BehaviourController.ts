@@ -34,6 +34,13 @@ const HIT = {
   top: new Vector3(0, 0.88 * H, 0),
   radius: 0.3 * H,
 }
+/**
+ * Looking at the camera aims at a point at least this far from the head (times
+ * Kelo's scale), on the same line. In the close-ups both eyes converged on the
+ * nearby lens and he looked cross-eyed; a far point keeps them parallel and
+ * still meets the viewer's eyes. The head turns exactly as before.
+ */
+const CAMERA_GAZE_MIN_M = 3
 
 export interface StepContext {
   camera: Camera
@@ -51,6 +58,7 @@ const _ray = new Ray()
 const _plane = new Plane(new Vector3(0, 0, 1), 0)
 const _wanted = new Vector3()
 const _head = new Vector3()
+const _scale = new Vector3()
 
 export class BehaviourController {
   readonly target = new Vector3()
@@ -198,8 +206,11 @@ export class BehaviourController {
       case 'glance':
         this.onPlane(out.glance.x, out.glance.y, ctx)
         break
-      default:
-        ctx.camera.getWorldPosition(_wanted)
+      default: {
+        const scale = head ? head.getWorldScale(_scale).y : 1
+        ctx.camera.getWorldPosition(_wanted).sub(_head)
+        _wanted.setLength(Math.max(_wanted.length(), CAMERA_GAZE_MIN_M * scale)).add(_head)
+      }
     }
   }
 
