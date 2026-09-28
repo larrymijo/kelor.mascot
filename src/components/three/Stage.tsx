@@ -8,6 +8,7 @@ import { character } from '@/lib/character'
 import { detectQualityTier, type QualityTier } from '@/lib/quality/detect'
 import { bootTimings, stepBoot, type BootPhase } from '@/lib/scene/boot'
 import { CameraRig, FOV } from './CameraRig'
+import { CinematicDriver } from './cinematic/CinematicDriver'
 import { Effects } from './Effects'
 import { Floor } from './Floor'
 import { disposeKtx2Loader } from './loaders'
@@ -170,8 +171,9 @@ export default function Stage({
         }}
       >
         <color attach="background" args={[character.colors.brandMono.ink900]} />
+        <CinematicDriver />
         <CameraRig />
-        <StudioLights shadows={boot.shadows} shadowMapSize={bootTier === 'high' ? 1024 : 512} />
+        <StudioLights shadows={boot.shadows} shadowMapSize={bootTier === 'high' ? 2048 : 1024} />
         <Floor shadows={boot.shadows} />
         {children}
         <Effects tier={tier} />

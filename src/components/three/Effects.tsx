@@ -18,6 +18,10 @@ import { useScene } from './store'
  * Post-processing per quality tier (character.json quality.tiers). The low
  * tier skips the composer entirely and relies on renderer tone mapping; the
  * others finish with an AgX tone-mapping pass so every tier looks alike.
+ *
+ * Antialiasing is MSAA on the composer: 4x on high, 2x on medium. SMAA was
+ * tried and dropped: postprocessing embeds its lookup texture as a 67 kB
+ * base64 image, which broke the deferred 3D budget on its own.
  */
 export function Effects({ tier }: { tier: QualityTier }) {
   const tweaks = useScene((s) => s.tweaks)
@@ -56,7 +60,7 @@ export function Effects({ tier }: { tier: QualityTier }) {
   }
 
   return (
-    <EffectComposer multisampling={tier === 'high' ? 4 : 0} enableNormalPass={false}>
+    <EffectComposer multisampling={tier === 'high' ? 4 : 2} enableNormalPass={false}>
       {effects}
     </EffectComposer>
   )

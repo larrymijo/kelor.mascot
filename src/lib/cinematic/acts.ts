@@ -68,6 +68,10 @@ export interface ChannelSet {
   contactText: Channel
   /** A dip to black used for cuts. */
   fade: Channel
+  /** Multiplier on the warm key light. */
+  keyLight: Channel
+  /** Multiplier on the purple rim light. */
+  rimLight: Channel
 }
 
 export interface Span<T> {
@@ -276,6 +280,28 @@ export const DESKTOP: Script = {
       [0.89, 1],
     ],
     fade: HOLD(0),
+    keyLight: [
+      [0, 0.8],
+      [0.04, 1],
+      [0.16, 0.7],
+      [0.28, 1],
+      [0.53, 1],
+      [0.59, 1.1],
+      [0.79, 1.1],
+      [0.85, 1.15],
+      [1, 1.15],
+    ],
+    rimLight: [
+      [0, 1],
+      [0.04, 1],
+      [0.16, 1.7],
+      [0.28, 1.3],
+      [0.53, 1.3],
+      [0.59, 1],
+      [0.79, 1.2],
+      [0.85, 1.5],
+      [1, 1.5],
+    ],
   },
 }
 
@@ -325,6 +351,8 @@ export const REDUCED_MOTION: Script = {
     meetText: stills([0, 0, 1, 0, 0, 0]),
     contactText: stills([0, 0, 0, 0, 0, 1]),
     fade: dip(),
+    keyLight: stills([0.8, 1, 1, 1.1, 1.1, 1.15]),
+    rimLight: stills([1, 1, 1.3, 1, 1.2, 1.5]),
   },
 }
 
@@ -342,6 +370,8 @@ export const STEPPED: ReadonlySet<keyof ChannelSet> = new Set([
   'logo',
   'meetText',
   'contactText',
+  'keyLight',
+  'rimLight',
 ])
 
 /** Phones and portrait screens: no lens shift, and bars that peak at 4% instead of 11%. */
