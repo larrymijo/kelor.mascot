@@ -6,6 +6,7 @@
  * useFrame priority, which keeps R3F's own rendering on.
  */
 import { useFrame } from '@react-three/fiber'
+import { Vector3 } from 'three'
 import { scrollProgress } from '@/lib/cinematic/progress'
 import { createSample, sampleTimeline, type Variant } from '@/lib/cinematic/timeline'
 import { useScene } from '../store'
@@ -14,6 +15,8 @@ export const cinematic = {
   sample: sampleTimeline(0, 'desktop', createSample()),
   progress: 0,
   variant: 'desktop' as Variant,
+  /** Kelo's mouth in the world, written by the mascot each frame (the gulp aims at it). */
+  mouth: new Vector3(0, 0.8, 0.36),
 }
 
 /** Before every other frame callback. */

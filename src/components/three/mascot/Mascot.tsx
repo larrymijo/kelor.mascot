@@ -7,16 +7,15 @@ import type { AnimationClip, Group, Object3D } from 'three'
 import { character } from '@/lib/character'
 import { degToRad, smoothstep } from '@/lib/math/damp'
 import type { BootPhase } from '@/lib/scene/boot'
+import { crossedCues } from '@/lib/cinematic/timeline'
 import { firstPaintUrl, upgradeUrl } from '@/lib/scene/model'
 import { readConnection, shouldUpgrade } from '@/lib/scene/upgrade'
+import { cinematic } from '../cinematic/CinematicDriver'
 import { loadKtx2Module, useKtx2Extension, warmUp } from '../loaders'
 import { useScene } from '../store'
 import { BehaviourController } from './BehaviourController'
 import { MascotRig, type RigSnapshot } from './MascotRig'
 import { useBehaviourInput } from './useBehaviourInput'
-
-/** Three-quarter turn towards the key light, so the tail and plates read; the gaze layer turns the head back to the viewer. */
-const POSE_YAW = degToRad(22)
 
 const easeOutBack = (t: number) => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2
 
@@ -83,6 +82,7 @@ export function Mascot() {
   const lastRequest = useRef(0)
   const lastBlink = useRef(0)
   const lastExpression = useRef<string | null>(null)
+  const lastProgress = useRef(0)
   const time = useRef(0)
   // Outlives rig swaps: the director, blink rhythm and gaze target carry on.
   const [behaviour] = useState(() => new BehaviourController())
@@ -128,12 +128,22 @@ export function Mascot() {
       lastBlink.current = scene.blinkRequest
       behaviour.requestBlink()
     }
+    const { sample, progress, variant } = cinematic
+    // One-shot moments of the scroll script, when scrolling forwards across them.
+    if (scene.boot.phase === 'ready') {
+      for (const cue of crossedCues(lastProgress.current, progress, variant)) {
+        if (cue.kind === 'blink') behaviour.requestBlink()
+        else rig.play(cue.clip)
+      }
+    }
+    lastProgress.current = progress
     const out = behaviour.step(dt, rig, {
       camera: state.camera,
       size: state.size,
       bootPhase: scene.boot.phase,
       reducedMotion: scene.reducedMotion,
       gazeEnabled: scene.gazeEnabled,
+      script: sample.act === 'hero' ? null : { gaze: sample.gaze, expression: sample.expression },
     })
     // Mirror the director into the store: edge-triggered, so the debug panel can override.
     if (out.expression !== lastExpression.current) {
@@ -147,7 +157,9 @@ export function Mascot() {
       const hatch = scene.boot.phase === 'egg' ? 0 : scene.boot.hatchProgress
       root.current.visible = scene.boot.phase !== 'egg'
       const reveal = scene.reducedMotion ? 1 : easeOutBack(smoothstep(0, 0.6, hatch))
-      root.current.scale.setScalar(0.55 + 0.45 * reveal)
+      root.current.scale.setScalar((0.55 + 0.45 * reveal) * sample.scale)
+      root.current.rotation.y = degToRad(sample.bodyYawDeg)
+      rig.mouthWorld(cinematic.mouth)
     }
 
     if (scene.clipRequest && scene.clipRequest.id !== lastRequest.current) {
@@ -157,13 +169,13 @@ export function Mascot() {
 
     rig.setExpression(scene.expression)
     const breathe = scene.reducedMotion ? 1 : 0.75 + 0.25 * Math.sin(time.current * 2.2)
-    rig.setPlateGlow(scene.tweaks.plateGlow * breathe)
+    rig.setPlateGlow(scene.tweaks.plateGlow * breathe * sample.plateGlow)
     rig.setFinish(scene.tweaks)
   })
 
   return (
     <>
-      <group ref={root} visible={false} rotation-y={POSE_YAW}>
+      <group ref={root} visible={false}>
         <primitive object={rig.scene} />
       </group>
       {upgrade && phase === 'ready' && !full && (

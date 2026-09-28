@@ -10,8 +10,7 @@
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import { Vector3 } from 'three'
-import { MOUTH } from '@/lib/cinematic/acts'
-import { degToRad, smoothstep } from '@/lib/math/damp'
+import { smoothstep } from '@/lib/math/damp'
 import { useScene } from '../store'
 import { cinematic } from './CinematicDriver'
 
@@ -45,16 +44,17 @@ export function OverlayDriver() {
 
     // The iris: a circle centred on the scaled, turned mouth, projected to the screen.
     if (sample.iris > 0) {
-      const yaw = degToRad(sample.bodyYawDeg)
-      const z = MOUTH.z * sample.scale
-      _mouth.set(Math.sin(yaw) * z, MOUTH.y * sample.scale, Math.cos(yaw) * z).project(state.camera)
+      _mouth.copy(cinematic.mouth).project(state.camera)
       const { width, height } = state.size
       const x = ((_mouth.x + 1) / 2) * width
       const y = ((1 - _mouth.y) / 2) * height
       set('--iris-on', '1')
       set('--iris-x', `${x.toFixed(1)}px`)
       set('--iris-y', `${y.toFixed(1)}px`)
-      set('--iris-r', `${((1 - sample.iris) * Math.hypot(width, height)).toFixed(1)}px`)
+      // Past fully closed, the edge moves beyond the centre so no soft dot is left.
+      const feather = 0.03 * Math.max(width, height)
+      const radius = (1 - sample.iris) * Math.hypot(width, height) - sample.iris * feather
+      set('--iris-r', `${radius.toFixed(1)}px`)
     } else {
       set('--iris-on', '0')
     }

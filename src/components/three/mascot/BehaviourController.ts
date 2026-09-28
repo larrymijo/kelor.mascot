@@ -16,6 +16,7 @@ import {
   createDirector,
   directorSettings,
   stepDirector,
+  type DirectorInput,
   type DirectorOutput,
   type PointerKind,
 } from '@/lib/behaviour/director'
@@ -41,6 +42,8 @@ export interface StepContext {
   bootPhase: BootPhase
   reducedMotion: boolean
   gazeEnabled: boolean
+  /** What the scroll script imposes past the first screen, or null. */
+  script: DirectorInput['script']
 }
 
 // Scratch objects: step() runs once per frame, never re-entrantly.
@@ -143,6 +146,7 @@ export class BehaviourController {
         tapS: this.tapS,
         reducedMotion: ctx.reducedMotion,
         touchFirst: this.touchFirst,
+        script: ctx.script,
       },
       this.settings,
       this.random,

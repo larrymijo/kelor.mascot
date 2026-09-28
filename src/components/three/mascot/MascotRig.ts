@@ -33,6 +33,7 @@ import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import { aimAngles, clampAngles, dampAngles, chainShares, type Angles } from '@/lib/behaviour/gaze'
 import { createTail, stepTail, type TailLink } from '@/lib/behaviour/tail'
 import { character } from '@/lib/character'
+import { MOUTH } from '@/lib/cinematic/acts'
 import { applyFinish, tuneFinish, type Finish } from './finish'
 import { damp, degToRad } from '@/lib/math/damp'
 
@@ -118,6 +119,8 @@ export class MascotRig {
   private readonly lids: (Bone | undefined)[]
   private readonly tailBones: Bone[]
   private readonly hips?: Bone
+  /** The mouth in the head bone's space, so it follows every turn of the head. */
+  private readonly mouthLocal = new Vector3()
   private headAngles: Angles = { yaw: 0, pitch: 0 }
   private eyeAngles: Angles[]
   private weight = 0
@@ -160,6 +163,11 @@ export class MascotRig {
     )
     this.tailBones = found(life.tail.bones)
     this.hips = this.bones.get('hips')
+    if (this.head) {
+      // At bind the scene root is the model's origin: place the mouth, then keep it in head space.
+      this.scene.updateMatrixWorld(true)
+      this.head.worldToLocal(this.mouthLocal.set(0, MOUTH.y, MOUTH.z))
+    }
     for (const bone of [...this.chain, ...this.eyes, ...this.lids, ...this.tailBones]) {
       if (bone) this.bind.set(bone, bone.quaternion.clone())
     }
@@ -173,6 +181,9 @@ export class MascotRig {
     this.faceMap =
       (findMaterial(this.scene, 'face') as MeshStandardMaterial | undefined)?.map ?? undefined
     this.plates = findMaterial(this.scene, 'plates') as MeshStandardMaterial | undefined
+    // The contract's pale glow colour burns out to white under bloom and AgX;
+    // a saturated violet keeps the plates reading as purple crystals.
+    this.plates?.emissive.set(character.colors.mascot['300'])
     this.mixer.addEventListener('finished', this.onFinished)
   }
 
@@ -272,6 +283,13 @@ export class MascotRig {
     this.expression = name
     const [col, row] = cells[name] ?? cells[character.expressions.default as ExpressionName]!
     this.faceMap.offset.set(col / grid[0], row / grid[1])
+  }
+
+  /** Where the mouth is in the world right now, whatever the head and the stage are doing. */
+  mouthWorld(out: Vector3) {
+    if (!this.head) return out.set(0, MOUTH.y, MOUTH.z)
+    this.head.updateWorldMatrix(true, false)
+    return this.head.localToWorld(out.copy(this.mouthLocal))
   }
 
   setPlateGlow(intensity: number) {

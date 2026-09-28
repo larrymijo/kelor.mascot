@@ -168,7 +168,7 @@ export const DESKTOP: Script = {
     mouthFocus: [
       [0, 0],
       [0.04, 0],
-      [0.14, 1],
+      [0.09, 1],
       [0.24, 1],
       [0.31, 0],
     ],

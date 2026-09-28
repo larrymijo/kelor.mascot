@@ -4,7 +4,10 @@
  * plays, which face it pulls and when it reacts. It owns no three.js objects
  * and mutates one memory object, so it is unit tested and allocation-free.
  *
- *   egg ──▶ hatch ──▶ tracking ──▶ scroll (phase 6, not entered yet)
+ *   egg ──▶ hatch ──▶ tracking ──▶ scroll
+ *
+ * scroll is the cinematic past the first screen: the scroll script may then
+ * impose Kelo's attention and expression, and he never plays look_around.
  *
  * Attention in tracking, highest priority first: a hovered or focused
  * data-gaze-target (the CTA), an active pointer, then idle. Idle faces the
@@ -32,6 +35,14 @@ export interface DirectorInput {
   reducedMotion: boolean
   /** Coarse primary pointer: a phone or tablet, even before the first touch. */
   touchFirst: boolean
+  /**
+   * Past the first screen, what the scroll script imposes (docs/scroll-script.md);
+   * null keeps the director on its own. A null field leaves that choice free.
+   */
+  script?: {
+    gaze: 'camera' | 'pointer' | 'cta' | 'off' | null
+    expression: Expression | null
+  } | null
 }
 
 export interface DirectorOutput {
@@ -137,6 +148,19 @@ export function stepDirector(
     return out
   }
 
+  const script = input.script ?? null
+  if (script) out.state = 'scroll'
+  // The script imposes a fixed look: at the camera, or no gaze at all.
+  if (script?.gaze === 'camera' || script?.gaze === 'off') {
+    out.attention = 'camera'
+    out.idleClip = 'idle'
+    out.gazeWeight = script.gaze === 'off' ? 0 : 1
+    memory.idleSinceS = -Infinity
+    memory.glanceUntilS = -Infinity
+    out.expression = script.expression ?? (nowS < memory.surprisedUntilS ? 'surprised' : 'happy')
+    return out
+  }
+
   const pointerActive =
     input.pointer !== null && nowS - input.pointer.lastActiveS < settings.returnToCameraAfterS
   const engaged = input.ctaActive || pointerActive
@@ -156,7 +180,7 @@ export function stepDirector(
     if (input.reducedMotion) {
       out.attention = 'camera'
       out.idleClip = settings.reducedMotionIdleClip
-    } else if (touch) {
+    } else if (touch && !script) {
       out.attention = 'camera'
       out.idleClip = 'look_around'
     } else {
@@ -174,6 +198,6 @@ export function stepDirector(
   }
 
   out.gazeWeight = out.idleClip === 'look_around' ? LOOK_AROUND_GAZE_WEIGHT : 1
-  out.expression = nowS < memory.surprisedUntilS ? 'surprised' : 'happy'
+  out.expression = script?.expression ?? (nowS < memory.surprisedUntilS ? 'surprised' : 'happy')
   return out
 }
