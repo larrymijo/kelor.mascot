@@ -362,7 +362,7 @@ def main():
         fmt = map_format(fit, tier)
         ext = "webp" if fmt == "WEBP" else "jpg"
 
-        base = new_image(f"basecolor_{tier}", size, non_color=False)
+        base = new_image(f"basecolor_{tier}", fit["bake"]["baseColorSize"][tier], non_color=False)
         bake("DIFFUSE", low, base, high=source, samples=4, fit=fit)
         save_image(base, os.path.join(folder, f"basecolor.{ext}"), fmt, fit["bake"]["jpegQuality"])
 

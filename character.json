@@ -32,9 +32,9 @@
   },
 
   "budgets": {
-    "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. File sizes are compressed (Meshopt geometry; WebP on lite, KTX2 on full) and set in phase 4 about 10 per cent above the measured build. Draw calls = mesh primitives rendered once (shadow passes excluded).",
+    "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. File sizes are compressed (Meshopt geometry; WebP on lite, KTX2 on full). Lite keeps its phase 4 budget; full returned to 1500 kB in phase 6 for a 2048 px base colour and a 1024 px normal map, since it streams in after first paint. Draw calls = mesh primitives rendered once (shadow passes excluded).",
     "full": {
-      "maxFileKB": 700,
+      "maxFileKB": 1500,
       "maxTriangles": 24000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,

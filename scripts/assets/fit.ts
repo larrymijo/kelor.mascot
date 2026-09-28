@@ -26,6 +26,7 @@ export const fitSchema = z
     bake: z.strictObject({
       ...docShape,
       size: tiers(z.int().refine((n) => n > 0 && (n & (n - 1)) === 0, 'Power of two')),
+      baseColorSize: tiers(z.int().refine((n) => n > 0 && (n & (n - 1)) === 0, 'Power of two')),
       normalSize: z.int().refine((n) => n > 0 && (n & (n - 1)) === 0, 'Power of two'),
       samples: z.int().min(1).max(256),
       cageExtrusionM: z.number().positive().max(0.2),
