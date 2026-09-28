@@ -160,6 +160,8 @@ export function Mascot() {
       root.current.scale.setScalar((0.55 + 0.45 * reveal) * sample.scale)
       root.current.rotation.y = degToRad(sample.bodyYawDeg)
       rig.mouthWorld(cinematic.mouth)
+      rig.eyesWorld(cinematic.focus.eyes)
+      rig.platesWorld(cinematic.focus.plates)
     }
 
     if (scene.clipRequest && scene.clipRequest.id !== lastRequest.current) {

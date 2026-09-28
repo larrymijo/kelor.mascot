@@ -17,6 +17,8 @@ export const cinematic = {
   variant: 'desktop' as Variant,
   /** Kelo's mouth in the world, written by the mascot each frame (the gulp aims at it). */
   mouth: new Vector3(0, 0.8, 0.36),
+  /** Depth-of-field focus points for the close-ups, written by the mascot. */
+  focus: { eyes: new Vector3(0, 0.93, 0.2), plates: new Vector3(0, 0.62, -0.2) },
 }
 
 /** Before every other frame callback. */

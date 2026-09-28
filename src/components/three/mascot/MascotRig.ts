@@ -292,6 +292,20 @@ export class MascotRig {
     return this.head.localToWorld(out.copy(this.mouthLocal))
   }
 
+  /** Midpoint between the eyes in the world, for the close-up's focus. */
+  eyesWorld(out: Vector3) {
+    if (this.eyes.length === 0) return out.set(0, 0.93, 0.2)
+    out.set(0, 0, 0)
+    for (const eye of this.eyes) out.add(eye.getWorldPosition(_world))
+    return out.divideScalar(this.eyes.length)
+  }
+
+  /** A point on the plates along the back, in the world, for the close-up's focus. */
+  platesWorld(out: Vector3) {
+    this.scene.updateWorldMatrix(true, false)
+    return this.scene.localToWorld(out.set(0, 0.62, -0.2))
+  }
+
   setPlateGlow(intensity: number) {
     if (this.plates) this.plates.emissiveIntensity = intensity
   }
