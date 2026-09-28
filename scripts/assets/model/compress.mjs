@@ -45,13 +45,13 @@ const KTX_PROFILES = {
 
 const EXTENSION_OF = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }
 
-/** KTX-Software 4.4 argument list for one texture. */
+/** Argument list for one texture, in KTX-Software 4.4.2 spelling (later releases rename the UASTC codec). */
 export function ktxArgs({ encode, srgb }, input, output) {
   const args = ['create', '--format', srgb ? 'R8G8B8A8_SRGB' : 'R8G8B8A8_UNORM']
   if (!srgb) args.push('--assign-tf', 'linear')
   args.push('--generate-mipmap')
   if (encode === 'uastc') {
-    args.push('--encode', 'uastc-ldr-4x4', '--uastc-quality', '2', '--zstd', '18')
+    args.push('--encode', 'uastc', '--uastc-quality', '2', '--zstd', '18')
   } else {
     args.push('--encode', 'basis-lz', '--clevel', '4', '--qlevel', '200')
   }
@@ -89,7 +89,7 @@ export async function compressTextures({
       try {
         execFileSync(ktxBin, args, { stdio: 'pipe' })
       } catch (error) {
-        const detail = error.stderr?.toString().trim() || error.message
+        const detail = (error.stderr?.toString().trim() || error.message).replace(/\.+$/, '')
         throw new Error(`ktx failed on ${name}: ${detail}. Set KTX to the KTX-Software binary.`)
       }
       const encoded = new Uint8Array(readFileSync(output))

@@ -64,7 +64,7 @@ describe('ktxArgs', () => {
     const data = ktxArgs({ encode: 'uastc', srgb: false }, 'n.jpg', 'n.ktx2')
     expect(data).toContain('R8G8B8A8_UNORM')
     expect(data.join(' ')).toContain('--assign-tf linear')
-    expect(data).toContain('uastc-ldr-4x4')
+    expect(data.join(' ')).toContain('--encode uastc')
 
     // Mipmaps must live in the file: a compressed texture cannot build them later.
     for (const args of [colour, data]) expect(args).toContain('--generate-mipmap')
