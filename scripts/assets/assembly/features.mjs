@@ -64,7 +64,11 @@ export function eyelid(center, openTiltDeg, detail) {
   return g
 }
 
-/** Catchlights: a main and a small secondary disc on the viewer's upper left. */
+/**
+ * Catchlights: a main and a small secondary disc on the viewer's upper left.
+ * The main one sits low enough that the open upper lid never clips it into a
+ * white flake at the rim.
+ */
 export function highlights(center, detail) {
   const onSurface = (dx, dy) => Math.sqrt(EYE.radius ** 2 - dx ** 2 - dy ** 2) + 0.004
   const disc = (dx, dy, r) => {
@@ -72,7 +76,7 @@ export function highlights(center, detail) {
     g.translate(center[0] + dx, center[1] + dy, center[2] + onSurface(dx, dy))
     return g
   }
-  return [disc(-0.028, 0.03, 0.019), disc(0.02, -0.024, 0.008)]
+  return [disc(-0.03, 0.018, 0.018), disc(0.02, -0.024, 0.008)]
 }
 
 /**
@@ -80,7 +84,8 @@ export function highlights(center, detail) {
  * @param {{ at: number[], size: number, tiltDeg: number }} plate position, radius and tilt about X
  */
 export function plate({ at, size, tiltDeg }) {
-  const g = new THREE.CylinderGeometry(size, size, 0.022, 6, 1, false)
+  // 32 mm: thick enough to read as a crystal, not a paper cut-out, in the close-ups.
+  const g = new THREE.CylinderGeometry(size, size, 0.032, 6, 1, false)
   g.rotateZ(Math.PI / 2)
   g.rotateX(THREE.MathUtils.degToRad(tiltDeg))
   g.translate(...at)

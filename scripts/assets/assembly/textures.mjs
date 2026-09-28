@@ -32,7 +32,8 @@ export function faceAtlas(colors, expressions, size, layout) {
   const canvas = new Canvas(size, size)
   const mouth = hexToRgb(colors.brandMono.ink900)
   const tongue = [233, 142, 196]
-  const blush = hexToRgb(colors.mascot['300'])
+  // A soft rose: lavender blush on violet skin read as a pale smudge, like tears.
+  const blush = [240, 150, 205]
 
   const draw = (cellXY, paintCell) => {
     const [cx, cy] = cellXY
@@ -72,34 +73,49 @@ export function faceAtlas(colors, expressions, size, layout) {
           1,
           bounds,
         ),
+      // Out on the cheeks at mouth height, clear of the eyes, built from nested
+      // ellipses so it fades at the edge instead of ending in a hard patch.
       blush: (alpha) => {
-        for (const side of [-1, 1])
-          canvas.paint(
-            sdf.ellipse(px(0.105 * side * k), py(0.9 + oy), 0.032 * k * sx, 0.016 * k * sy),
-            blush,
-            alpha,
-            bounds,
-          )
+        for (const side of [-1, 1]) {
+          for (const [r, a] of [
+            [1, 0.25],
+            [0.78, 0.3],
+            [0.56, 0.35],
+            [0.34, 0.4],
+          ]) {
+            canvas.paint(
+              sdf.ellipse(
+                px(0.145 * side * k),
+                py(0.852 + oy),
+                0.03 * r * k * sx,
+                0.018 * r * k * sy,
+              ),
+              blush,
+              alpha * a,
+              bounds,
+            )
+          }
+        }
       },
     })
   }
 
   const cells = expressions.cells
   draw(cells.neutral, (p) => {
-    p.blush(0.45)
+    p.blush(0.5)
     p.smile(0, 0.862, 0.034, 0.018, 0.008)
   })
   draw(cells.happy, (p) => {
-    p.blush(0.75)
+    p.blush(0.7)
     p.halfEllipse(0, 0.858, 0.042, 0.03, mouth)
     p.ellipse(0, 0.838, 0.02, 0.009, tongue)
   })
   draw(cells.surprised, (p) => {
-    p.blush(0.3)
+    p.blush(0.35)
     p.ellipse(0, 0.845, 0.017, 0.022, mouth)
   })
   draw(cells.roar, (p) => {
-    p.blush(0.2)
+    p.blush(0.25)
     p.ellipse(0, 0.848, 0.05, 0.042, mouth)
     p.ellipse(0, 0.822, 0.028, 0.012, tongue)
   })
