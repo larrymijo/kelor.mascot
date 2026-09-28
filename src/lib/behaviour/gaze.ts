@@ -21,12 +21,22 @@ export function aimAngles(x: number, y: number, z: number, out: Angles): Angles 
   return out
 }
 
+/** Share of the limit that stays exactly linear. */
+export const SOFT_KNEE = 0.7
+
 /**
- * Soft limit: close to linear for small angles, easing into ±max instead of
- * stopping dead, so a head reaching its limit settles rather than snaps.
+ * Soft limit: exact up to 70% of ±max, so the gaze lands on targets well
+ * inside its range, then easing into the limit instead of stopping dead, so a
+ * head reaching it settles rather than snaps. Smooth at the knee: the tanh
+ * above it starts with slope 1.
  */
 export function softClamp(value: number, max: number) {
-  return max <= 0 ? 0 : max * Math.tanh(value / max)
+  if (max <= 0) return 0
+  const knee = max * SOFT_KNEE
+  const size = Math.abs(value)
+  if (size <= knee) return value
+  const room = max - knee
+  return Math.sign(value) * (knee + room * Math.tanh((size - knee) / room))
 }
 
 export function clampAngles(angles: Angles, maxYaw: number, maxPitch: number, out: Angles) {

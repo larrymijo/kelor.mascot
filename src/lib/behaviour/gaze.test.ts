@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { character } from '@/lib/character'
 import { degToRad } from '@/lib/math/damp'
-import { aimAngles, chainShares, clampAngles, dampAngles, softClamp, type Angles } from './gaze'
+import {
+  aimAngles,
+  chainShares,
+  clampAngles,
+  dampAngles,
+  SOFT_KNEE,
+  softClamp,
+  type Angles,
+} from './gaze'
 
 const angles = (): Angles => ({ yaw: 0, pitch: 0 })
 const deg = (radians: number) => (radians * 180) / Math.PI
@@ -36,9 +44,18 @@ describe('softClamp', () => {
     }
   })
 
-  it('is nearly linear for small angles and keeps the sign', () => {
-    expect(softClamp(degToRad(5), max)).toBeCloseTo(degToRad(5), 2)
-    expect(softClamp(-degToRad(5), max)).toBeCloseTo(-degToRad(5), 2)
+  it('is exact inside the knee, so the gaze lands on targets well within range', () => {
+    for (const v of [0, 0.1, -0.2, max * SOFT_KNEE, -max * SOFT_KNEE]) {
+      expect(softClamp(v, max)).toBe(v)
+    }
+  })
+
+  it('bends smoothly at the knee, with no kink', () => {
+    const knee = max * SOFT_KNEE
+    const h = 1e-6
+    const slopeBelow = (softClamp(knee, max) - softClamp(knee - h, max)) / h
+    const slopeAbove = (softClamp(knee + h, max) - softClamp(knee, max)) / h
+    expect(slopeAbove).toBeCloseTo(slopeBelow, 3)
   })
 
   it('never decreases, so the head never jumps back', () => {
