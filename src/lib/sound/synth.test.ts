@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSynth, crossedSounds } from './synth'
 
 describe('crossedSounds', () => {
-  it('plays the gulp going forwards only', () => {
-    expect(crossedSounds(0.19, 0.21)).toEqual(['gulp'])
-    expect(crossedSounds(0.21, 0.19)).toEqual([])
+  it('plays the bite and gulp going forwards only', () => {
+    expect(crossedSounds(0.17, 0.18)).toEqual(['gulp'])
+    expect(crossedSounds(0.18, 0.17)).toEqual([])
   })
 
   it('plays act whooshes in both directions', () => {

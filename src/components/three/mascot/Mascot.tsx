@@ -134,10 +134,13 @@ export function Mascot() {
     if (scene.boot.phase === 'ready') {
       for (const cue of crossedCues(lastProgress.current, progress, variant)) {
         if (cue.kind === 'blink') behaviour.requestBlink()
+        else if (cue.kind === 'bite') rig.bite()
         else rig.play(cue.clip)
       }
     }
     lastProgress.current = progress
+    // The script opens the jaw as he closes in on the viewer; behave() moves it.
+    rig.setJawScript(sample.jaw * character.jaw.maxOpenDeg)
     const out = behaviour.step(dt, rig, {
       camera: state.camera,
       size: state.size,
