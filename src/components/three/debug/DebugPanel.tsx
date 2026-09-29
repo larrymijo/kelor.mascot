@@ -44,6 +44,8 @@ export default function DebugPanel() {
       onChange: (expression: ExpressionName) => useScene.getState().setExpression(expression),
     },
     plateGlow: range('plateGlow', 0, 5),
+    skinCoat: range('skinCoat', 0, 1),
+    skinSheen: range('skinSheen', 0, 1),
     ...Object.fromEntries(
       character.clips.required.map((clip) => [
         `play ${clip.name}`,

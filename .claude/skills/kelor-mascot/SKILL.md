@@ -56,7 +56,8 @@ Purple is the accent over the monochrome logo base. Tokens (mirrored in `src/app
 
 - Separate geometry: two spheres in one `eyes` mesh, each weighted 100 % to `eye_L` / `eye_R`. Iris and pupil are in the `eyes_basecolor` texture.
 - Upper eyelids in one `eyelids` mesh, weighted to `eyelid_L` / `eyelid_R`, rotating closed by `gaze.blink.closedAngleDeg`.
-- Catchlights in `eye_highlights`: unlit quads weighted to `head`, so they stay fixed while the eyes rotate.
+- Catchlights in `eye_highlights`: unlit discs weighted to `head`, so they stay fixed while the eyes rotate. They sit on the iris of an eye looking at the viewer (the main one upper left, 14 mm, a small one lower right), clear of the open lid; on the white sclera a catchlight is invisible. At runtime they skip tone mapping so they stay pure white.
+- On medium and high tiers the eyes get a glassy clearcoat cornea and the skin a soft clearcoat and sheen, the vinyl-toy finish; low keeps the GLB's plain materials.
 - Eye and eyelid bones are **procedural**. Animation clips must never key them; the validator fails the GLB if they do.
 
 ## Expressions
@@ -85,7 +86,7 @@ Use these names exactly, in Blender, in the GLB and in code.
 
 |                       | lite             | full             |
 | --------------------- | ---------------- | ---------------- |
-| File size             | ≤ 250 kB         | ≤ 700 kB         |
+| File size             | ≤ 250 kB         | ≤ 1500 kB        |
 | Triangles             | ≤ 8 000          | ≤ 24 000         |
 | Bones                 | ≤ 32             | ≤ 32             |
 | Influences per vertex | ≤ 4              | ≤ 4              |
@@ -107,9 +108,9 @@ The real Kelo comes from the owner's image-to-3D source through `corepack pnpm b
 
 ## Runtime behaviour (phases 5 and 6)
 
-- **Gaze** is a layer applied after `AnimationMixer.update`, added on top of the clip pose, never replacing it. Eyes are fast (λ 14, ±35° yaw, ±25° pitch). Neck and head share the slow rotation (λ 5, ±40° yaw, ±25° pitch; shares 0.2 / 0.2 / 0.6). Damping is frame-rate independent: `x += (target - x) * (1 - exp(-λ·dt))`.
+- **Gaze** is a layer applied after `AnimationMixer.update`, added on top of the clip pose, never replacing it. Eyes are fast (λ 14, ±35° yaw, ±25° pitch). Neck and head share the slow rotation (λ 5, ±40° yaw, ±25° pitch; shares 0.2 / 0.2 / 0.6). Damping is frame-rate independent: `x += (target - x) * (1 - exp(-λ·dt))`. Looking at the camera aims at a point at least 3 m away (times his scale) on the same line, so the eyes stay parallel instead of crossing in the close-ups.
 - **Life**: breathing (`idle`), tail inertia, random blinks every 2 to 6 s, return to camera after 4 s without a pointer, look at the CTA on hover, hop (`jump`) on click. On touch devices it follows the finger and runs `look_around` when idle.
-- **Director**: state machine `egg → hatch → tracking → scroll pose`, blending clip weights. Implemented in phase 5 (`src/lib/behaviour/director.ts`); the scroll state waits for phase 6. The hop plays only when a click or tap lands on Kelo, and `data-gaze-target` elements draw his look on hover and keyboard focus.
+- **Director**: state machine `egg → hatch → tracking → scroll pose`, blending clip weights. Implemented in phase 5 (`src/lib/behaviour/director.ts`). In phase 6 the scroll state takes gaze and expression from the scroll script (`docs/scroll-script.md`): the roar face as he swallows the screen, happy afterwards, a blink as he comes back out, the wave in the finale. The hop plays only when a click or tap lands on Kelo, and `data-gaze-target` elements draw his look on hover and keyboard focus.
 - **Reduced motion**: no camera orbit, no particles or grain, the hatch is a cut, gaze is calmer (λ × 0.5). Content never depends on the animation.
 
 ## Originality guardrails

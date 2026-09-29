@@ -82,16 +82,16 @@
       "blender": "5.2.2 LTS",
       "tiers": {
         "full": {
-          "triangles": 10786,
+          "triangles": 16190,
           "textureSize": 1024,
-          "seconds": 13.9,
+          "seconds": 21,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 4600,
           "textureSize": 512,
-          "seconds": 7,
+          "seconds": 7.2,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -99,22 +99,22 @@
     },
     "assemble": {
       "full": {
-        "repairedVertices": 556,
-        "clampedWeights": 4313,
+        "repairedVertices": 788,
+        "clampedWeights": 6503,
         "eyes": {
           "L": [
             0.105,
             0.93,
-            0.18622841162272408
+            0.18585515746651537
           ],
           "R": [
             -0.105,
             0.93,
-            0.18588122682805064
+            0.18587377952524153
           ]
         },
         "mouthY": 0.801,
-        "kB": 1097
+        "kB": 1830
       },
       "lite": {
         "repairedVertices": 233,
@@ -132,51 +132,51 @@
           ]
         },
         "mouthY": 0.801,
-        "kB": 426
+        "kB": 435
       }
     },
     "compress": {
       "full": {
-        "beforeKB": 1097,
-        "afterKB": 627,
-        "savedPercent": 44,
+        "beforeKB": 1830,
+        "afterKB": 1283,
+        "savedPercent": 36,
         "textures": [
           {
             "name": "body_orm",
             "encode": "basis-lz",
-            "beforeKB": 207,
-            "afterKB": 134
+            "beforeKB": 222,
+            "afterKB": 140
           },
           {
             "name": "body_basecolor",
             "encode": "basis-lz",
-            "beforeKB": 118,
-            "afterKB": 121
+            "beforeKB": 366,
+            "afterKB": 345
           },
           {
             "name": "body_normal",
             "encode": "uastc",
-            "beforeKB": 80,
-            "afterKB": 161
+            "beforeKB": 256,
+            "afterKB": 528
           },
           {
             "name": "face_atlas",
             "encode": "uastc",
-            "beforeKB": 21,
-            "afterKB": 35
+            "beforeKB": 45,
+            "afterKB": 39
           },
           {
             "name": "eyes_basecolor",
             "encode": "basis-lz",
-            "beforeKB": 3,
-            "afterKB": 3
+            "beforeKB": 9,
+            "afterKB": 6
           }
         ]
       },
       "lite": {
-        "beforeKB": 426,
-        "afterKB": 183,
-        "savedPercent": 57
+        "beforeKB": 435,
+        "afterKB": 192,
+        "savedPercent": 56
       }
     },
     "validate": {

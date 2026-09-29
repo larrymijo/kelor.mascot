@@ -12,14 +12,15 @@
   "retopo": {
     "_doc": "Voxel remesh makes the source one manifold volume; Quadriflow then builds quads. Face counts are quads (about twice as many triangles).",
     "voxelSizeM": 0.006,
-    "targetQuads": { "full": 6500, "lite": 2400 },
+    "targetQuads": { "full": 9500, "lite": 2400 },
     "smoothIterations": 2
   },
 
   "bake": {
-    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. Sizes are pixels per tier; the normal map exists only on full and has its own size, because as KTX2 UASTC it costs about four times the bytes of a colour map (run 14: 539 kB at 1024 px).",
+    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. size is the ORM map per tier; baseColorSize and normalSize are separate because definition matters most in the close-ups (phase 6 raised them: the source base colour is 2048 px, and the camera now gets within centimetres of his face). The normal map exists only on full.",
     "size": { "full": 1024, "lite": 512 },
-    "normalSize": 512,
+    "baseColorSize": { "full": 2048, "lite": 512 },
+    "normalSize": 1024,
     "samples": 16,
     "cageExtrusionM": 0.01,
     "maxRayDistanceM": 0.025,

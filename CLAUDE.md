@@ -45,16 +45,17 @@ Version constraints that matter:
 
 ## Budgets
 
-| Metric                                            | Budget                                                         |
-| ------------------------------------------------- | -------------------------------------------------------------- |
-| Initial JS (excluding the lazily loaded 3D chunk) | ≤ 150 kB gzip                                                  |
-| Deferred 3D JS (the stage chunk)                  | ≤ 420 kB gzip                                                  |
-| LCP (4G, mid-range phone)                         | < 2.0 s                                                        |
-| CLS                                               | 0                                                              |
-| TBT                                               | < 200 ms                                                       |
-| Mascot GLB                                        | lite ≤ 250 kB (Meshopt + WebP), full ≤ 700 kB (Meshopt + KTX2) |
-| Frame rate                                        | 60 fps on Intel integrated GPU at quality `medium`             |
-| Lighthouse accessibility                          | ≥ 95                                                           |
+| Metric                                            | Budget                                                          |
+| ------------------------------------------------- | --------------------------------------------------------------- |
+| Initial JS (excluding the lazily loaded 3D chunk) | ≤ 150 kB gzip                                                   |
+| Deferred 3D JS (the stage chunk)                  | ≤ 420 kB gzip                                                   |
+| Cinematic JS (the lazy scroll engine chunk)       | ≤ 70 kB gzip                                                    |
+| LCP (4G, mid-range phone)                         | < 2.0 s                                                         |
+| CLS                                               | 0                                                               |
+| TBT                                               | < 200 ms                                                        |
+| Mascot GLB                                        | lite ≤ 250 kB (Meshopt + WebP), full ≤ 1500 kB (Meshopt + KTX2) |
+| Frame rate                                        | 60 fps on Intel integrated GPU at quality `medium`              |
+| Lighthouse accessibility                          | ≥ 95                                                            |
 
 Model budgets (triangles, bones, textures, draw calls, clips) live in `character.json` and are enforced by `pnpm validate:model`. JS budgets are enforced by `pnpm size` after a build.
 
@@ -86,9 +87,10 @@ Full bible, canonical names and name candidates: `.claude/skills/kelor-mascot/SK
 ```
 src/app                 routes, layout, global CSS tokens
 src/components/sections page sections (scroll acts)
+src/components/cinematic lazy scroll engine (GSAP, Lenis) and its mount
 src/components/three    R3F scene, mascot, egg, effects (client only)
 src/components/ui       monochrome UI primitives
-src/lib                 pure logic (character contract, copy, math, behaviour); unit tested
+src/lib                 pure logic (character contract, copy, math, behaviour, cinematic timeline, sound); unit tested
 scripts/assets          GLB validation and asset processing (Node)
 scripts/blender         headless Blender pipeline (Python, phase 3)
 scripts/review          capture and review tooling
@@ -112,11 +114,20 @@ public/basis            three's Basis transcoder for KTX2, served locally (kept 
 
 ## Behaviour and director (phase 5)
 
-- Pure logic lives in `src/lib/behaviour`: gaze angles and soft limits, the blink scheduler, the tail spring and the director state machine (`egg → hatch → tracking → scroll`, scroll reserved for phase 6). All of it is unit tested and reads its numbers from `character.json` (`gaze`, `life`, `accessibility.reducedMotion`).
+- Pure logic lives in `src/lib/behaviour`: gaze angles and soft limits, the blink scheduler, the tail spring and the director state machine (`egg → hatch → tracking → scroll`; in `scroll` the script imposes gaze and expression). All of it is unit tested and reads its numbers from `character.json` (`gaze`, `life`, `accessibility.reducedMotion`).
 - `MascotRig` layers the behaviour: `update()` resets the layered bones to their bind pose and runs the mixer, then `behave()` multiplies gaze, blink and tail offsets on top. Never set layered bones anywhere else.
 - `BehaviourController` runs the director each frame and turns attention into a world target; `useBehaviourInput` feeds it from window events. It outlives model swaps.
 - Mark any element with `data-gaze-target` to draw Kelo's look on hover and keyboard focus.
 - `StageMount` also exposes `data-attention` and `data-clip` for tests; `?debug` has a gaze switch, a blink button and an attention readout.
+
+## Scroll cinematic (phase 6)
+
+- `docs/scroll-script.md` is the source of the sequence; `src/lib/cinematic/acts.ts` holds it as keyed channels per variant (desktop, mobile, reduced) and `timeline.ts` samples them purely. Change the script first, then the data; the continuity test rejects any transition faster than about 4% of the page.
+- The engine (`src/components/cinematic/engine.ts`: GSAP ScrollTrigger and SplitText, Lenis on fine pointers) is a lazy chunk that `CinematicMount` imports once the stage draws and the browser is idle. It adds `html.cinematic`, which gives the scroll track its height, and writes one smoothed progress value to `src/lib/cinematic/progress.ts`.
+- In the scene, `CinematicDriver` (priority -2) samples the timeline into the shared `cinematic` object every frame; the camera, mascot, lights, effects, particles and the finale's mark read it. `OverlayDriver` writes the screen-space layers (letterbox, iris, fade, words) as CSS variables on `#cinematic-ui`, plus `data-act` and `data-scale` for tests. Nothing re-renders React per frame.
+- Effects follow the tier strictly: depth of field on high only (a subclass skips its passes outside the close-ups), MSAA 4x on high and FXAA on medium, no ambient occlusion on medium. Measure with `?tier=low|medium|high`, which pins the tier on local and preview builds.
+- Sound is synthesised (`src/lib/sound/synth.ts`) and off by default; the switch creates the AudioContext on its first press and only then loads the synthesiser.
+- `tests/e2e/cinematic.spec.ts` plays every act on every profile against the script's checkpoints and captures them to `scripts/review/out`.
 
 ## Progressive loading (phase 4)
 
@@ -143,7 +154,7 @@ corepack pnpm validate:model   # validate GLBs in public/models against characte
 corepack pnpm build:model      # full model pipeline (CI; needs Blender)
 corepack pnpm build:placeholder # placeholder GLBs into build/placeholder (--public to overwrite the model)
 corepack pnpm size             # bundle report and JS budgets (after build)
-corepack pnpm e2e              # Playwright: 3D hero, reduced motion, keyboard, debug panel, captures (after build)
+corepack pnpm e2e              # Playwright: 3D hero, cinematic checkpoints, reduced motion, keyboard, sound, captures (after build)
 ```
 
 CI (`.github/workflows/ci.yml`) runs the same checks plus the e2e suite on every PR and uploads the captures as an artifact.

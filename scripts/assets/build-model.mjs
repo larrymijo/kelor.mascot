@@ -33,7 +33,7 @@ import { PLACEHOLDER_CLIPS } from './placeholder-clips.mjs'
 
 /** Feature detail and procedural texture sizes per tier. */
 const TIER_SETTINGS = {
-  full: { detail: 0.75, eyes: 256, face: 1024 },
+  full: { detail: 0.9, eyes: 512, face: 1024 },
   lite: { detail: 0.5, eyes: 128, face: 512 },
 }
 

@@ -45,9 +45,13 @@ describe('director states', () => {
     expect(tracking!.expression).toBe('happy')
   })
 
-  it('never enters the scroll state yet', () => {
-    const outputs = run(Array.from({ length: 50 }, (_, i) => base({ nowS: i })))
-    expect(outputs.every((o) => o.state !== 'scroll')).toBe(true)
+  it('stays in tracking on the first screen and enters scroll past it', () => {
+    const [hero, cinematic] = run([
+      base({ nowS: 1 }),
+      base({ nowS: 2, script: { gaze: null, expression: null } }),
+    ])
+    expect(hero!.state).toBe('tracking')
+    expect(cinematic!.state).toBe('scroll')
   })
 })
 
@@ -164,5 +168,38 @@ describe('reactions', () => {
   it('hops even with reduced motion, because the visitor asked for it', () => {
     const [out] = run([base({ nowS: 1, tapS: 1, reducedMotion: true })])
     expect(out!.reaction).toBe('hop')
+  })
+})
+
+describe('scroll script', () => {
+  const mouse = (lastActiveS: number) => ({ kind: 'mouse' as const, lastActiveS })
+
+  it('imposes the camera and the roar face during the gulp, over an active pointer', () => {
+    const [out] = run([
+      base({ nowS: 3, pointer: mouse(3), script: { gaze: 'camera', expression: 'roar' } }),
+    ])
+    expect(out!.attention).toBe('camera')
+    expect(out!.expression).toBe('roar')
+    expect(out!.gazeWeight).toBe(1)
+  })
+
+  it('switches the gaze off for the plates close-up', () => {
+    const [out] = run([base({ nowS: 3, script: { gaze: 'off', expression: null } })])
+    expect(out!.gazeWeight).toBe(0)
+    expect(out!.expression).toBe('happy')
+  })
+
+  it('lets the visitor lead in the finale and never plays look_around', () => {
+    const [cta, idle] = run([
+      base({
+        nowS: 3,
+        ctaActive: true,
+        touchFirst: true,
+        script: { gaze: null, expression: null },
+      }),
+      base({ nowS: 9, touchFirst: true, script: { gaze: null, expression: null } }),
+    ])
+    expect(cta!.attention).toBe('cta')
+    expect(idle!.idleClip).toBe('idle')
   })
 })

@@ -19,15 +19,15 @@ const sans = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: copy.meta.title, template: `%s · ${copy.meta.title}` },
+  title: { default: copy.meta.title, template: `%s · ${copy.brand}` },
   description: copy.meta.description,
-  applicationName: copy.meta.title,
+  applicationName: copy.brand,
   // Not indexed until launch (phase 8).
   robots: { index: false, follow: false },
   openGraph: {
     type: 'website',
     locale: 'es_EC',
-    siteName: copy.meta.title,
+    siteName: copy.brand,
     title: copy.meta.title,
     description: copy.meta.description,
   },

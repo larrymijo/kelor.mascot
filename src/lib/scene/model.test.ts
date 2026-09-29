@@ -15,6 +15,6 @@ describe('model URLs', () => {
   })
 
   it('exposes the tier settings from the contract', () => {
-    expect(tierSettings(character, 'medium')).toMatchObject({ ao: 'half', dprMax: 1.5 })
+    expect(tierSettings(character, 'medium')).toMatchObject({ ao: 'off', dprMax: 1.5 })
   })
 })

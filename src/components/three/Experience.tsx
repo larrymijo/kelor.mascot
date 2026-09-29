@@ -4,7 +4,9 @@ import { Stats } from '@react-three/drei'
 import dynamic from 'next/dynamic'
 import { Suspense, useState } from 'react'
 import { Egg } from './egg/Egg'
+import { LogoAssembly } from './LogoAssembly'
 import { Mascot } from './mascot/Mascot'
+import { Particles } from './Particles'
 import Stage, { type StageProps } from './Stage'
 
 /** leva lives in its own chunk and only loads with ?debug. */
@@ -15,7 +17,8 @@ const debugAllowed = process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production'
 
 /**
  * Entry point of the lazily loaded 3D chunk: the stage with the procedural
- * egg (visible immediately) and the mascot (suspends while its GLB loads).
+ * egg (visible immediately), the particles, the finale's logo, and the
+ * mascot (suspends while its GLB loads).
  */
 export default function Experience(props: Omit<StageProps, 'children'>) {
   // Client-only chunk (ssr: false), so reading the URL while initialising is safe.
@@ -27,6 +30,8 @@ export default function Experience(props: Omit<StageProps, 'children'>) {
     <>
       <Stage {...props}>
         <Egg />
+        <Particles />
+        <LogoAssembly />
         <Suspense fallback={null}>
           <Mascot />
         </Suspense>

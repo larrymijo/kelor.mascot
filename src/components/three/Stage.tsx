@@ -8,6 +8,8 @@ import { character } from '@/lib/character'
 import { detectQualityTier, type QualityTier } from '@/lib/quality/detect'
 import { bootTimings, stepBoot, type BootPhase } from '@/lib/scene/boot'
 import { CameraRig, FOV } from './CameraRig'
+import { CinematicDriver } from './cinematic/CinematicDriver'
+import { OverlayDriver } from './cinematic/OverlayDriver'
 import { Effects } from './Effects'
 import { Floor } from './Floor'
 import { disposeKtx2Loader } from './loaders'
@@ -33,6 +35,13 @@ export interface StageProps {
   onUnavailable?: () => void
   /** Scene content (egg, mascot); kept as children so the stage stays generic. */
   children?: ReactNode
+}
+
+/** A tier pinned with ?tier= on local and preview builds, never on production. */
+function forcedTier(): QualityTier | null {
+  if (process.env.NEXT_PUBLIC_VERCEL_ENV === 'production') return null
+  const value = new URLSearchParams(window.location.search).get('tier')
+  return value === 'low' || value === 'medium' || value === 'high' ? value : null
 }
 
 /** Advances the pure boot machine with accumulated frame time (pauses with the loop). */
@@ -101,8 +110,11 @@ export default function Stage({
   const [bootTier] = useState<QualityTier | 'unavailable'>(() => {
     const signals = readDeviceSignals()
     if (!signals.webgl2) return 'unavailable'
-    const detected = detectQualityTier(signals)
+    // ?tier=low|medium|high pins the tier on local and preview builds, for measuring.
+    const forced = forcedTier()
+    const detected = forced ?? detectQualityTier(signals)
     useScene.getState().initTier(detected)
+    if (forced) useScene.getState().lockTier()
     return detected
   })
   const [inView, setInView] = useState(true)
@@ -170,8 +182,9 @@ export default function Stage({
         }}
       >
         <color attach="background" args={[character.colors.brandMono.ink900]} />
+        <CinematicDriver />
         <CameraRig />
-        <StudioLights shadows={boot.shadows} shadowMapSize={bootTier === 'high' ? 1024 : 512} />
+        <StudioLights shadows={boot.shadows} shadowMapSize={bootTier === 'high' ? 2048 : 1024} />
         <Floor shadows={boot.shadows} />
         {children}
         <Effects tier={tier} />
@@ -179,6 +192,7 @@ export default function Stage({
         <LoadingTracker />
         <LoaderLifetime />
         <BootDriver />
+        <OverlayDriver />
         <FirstFrame onFirstFrame={onFirstFrame} />
       </Canvas>
     </div>

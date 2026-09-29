@@ -24,6 +24,7 @@ import {
   type Bone,
   type Material,
   type Mesh,
+  type MeshPhysicalMaterial,
   type MeshStandardMaterial,
   type Object3D,
   type Texture,
@@ -32,6 +33,8 @@ import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import { aimAngles, clampAngles, dampAngles, chainShares, type Angles } from '@/lib/behaviour/gaze'
 import { createTail, stepTail, type TailLink } from '@/lib/behaviour/tail'
 import { character } from '@/lib/character'
+import { MOUTH } from '@/lib/cinematic/acts'
+import { applyFinish, tuneFinish, type Finish } from './finish'
 import { damp, degToRad } from '@/lib/math/damp'
 
 const CROSS_FADE_S = 0.25
@@ -116,15 +119,25 @@ export class MascotRig {
   private readonly lids: (Bone | undefined)[]
   private readonly tailBones: Bone[]
   private readonly hips?: Bone
+  /** The mouth in the head bone's space, so it follows every turn of the head. */
+  private readonly mouthLocal = new Vector3()
   private headAngles: Angles = { yaw: 0, pitch: 0 }
   private eyeAngles: Angles[]
   private weight = 0
   private tail: TailLink[]
+  private readonly finish: MeshPhysicalMaterial[]
   private hipsYaw = 0
   private hipsY = 0
   private hipsMeasured = false
 
-  constructor(gltf: { scene: Object3D; animations: AnimationClip[] }) {
+  /**
+   * @param options.finish swap in the physical skin and eye finish (medium and
+   *   high tiers); the low tier keeps the GLB's standard materials.
+   */
+  constructor(
+    gltf: { scene: Object3D; animations: AnimationClip[] },
+    options: { finish?: boolean } = {},
+  ) {
     this.scene = cloneSkinned(gltf.scene)
     this.scene.traverse((object) => {
       if ((object as Bone).isBone) this.bones.set(object.name, object as Bone)
@@ -150,6 +163,11 @@ export class MascotRig {
     )
     this.tailBones = found(life.tail.bones)
     this.hips = this.bones.get('hips')
+    if (this.head) {
+      // At bind the scene root is the model's origin: place the mouth, then keep it in head space.
+      this.scene.updateMatrixWorld(true)
+      this.head.worldToLocal(this.mouthLocal.set(0, MOUTH.y, MOUTH.z))
+    }
     for (const bone of [...this.chain, ...this.eyes, ...this.lids, ...this.tailBones]) {
       if (bone) this.bind.set(bone, bone.quaternion.clone())
     }
@@ -158,9 +176,17 @@ export class MascotRig {
 
     this.mixer = new AnimationMixer(this.scene)
     this.actions = new Map(gltf.animations.map((clip) => [clip.name, this.mixer.clipAction(clip)]))
+    // Before the face lookup: the physical face keeps the same atlas texture.
+    this.finish = options.finish ? applyFinish(this.scene) : []
     this.faceMap =
       (findMaterial(this.scene, 'face') as MeshStandardMaterial | undefined)?.map ?? undefined
     this.plates = findMaterial(this.scene, 'plates') as MeshStandardMaterial | undefined
+    // The contract's pale glow colour burns out to white under bloom and AgX;
+    // a saturated violet keeps the plates reading as purple crystals.
+    this.plates?.emissive.set(character.colors.mascot['500'])
+    // Catchlights are the brightest thing on screen: AgX would tone pure white down to grey.
+    const highlight = findMaterial(this.scene, 'highlight')
+    if (highlight) highlight.toneMapped = false
     this.mixer.addEventListener('finished', this.onFinished)
   }
 
@@ -262,11 +288,38 @@ export class MascotRig {
     this.faceMap.offset.set(col / grid[0], row / grid[1])
   }
 
+  /** Where the mouth is in the world right now, whatever the head and the stage are doing. */
+  mouthWorld(out: Vector3) {
+    if (!this.head) return out.set(0, MOUTH.y, MOUTH.z)
+    this.head.updateWorldMatrix(true, false)
+    return this.head.localToWorld(out.copy(this.mouthLocal))
+  }
+
+  /** Midpoint between the eyes in the world, for the close-up's focus. */
+  eyesWorld(out: Vector3) {
+    if (this.eyes.length === 0) return out.set(0, 0.93, 0.2)
+    out.set(0, 0, 0)
+    for (const eye of this.eyes) out.add(eye.getWorldPosition(_world))
+    return out.divideScalar(this.eyes.length)
+  }
+
+  /** A point on the plates along the back, in the world, for the close-up's focus. */
+  platesWorld(out: Vector3) {
+    this.scene.updateWorldMatrix(true, false)
+    return this.scene.localToWorld(out.set(0, 0.62, -0.2))
+  }
+
   setPlateGlow(intensity: number) {
     if (this.plates) this.plates.emissiveIntensity = intensity
   }
 
+  /** Live-tune the vinyl finish from the debug panel. */
+  setFinish(finish: Finish) {
+    tuneFinish(this.finish, finish)
+  }
+
   dispose() {
+    for (const material of this.finish) material.dispose()
     this.mixer.removeEventListener('finished', this.onFinished)
     this.mixer.stopAllAction()
   }
