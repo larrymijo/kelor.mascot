@@ -7,11 +7,20 @@ import { logoMarkDataUri, logoMarkWidth } from '@/components/ui/LogoMark'
 import { copy } from '@/lib/copy'
 import type { BootPhase } from '@/lib/scene/boot'
 
+/** Marks when the 3D chunk is requested, so load measurements can tell the page from the 3D boot. */
+export const STAGE_IMPORT_MARK = 'kelor:3d-import'
+
 /** The whole 3D experience is a separate chunk, fetched after hydration. */
-const Experience = dynamic(() => import('@/components/three/Experience'), {
-  ssr: false,
-  loading: () => null,
-})
+const Experience = dynamic(
+  () => {
+    performance.mark(STAGE_IMPORT_MARK)
+    return import('@/components/three/Experience')
+  },
+  {
+    ssr: false,
+    loading: () => null,
+  },
+)
 
 type SceneState = 'loading' | BootPhase | 'unavailable'
 

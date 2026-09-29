@@ -25,6 +25,7 @@
     "build:placeholder": "node scripts/assets/build-placeholder.mjs",
     "size": "node scripts/review/bundle-report.mjs",
     "perf": "node scripts/review/perf.mjs",
+    "perf:budget": "node scripts/review/perf.mjs --profile phone-load --runs 3 --assert",
     "build:model": "node scripts/assets/model/run.mjs"
   },
   "dependencies": {

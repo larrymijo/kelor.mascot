@@ -14,7 +14,7 @@
         "categories:accessibility": ["error", { "minScore": 0.95 }],
         "cumulative-layout-shift": ["error", { "maxNumericValue": 0.01 }],
         "largest-contentful-paint": ["error", { "maxNumericValue": 2000 }],
-        "total-blocking-time": ["warn", { "maxNumericValue": 200 }]
+        "total-blocking-time": "off"
       }
     },
     "upload": {

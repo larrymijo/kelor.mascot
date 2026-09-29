@@ -16,6 +16,12 @@
  * back to back, not across days.
  *
  *   node scripts/review/perf.mjs [--profile a,b] [--runs 3] [--url http://localhost:3000]
+ *                                [--tasks] [--assert]
+ *
+ * TBT is split where StageMount requests the 3D chunk: the page before it
+ * and the 3D boot after it, each with its own budget (D-094). --assert fails
+ * when the phone profile misses either; --tasks lists the page's long tasks
+ * and the scripts that ran in them.
  *
  * Without --url it builds nothing: it serves the existing .next build with
  * `next start` on a spare port. Results also go to scripts/review/out/perf.json.
@@ -25,7 +31,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium, devices } from '@playwright/test'
-import { blockingTime, median, resourceKind } from './perf-metrics.mjs'
+import { blockingTime, checkTbt, median, resourceKind } from './perf-metrics.mjs'
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const OUT_DIR = join(REPO_ROOT, 'scripts', 'review', 'out')
@@ -64,11 +70,13 @@ export const PROFILES = {
 }
 
 function parseArgs(argv) {
-  const args = { profiles: Object.keys(PROFILES), runs: 1, url: null }
+  const args = { profiles: Object.keys(PROFILES), runs: 1, url: null, tasks: false, assert: false }
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--profile') args.profiles = argv[++i].split(',')
     else if (argv[i] === '--runs') args.runs = Number(argv[++i])
     else if (argv[i] === '--url') args.url = argv[++i]
+    else if (argv[i] === '--tasks') args.tasks = true
+    else if (argv[i] === '--assert') args.assert = true
   }
   for (const name of args.profiles)
     if (!PROFILES[name]) throw new Error(`Unknown profile ${name}: ${Object.keys(PROFILES)}`)
@@ -157,7 +165,7 @@ async function runLoad(browser, baseUrl, profile) {
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: profile.cpuSlowdown })
   if (profile.network) await cdp.send('Network.emulateNetworkConditions', profile.network)
   await page.addInitScript(() => {
-    const m = { fcp: null, lcp: null, cls: 0, longTasks: [], states: {} }
+    const m = { fcp: null, lcp: null, cls: 0, longTasks: [], frames: [], states: {} }
     Object.assign(window, { __perf: m })
     const watch = (type, onEntry) =>
       new PerformanceObserver((list) => list.getEntries().forEach(onEntry)).observe({
@@ -180,6 +188,20 @@ async function runLoad(browser, baseUrl, profile) {
       if (!e.hadRecentInput) m.cls += e.value
     })
     watch('longtask', (e) => m.longTasks.push([e.startTime, e.duration]))
+    // Long animation frames name the scripts that ran in them (Chrome 123+), for --tasks.
+    if (PerformanceObserver.supportedEntryTypes.includes('long-animation-frame'))
+      watch('long-animation-frame', (e) =>
+        m.frames.push({
+          start: Math.round(e.startTime),
+          duration: Math.round(e.duration),
+          scripts: e.scripts.map((sc) => ({
+            source: (sc.sourceURL || sc.invoker || '').split('/').pop(),
+            invoker: sc.invokerType,
+            ms: Math.round(sc.duration),
+            layout: Math.round(sc.forcedStyleAndLayoutDuration),
+          })),
+        }),
+      )
     new MutationObserver(() => {
       const state = document.querySelector('[data-scene-state]')?.getAttribute('data-scene-state')
       if (state && m.states[state] === undefined) m.states[state] = performance.now()
@@ -193,6 +215,10 @@ async function runLoad(browser, baseUrl, profile) {
     .catch(() => {})
   await page.waitForTimeout(3_000)
   const m = await page.evaluate(() => window.__perf)
+  // StageMount marks when it requests the 3D chunk (STAGE_IMPORT_MARK).
+  const stageImport = await page.evaluate(
+    () => performance.getEntriesByName('kelor:3d-import')[0]?.startTime ?? null,
+  )
   const resources = await page.evaluate(() =>
     performance
       .getEntriesByType('resource')
@@ -213,6 +239,17 @@ async function runLoad(browser, baseUrl, profile) {
     lcpElement: m.lcp?.element ?? null,
     cls: Math.round(m.cls * 1000) / 1000,
     tbtMs: Math.round(blockingTime(m.longTasks, m.fcp ?? 0, (ready ?? m.fcp ?? 0) + 3_000)),
+    // The page itself: blocking time from first paint until the 3D chunk is requested.
+    shellTbtMs:
+      stageImport === null ? null : Math.round(blockingTime(m.longTasks, m.fcp ?? 0, stageImport)),
+    // The page's long tasks, [start, duration] in ms, for --tasks.
+    pageTasks: m.longTasks
+      .filter(([start]) => start >= (m.fcp ?? 0) && start <= (stageImport ?? Infinity))
+      .map(([start, duration]) => [Math.round(start), Math.round(duration)]),
+    stageImportMs: stageImport && Math.round(stageImport),
+    pageFrames: m.frames.filter(
+      (fr) => fr.start >= (m.fcp ?? 0) - 50 && fr.start <= (stageImport ?? Infinity),
+    ),
     drawingMs: drawing && Math.round(drawing),
     readyMs: ready && Math.round(ready),
     kB: Object.fromEntries(Object.entries(bytes).map(([k, v]) => [k, Math.round(v / 1024)])),
@@ -227,6 +264,7 @@ function summariseLoad(runs) {
     lcpElement: runs.at(-1).lcpElement,
     cls: pick('cls'),
     tbtMs: pick('tbtMs'),
+    shellTbtMs: pick('shellTbtMs'),
     drawingMs: pick('drawingMs'),
     readyMs: pick('readyMs'),
     kB: runs.at(-1).kB,
@@ -253,9 +291,23 @@ async function main() {
         for (let i = 0; i < args.runs; i++) runs.push(await runLoad(browser, server.url, profile))
         const r = summariseLoad(runs)
         results[name] = r
+        if (args.tasks)
+          for (const run of runs)
+            console.log(
+              `  page tasks until the 3D import at ${run.stageImportMs} ms: ${JSON.stringify(run.pageTasks)}\n` +
+                run.pageFrames
+                  .map(
+                    (fr) =>
+                      `    frame at ${fr.start} ms, ${fr.duration} ms: ` +
+                      fr.scripts.map((sc) => `${sc.source} (${sc.invoker}) ${sc.ms} ms`).join(', '),
+                  )
+                  .join('\n'),
+            )
         console.log(`\n${name}  (median of ${r.runs})`)
         console.log(`  FCP ${r.fcpMs} ms   LCP ${r.lcpMs} ms (${r.lcpElement})   CLS ${r.cls}`)
-        console.log(`  TBT ~${r.tbtMs} ms   egg ${r.drawingMs} ms   Kelo ready ${r.readyMs} ms`)
+        console.log(
+          `  TBT ~${r.tbtMs} ms (page ${r.shellTbtMs} ms, 3D boot ${r.tbtMs - r.shellTbtMs} ms)   egg ${r.drawingMs} ms   Kelo ready ${r.readyMs} ms`,
+        )
         console.log(
           `  kB  ${Object.entries(r.kB)
             .map(([k, v]) => `${k} ${v}`)
@@ -269,6 +321,18 @@ async function main() {
   }
   mkdirSync(OUT_DIR, { recursive: true })
   writeFileSync(join(OUT_DIR, 'perf.json'), JSON.stringify(results, null, 2))
+
+  if (args.assert) {
+    const phone = results['phone-load']
+    if (!phone) throw new Error('--assert needs the phone-load profile')
+    const checks = checkTbt(phone)
+    console.log('')
+    for (const c of checks)
+      console.log(
+        `  ${c.ok ? 'PASS' : 'FAIL'}  ${c.name.padEnd(12)} ${c.value} ms (budget ${c.budget} ms)`,
+      )
+    if (checks.some((c) => !c.ok)) process.exitCode = 1
+  }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
