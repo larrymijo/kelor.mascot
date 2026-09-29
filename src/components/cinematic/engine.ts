@@ -58,12 +58,13 @@ export function startCinematic(): () => void {
   setScrollProgress(progress.progress)
 
   // The heading rises letter by letter as the meet act opens; SplitText keeps
-  // an aria-label on the heading so screen readers still read one word.
+  // an aria-label on the heading so screen readers still read one word. The
+  // letters stay grouped in their words, so a line never breaks inside one.
   const heading = document.getElementById('meet-title')
   let split: SplitText | null = null
   let reveal: gsap.core.Tween | null = null
   if (heading && !reduced) {
-    split = SplitText.create(heading, { type: 'chars', aria: 'auto' })
+    split = SplitText.create(heading, { type: 'words,chars', aria: 'auto' })
     reveal = gsap.from(split.chars, {
       yPercent: 60,
       opacity: 0,

@@ -34,7 +34,7 @@ export function CinematicUI() {
       >
         <h1
           id="meet-title"
-          className="font-display text-5xl font-extrabold tracking-tight text-ink-50 sm:text-7xl"
+          className="font-display text-[2.6rem] leading-tight font-extrabold tracking-tight text-ink-50 sm:text-7xl"
         >
           {meet.title}
         </h1>
