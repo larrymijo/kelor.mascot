@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * Purple motes around Kelo, moved entirely on the GPU: one draw call and no
- * per-particle work on the CPU. They drift up around the stage, are blown
+ * A few soft purple motes around Kelo, moved entirely on the GPU: one draw
+ * call and no per-particle work on the CPU. They are accents close to him,
+ * not a star field: they drift slowly up around him, are blown
  * outwards when the shell bursts, and spiral into his mouth in the gulp
  * (the script's particleSwirl), streaming back out as he shrinks.
  *
@@ -26,9 +27,11 @@ import { cinematic } from './cinematic/CinematicDriver'
 import { useScene } from './store'
 
 /** World size of a mote, in metres. */
-const SIZE_M = 0.014
+const SIZE_M = 0.022
 /** The motes live in a ring around Kelo: inner and outer radius, and height, in metres. */
-const VOLUME = { inner: 0.45, outer: 1.7, height: 2.4 }
+const VOLUME = { inner: 0.5, outer: 1.25, height: 2 }
+/** Motes closer to the camera than this fade out, so none crosses the lens (metres). */
+const NEAR_FADE = { from: 0.5, to: 1.3 }
 /** Mixed into the pale violet so the motes stay saturated. */
 const MOTE_500 = new Color(character.colors.mascot['500'])
 /** Where the burst blows them from: the middle of the egg. */
@@ -42,6 +45,7 @@ const vertexShader = /* glsl */ `
   uniform float uSize;
   uniform float uEggY;
   uniform float uHeight;
+  uniform vec2 uNearFade;
   attribute vec4 seed;
   varying float vAlpha;
 
@@ -50,10 +54,10 @@ const vertexShader = /* glsl */ `
     float r = seed.w;
 
     // Rise slowly and wrap, swaying a little; fade in and out at the wrap.
-    p.y = mod(p.y + uTime * (0.03 + 0.05 * r), uHeight);
-    float edge = smoothstep(0.0, 0.25, p.y) * (1.0 - smoothstep(uHeight - 0.4, uHeight, p.y));
-    p.x += sin(uTime * 0.4 + r * 40.0) * 0.06;
-    p.z += cos(uTime * 0.33 + r * 30.0) * 0.06;
+    p.y = mod(p.y + uTime * (0.015 + 0.025 * r), uHeight);
+    float edge = smoothstep(0.0, 0.4, p.y) * (1.0 - smoothstep(uHeight - 0.5, uHeight, p.y));
+    p.x += sin(uTime * 0.25 + r * 40.0) * 0.05;
+    p.z += cos(uTime * 0.2 + r * 30.0) * 0.05;
 
     // The burst: blown out from the egg, then settling back.
     vec3 away = normalize(p - vec3(0.0, uEggY, 0.0) + 1e-4);
@@ -68,9 +72,9 @@ const vertexShader = /* glsl */ `
     p = uMouth + rel * (1.0 - s);
 
     vec4 view = modelViewMatrix * vec4(p, 1.0);
-    // No big soft blobs sliding past the lens in the close-ups.
-    float near = smoothstep(0.08, 0.5, -view.z);
-    vAlpha = edge * near * (0.35 + 0.65 * fract(r * 7.13)) * (1.0 - s * s);
+    // Nothing slides past the lens, in the wide shots or the close-ups.
+    float near = smoothstep(uNearFade.x, uNearFade.y, -view.z);
+    vAlpha = edge * near * (0.3 + 0.4 * fract(r * 7.13)) * (1.0 - s * s);
     gl_PointSize = uSize * (0.6 + 0.8 * fract(r * 3.7)) / -view.z;
     gl_Position = projectionMatrix * view;
   }
@@ -81,7 +85,9 @@ const fragmentShader = /* glsl */ `
   varying float vAlpha;
 
   void main() {
-    float glow = smoothstep(0.5, 0.0, length(gl_PointCoord - 0.5));
+    // A soft round falloff, brighter in the middle: bokeh, not a hard dot.
+    float d = length(gl_PointCoord - 0.5) * 2.0;
+    float glow = exp(-3.5 * d * d) * (1.0 - smoothstep(0.7, 1.0, d));
     gl_FragColor = vec4(uColor, glow * vAlpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -130,6 +136,7 @@ export function Particles() {
         uSize: { value: 1 },
         uEggY: { value: EGG_CENTRE_Y },
         uHeight: { value: VOLUME.height },
+        uNearFade: { value: [NEAR_FADE.from, NEAR_FADE.to] },
         // Kept below 1: brighter, AgX desaturated them to white, like stars.
         uColor: { value: new Color(character.colors.mascot['300']).lerp(MOTE_500, 0.3) },
       },

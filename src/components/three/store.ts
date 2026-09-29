@@ -33,7 +33,7 @@ export const defaultTweaks: Tweaks = {
   envIntensity: 0.8,
   bloomIntensity: 0.9,
   plateGlow: 1.6,
-  grain: 0.035,
+  grain: 0.025,
   skinCoat: DEFAULT_FINISH.skinCoat,
   skinSheen: DEFAULT_FINISH.skinSheen,
 }

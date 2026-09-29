@@ -11,6 +11,7 @@ import { CameraRig, FOV } from './CameraRig'
 import { CinematicDriver } from './cinematic/CinematicDriver'
 import { OverlayDriver } from './cinematic/OverlayDriver'
 import { Effects } from './Effects'
+import { Backdrop } from './Backdrop'
 import { Floor } from './Floor'
 import { disposeKtx2Loader } from './loaders'
 import { QualityController, qualityLadder } from './quality/QualityController'
@@ -193,6 +194,7 @@ export default function Stage({
         }}
       >
         <color attach="background" args={[character.colors.brandMono.ink900]} />
+        <Backdrop />
         <CinematicDriver />
         <CameraRig />
         <StudioLights shadows={boot.shadows} shadowMapSize={bootTier === 'high' ? 2048 : 1024} />

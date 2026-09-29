@@ -314,7 +314,7 @@
         "ao": "full",
         "bloom": true,
         "depthOfField": true,
-        "particles": 600,
+        "particles": 48,
         "filmGrain": true
       },
       "medium": {
@@ -325,7 +325,7 @@
         "ao": "off",
         "bloom": true,
         "depthOfField": false,
-        "particles": 250,
+        "particles": 32,
         "filmGrain": true
       },
       "low": {
@@ -336,7 +336,7 @@
         "ao": "off",
         "bloom": false,
         "depthOfField": false,
-        "particles": 80,
+        "particles": 16,
         "filmGrain": false
       }
     },
