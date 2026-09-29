@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { character } from '@/lib/character'
-import { buildLadder, type LadderSettings } from './ladder'
+import { acceptsDecline, buildLadder, type LadderSettings } from './ladder'
 
 const settings: LadderSettings = {
   tiers: character.quality.tiers,
@@ -9,6 +9,21 @@ const settings: LadderSettings = {
 const show = (rungs: ReturnType<typeof buildLadder>) => rungs.map((r) => `${r.tier}@${r.dpr}`)
 
 describe('quality ladder', () => {
+  it('trades resolution below 54 fps but keeps the tier until 45', () => {
+    const ladder = buildLadder('medium', 1.5, settings)
+    const bounds = { dprLowerFps: 54, lowerFps: 45 }
+    // medium at 1.5 → medium at 1.25: a resize, taken at 50 fps.
+    expect(acceptsDecline(ladder, 0, 50, bounds)).toBe(true)
+    expect(acceptsDecline(ladder, 0, 56, bounds)).toBe(false)
+    // medium at 1 → low at 1: the look changes, so 50 fps is not enough reason.
+    const floor = ladder.findIndex((r) => r.tier === 'medium' && r.dpr === 1)
+    expect(ladder[floor + 1]).toEqual({ tier: 'low', dpr: 1 })
+    expect(acceptsDecline(ladder, floor, 50, bounds)).toBe(false)
+    expect(acceptsDecline(ladder, floor, 40, bounds)).toBe(true)
+    // Nothing below the last step.
+    expect(acceptsDecline(ladder, ladder.length - 1, 10, bounds)).toBe(false)
+  })
+
   it('steps the resolution down before the tier on a 150% laptop screen', () => {
     expect(show(buildLadder('medium', 1.5, settings))).toEqual([
       'medium@1.5',

@@ -4,7 +4,7 @@ import { PerformanceMonitor } from '@react-three/drei'
 import { useEffect, useMemo, useState } from 'react'
 import { character } from '@/lib/character'
 import type { QualityTier } from '@/lib/quality/detect'
-import { buildLadder } from '@/lib/quality/ladder'
+import { acceptsDecline, buildLadder } from '@/lib/quality/ladder'
 import { useScene } from '../store'
 
 /** Loading (hatch, model upgrade, shader compiles) is not the steady state: wait it out. */
@@ -24,8 +24,9 @@ export function qualityLadder(bootTier: QualityTier) {
 /**
  * Adjusts quality at runtime with drei's PerformanceMonitor, using the
  * contract's fps bounds, one step of the quality ladder at a time: within a
- * tier the render resolution steps down first (a cheap resize), and only at
- * the tier's floor does the tier change (which rebuilds the effects). It never
+ * tier the render resolution steps down first (a cheap resize, below
+ * dprLowerFps), and only at the tier's floor does the tier change (which
+ * rebuilds the effects and changes the look, so only below lowerFps). It never
  * climbs above the boot tier and locks after too many flip-flops, on the lower
  * of the two steps. Shadows and the model stay fixed to the boot tier.
  *
@@ -36,7 +37,7 @@ export function qualityLadder(bootTier: QualityTier) {
  * fresh, after a pause, whenever the step changes.
  */
 export function QualityController() {
-  const { lowerFps, upperFps, flipflops } = character.quality.performanceMonitor
+  const { dprLowerFps, lowerFps, upperFps, flipflops } = character.quality.performanceMonitor
   const ready = useScene((s) => s.boot.phase === 'ready')
   const bootTier = useScene((s) => s.bootTier)
   const locked = useScene((s) => s.tierLocked)
@@ -76,8 +77,11 @@ export function QualityController() {
   return (
     <PerformanceMonitor
       key={step}
-      bounds={() => [lowerFps, upperFps]}
-      onDecline={() => move(step + 1)}
+      bounds={() => [dprLowerFps, upperFps]}
+      onDecline={({ averages }) => {
+        const fps = averages.reduce((sum, f) => sum + f, 0) / averages.length
+        if (acceptsDecline(ladder, step, fps, { dprLowerFps, lowerFps })) move(step + 1)
+      }}
       onIncline={() => move(step - 1)}
     />
   )

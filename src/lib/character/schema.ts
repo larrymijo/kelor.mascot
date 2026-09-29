@@ -244,6 +244,7 @@ export const characterSchema = z
       }),
       dprSteps: z.array(z.number().min(0.5).max(3)).min(1),
       performanceMonitor: z.strictObject({
+        dprLowerFps: posInt,
         lowerFps: posInt,
         upperFps: posInt,
         flipflops: posInt,
@@ -443,6 +444,8 @@ export const characterSchema = z
     const pm = c.quality.performanceMonitor
     if (pm.lowerFps >= pm.upperFps)
       issue(['quality', 'performanceMonitor'], 'lowerFps must be below upperFps')
+    if (pm.dprLowerFps < pm.lowerFps || pm.dprLowerFps >= pm.upperFps)
+      issue(['quality', 'performanceMonitor'], 'dprLowerFps must lie between lowerFps and upperFps')
   })
 
 export type Character = z.infer<typeof characterSchema>

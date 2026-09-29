@@ -44,3 +44,28 @@ export function buildLadder(
   }
   return rungs
 }
+
+export interface StepBounds {
+  /** Below this the resolution steps down within the tier. */
+  dprLowerFps: number
+  /** Below this the tier itself steps down. */
+  lowerFps: number
+}
+
+/**
+ * Whether a measured decline takes the next step down. A resolution step is
+ * cheap and barely visible, so it takes anything below dprLowerFps. A tier
+ * step changes the look (bloom, grain, the skin's finish), so it waits for
+ * the frame rate to fall below lowerFps.
+ */
+export function acceptsDecline(
+  ladder: readonly Rung[],
+  step: number,
+  fps: number,
+  bounds: StepBounds,
+) {
+  const current = ladder[step]
+  const next = ladder[step + 1]
+  if (!current || !next) return false
+  return fps < (next.tier === current.tier ? bounds.dprLowerFps : bounds.lowerFps)
+}
