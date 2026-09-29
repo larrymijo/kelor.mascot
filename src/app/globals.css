@@ -91,11 +91,12 @@
 }
 
 /*
- * Live mode. Without it the page is a short, readable document: the first
- * screen, then the words in normal flow. StageMount adds html.live while the
- * stage is drawing; the words then sit fixed around Kelo on one screen, and
- * the frame loop drives them through CSS variables set on #live-ui
- * (docs/interaction-script.md).
+ * Live mode. The words sit in their places on one screen from the first
+ * paint, so switching modes never moves them (no layout shift). StageMount
+ * adds html.live while the stage is drawing: the stage's extras (overlays,
+ * hint, sound switch, Kelo button) appear, and the frame loop drives them
+ * and the words' opacity through CSS variables set on #live-ui
+ * (docs/interaction-script.md). Without it the page is the words alone.
  */
 .live-overlay,
 .live-hint,
@@ -139,9 +140,12 @@ html.live .live-control {
   position: fixed;
 }
 
-html.live .live-text {
+.live-text {
   position: fixed;
-  opacity: var(--text, 0);
+}
+
+html.live .live-text {
+  opacity: var(--text, 1);
   transition: opacity 600ms var(--ease-out-quart);
 }
 

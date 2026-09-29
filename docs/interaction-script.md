@@ -6,15 +6,15 @@ This document is the source of the behaviour; the numbers live in `character.jso
 
 ## The screen
 
-| Element      | Where and what                                                                                                                                                                                  |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Kelo         | Centre stage on a soft studio halo (`Backdrop`), a small glow and his shadow under his feet. The camera frames him for the screen (`frameSubject`), leaving a band at the bottom for the words. |
-| Brand mark   | Top left, links to the studio's site.                                                                                                                                                           |
-| Sound switch | Top right, `aria-pressed`, off by default.                                                                                                                                                      |
-| Title        | "Conoce a Kelo" (the `h1`) and "la mascota de KELOR Interactive": left of him on desktop, above the contact line on phones. Fades in once he has hatched.                                       |
-| Hint         | "Tócalo o arrástralo" with a mouse, "Tócalo" on touch screens, above the contact line until someone first touches him.                                                                          |
-| Contact line | "¿Quieres una web a medida? Escríbenos" and the © line, at the bottom.                                                                                                                          |
-| Kelo button  | An invisible button over him, from head to feet, for the keyboard: "Tocar a Kelo".                                                                                                              |
+| Element      | Where and what                                                                                                                                                                                                                    |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Kelo         | Centre stage on a soft studio halo (`Backdrop`), a small glow and his shadow under his feet. The camera frames him for the screen (`frameSubject`), leaving a band at the bottom for the words.                                   |
+| Brand mark   | Top left, links to the studio's site.                                                                                                                                                                                             |
+| Sound switch | Top right, `aria-pressed`, off by default.                                                                                                                                                                                        |
+| Title        | "Conoce a Kelo" (the `h1`) and "la mascota de KELOR Interactive": left of him on desktop, above the contact line on phones. In place from the first paint, so nothing shifts when the stage starts; it fades out during the bite. |
+| Hint         | "Tócalo o arrástralo" with a mouse, "Tócalo" on touch screens, above the contact line until someone first touches him.                                                                                                            |
+| Contact line | "¿Quieres una web a medida? Escríbenos" and the © line, at the bottom.                                                                                                                                                            |
+| Kelo button  | An invisible button over him, from head to feet, for the keyboard: "Tocar a Kelo".                                                                                                                                                |
 
 Without WebGL, or when the 3D fails to load, the brand mark stays, the words read as a short document and the Kelo button is hidden.
 

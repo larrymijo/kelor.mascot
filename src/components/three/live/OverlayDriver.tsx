@@ -41,8 +41,7 @@ export function OverlayDriver() {
     const ready = useScene.getState().boot.phase === 'ready'
 
     set('--letterbox', sample.letterbox.toFixed(4))
-    // The words wait for him to hatch.
-    set('--text', ready ? sample.text.toFixed(3) : '0')
+    set('--text', sample.text.toFixed(3))
     set('--hint', ready && !kelo.touched ? sample.text.toFixed(3) : '0')
 
     // Kelo on screen: the keyboard button covers him from head to feet.

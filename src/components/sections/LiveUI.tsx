@@ -7,9 +7,10 @@ import { SoundToggle } from './SoundToggle'
  * so each frame restyles just these few nodes: --letterbox, --iris-*, --text,
  * --hint and Kelo's place on screen (--kelo-*).
  *
- * Without live mode, the overlays, the hint and the Kelo button are hidden
- * and the words read as a short document after the first screen, so nothing
- * depends on WebGL. The contact link is the one gaze target on the page. The
+ * The words have their places from the first paint, so nothing moves when
+ * the stage starts; without live mode the overlays, the hint and the Kelo
+ * button are hidden and the page is the words alone, so nothing depends on
+ * WebGL. The contact link is the one gaze target on the page. The
  * Kelo button is the keyboard's way to him: Enter or Space taps him, the
  * arrow keys make him hop.
  */
@@ -46,7 +47,7 @@ export function LiveUI() {
       <section
         id="meet"
         aria-labelledby="meet-title"
-        className="live-text z-20 flex flex-col items-center px-6 py-24 text-center [html.live_&]:inset-x-0 [html.live_&]:bottom-[calc(var(--letterbox,0)*100svh+6.5rem)] [html.live_&]:py-0 sm:[html.live_&]:inset-x-auto sm:[html.live_&]:top-1/2 sm:[html.live_&]:bottom-auto sm:[html.live_&]:left-[6vw] sm:[html.live_&]:-translate-y-1/2 sm:[html.live_&]:items-start sm:[html.live_&]:text-left"
+        className="live-text inset-x-0 bottom-[calc(var(--letterbox,0)*100svh+6.5rem)] z-20 flex flex-col items-center px-6 text-center sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-[6vw] sm:-translate-y-1/2 sm:items-start sm:text-left"
       >
         <h1
           id="meet-title"
@@ -62,7 +63,7 @@ export function LiveUI() {
       <section
         id="contact"
         aria-label={contact.question}
-        className="live-text z-20 flex flex-col items-center gap-1 px-4 pt-8 pb-10 text-center text-[0.72rem] text-ink-300 [html.live_&]:inset-x-0 [html.live_&]:bottom-[calc(var(--letterbox,0)*100svh+0.75rem)] [html.live_&]:pb-0"
+        className="live-text inset-x-0 bottom-[calc(var(--letterbox,0)*100svh+0.75rem)] z-20 flex flex-col items-center gap-1 px-4 text-center text-[0.72rem] text-ink-300"
       >
         <p>
           {contact.question}{' '}
