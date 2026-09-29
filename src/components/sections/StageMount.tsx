@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useCallback, useRef, useState } from 'react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { LogoMark } from '@/components/ui/LogoMark'
+import { logoMarkDataUri, logoMarkWidth } from '@/components/ui/LogoMark'
 import { copy } from '@/lib/copy'
 import type { BootPhase } from '@/lib/scene/boot'
 
@@ -14,6 +14,8 @@ const Experience = dynamic(() => import('@/components/three/Experience'), {
 })
 
 type SceneState = 'loading' | BootPhase | 'unavailable'
+
+const BRAND_MARK = logoMarkDataUri()
 
 /** How long a lost GPU context may take to come back before the scene gives up. */
 const CONTEXT_GRACE_MS = 5_000
@@ -79,7 +81,17 @@ export function StageMount() {
             data-testid="logo-glow"
             className="absolute size-44 rounded-full bg-mascot-500/40 opacity-60 blur-3xl motion-safe:animate-glow-pulse"
           />
-          <LogoMark size={120} className="relative" />
+          {/* An image, not inline SVG, so the first screen has a contentful
+              paint to report as LCP before the canvas takes over. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- an inline data URI needs no optimisation */}
+          <img
+            src={BRAND_MARK}
+            width={logoMarkWidth(120)}
+            height={120}
+            alt=""
+            decoding="sync"
+            className="relative"
+          />
         </div>
       </div>
 
