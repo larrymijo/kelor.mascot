@@ -23,7 +23,7 @@ async function expectReadable(page: Page) {
 
 test.describe('resilience', () => {
   test('keeps the page readable when the lite model fails to download', async ({ page }) => {
-    await page.route('**/models/mascot.lite.glb', (route) => route.abort())
+    await page.route('**/models/mascot.lite.glb*', (route) => route.abort())
     await page.goto('/')
     await expect(stage(page)).toHaveAttribute('data-scene-state', 'unavailable', {
       timeout: 30_000,
@@ -48,7 +48,7 @@ test.describe('resilience', () => {
 
   test('keeps the lite Kelo when the full model fails to download', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'One profile is enough')
-    await page.route('**/models/mascot.full.glb', (route) => route.abort())
+    await page.route('**/models/mascot.full.glb*', (route) => route.abort())
     await page.goto('/?tier=medium')
     await expect(stage(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
     await page.waitForTimeout(5_000)

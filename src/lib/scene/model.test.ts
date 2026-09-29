@@ -8,6 +8,13 @@ describe('model URLs', () => {
     expect(() => publicUrl('assets/concept/x.png')).toThrow(/not under public/)
   })
 
+  it('carries the content hash when the build provides one', () => {
+    const versions = { files: { 'public/models/mascot.full.glb': 'abc123' }, basis: 'x' }
+    expect(publicUrl('public/models/mascot.full.glb', versions)).toBe(
+      '/models/mascot.full.glb?v=abc123',
+    )
+  })
+
   it('loads the lite model on low and the full model otherwise', () => {
     expect(modelUrl(character, 'low')).toBe('/models/mascot.lite.glb')
     expect(modelUrl(character, 'medium')).toBe('/models/mascot.full.glb')

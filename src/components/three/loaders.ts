@@ -4,7 +4,8 @@
  * GLTF decoding without a CDN. Models load through three's own GLTFLoader
  * with its Meshopt decoder, which is inlined WebAssembly. KTX2 needs a Basis
  * transcoder, served from public/basis (a copy of three's, kept in sync by a
- * test), and a loader that owns a worker pool, so there is one per renderer.
+ * test) under a versioned folder, and a loader that owns a worker pool, so
+ * there is one per renderer.
  *
  * Nothing KTX2-related touches the lite model's first paint: the loader code
  * is a separate chunk imported when the upgrade starts, and the transcoder
@@ -16,8 +17,7 @@ import type { Camera, Object3D, Scene, WebGLRenderer } from 'three'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js'
-
-export const TRANSCODER_PATH = '/basis/'
+import { transcoderPath } from '@/lib/assets/versions'
 
 export type KTX2Module = typeof import('three/examples/jsm/loaders/KTX2Loader.js')
 
@@ -34,7 +34,7 @@ const ktx2Loaders = new WeakMap<WebGLRenderer, KTX2Loader>()
 export function ktx2LoaderFor(renderer: WebGLRenderer, module: KTX2Module) {
   let loader = ktx2Loaders.get(renderer)
   if (!loader) {
-    loader = new module.KTX2Loader().setTranscoderPath(TRANSCODER_PATH).detectSupport(renderer)
+    loader = new module.KTX2Loader().setTranscoderPath(transcoderPath()).detectSupport(renderer)
     ktx2Loaders.set(renderer, loader)
   }
   return loader
