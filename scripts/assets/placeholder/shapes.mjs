@@ -30,7 +30,7 @@ export const PLACEHOLDER_MOUTH = {
     row: { length: 0.019, radius: 0.0048, thickness: 0.6, insetM: 0.006, rakeDeg: 40 },
     tusks: {
       upper: { at: 0.36, length: 0.032, radius: 0.0075, clearanceM: 0.001, curl: 0.25 },
-      lower: { at: 0.66, length: 0.019, radius: 0.0052, clearanceM: 0.001, curl: 0.2 },
+      lower: { at: 0.55, length: 0.017, radius: 0.0052, clearanceM: 0.001, curl: 0.18 },
       rings: 5,
     },
     gums: { radiusM: 0.0045, depth: 1.4, insetM: 0.006 },

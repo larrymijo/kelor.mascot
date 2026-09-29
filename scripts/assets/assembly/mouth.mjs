@@ -378,8 +378,14 @@ export function mouthCavity(line, mouth, skin, colours, detail = 1) {
     Math.max(12, Math.round(18 * detail)),
     Math.max(6, Math.round(9 * detail)),
   )
-  tongue.scale(radii.x * 0.62, mouth.cavityHeightM * 0.3, depth * 0.78)
-  tongue.translate(0, mouth.y - mouth.cavityHeightM * 0.45, centre.z + depth * 0.12)
+  // The tongue lies behind the lower gums and teeth, never out past the lips.
+  const gums = mouth.teeth.gums
+  const tongueFront =
+    Math.max(...line.map((s) => s.point.z)) - gums.insetM - 2 * gums.radiusM - 0.004
+  const tongueBack = back + depth * 0.25
+  const half = Math.max(0.005, (tongueFront - tongueBack) / 2)
+  tongue.scale(radii.x * 0.62, mouth.cavityHeightM * 0.3, half)
+  tongue.translate(0, mouth.y - mouth.cavityHeightM * 0.45, tongueBack + half)
   halves.push(paint(tongue, skin.lower, colours.tongue))
   return halves
 }

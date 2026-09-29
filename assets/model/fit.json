@@ -99,11 +99,11 @@
           "curl": 0.38
         },
         "lower": {
-          "at": 0.7,
-          "length": 0.034,
-          "radius": 0.0088,
+          "at": 0.55,
+          "length": 0.026,
+          "radius": 0.0078,
           "clearanceM": 0.0015,
-          "curl": 0.32
+          "curl": 0.18
         },
         "rings": 6
       },
