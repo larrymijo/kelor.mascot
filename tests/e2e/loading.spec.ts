@@ -70,6 +70,35 @@ test.describe('progressive loading', () => {
     expect(seen.errors).toEqual([])
   })
 
+  test('versions the models and the transcoder by content and caches them for good', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'One profile is enough')
+    const heavy: { url: URL; cacheControl: string }[] = []
+    page.on('response', (response) => {
+      const url = new URL(response.url())
+      if (/^\/(models|basis)\//.test(url.pathname))
+        heavy.push({ url, cacheControl: response.headers()['cache-control'] ?? '' })
+    })
+    // Medium, so the full model and its KTX2 transcoder load too.
+    await page.goto('/?tier=medium')
+    await expect(stage(page)).toHaveAttribute('data-model', 'full', { timeout: 40_000 })
+
+    const models = heavy.filter(({ url }) => url.pathname.startsWith('/models/'))
+    const basis = heavy.filter(({ url }) => url.pathname.startsWith('/basis/'))
+    expect(models.map(({ url }) => url.pathname)).toEqual([
+      '/models/mascot.lite.glb',
+      '/models/mascot.full.glb',
+    ])
+    expect(basis.map(({ url }) => url.pathname.split('/').at(-1)).sort()).toEqual([
+      'basis_transcoder.js',
+      'basis_transcoder.wasm',
+    ])
+    for (const { url } of models) expect(url.searchParams.get('v')).toMatch(/^[0-9a-f]{12}$/)
+    for (const { url } of basis) expect(url.pathname).toMatch(/^\/basis\/[0-9a-f]{12}\//)
+    for (const { cacheControl } of heavy) expect(cacheControl).toContain('immutable')
+  })
+
   test('keeps the lite model when the visitor asked to save data', async ({ page, baseURL }) => {
     const seen = watch(page, baseURL!)
     await page.addInitScript(() => {

@@ -3,7 +3,8 @@
 /**
  * Loads the cinematic engine once Kelo's stage is drawing and the browser is
  * idle. Until then, and for good if WebGL is unavailable, the page stays a
- * short readable document. This component is the only cinematic code in the
+ * short readable document; if the stage fails later, it stops the engine and
+ * the page goes back to being that document. This component is the only cinematic code in the
  * initial bundle: a few lines and a dynamic import.
  */
 import { useEffect } from 'react'
@@ -38,9 +39,15 @@ export function CinematicMount() {
       })
     }
     const check = () => {
-      if (DRAWING.has(stage.getAttribute('data-scene-state') ?? '')) {
+      const state = stage.getAttribute('data-scene-state') ?? ''
+      if (DRAWING.has(state)) start()
+      // The stage gave up (a failed load, a lost context): back to the document.
+      if (state === 'unavailable') {
         observer.disconnect()
-        start()
+        disposed = true
+        cancelIdle?.()
+        stop?.()
+        stop = null
       }
     }
     const observer = new MutationObserver(check)

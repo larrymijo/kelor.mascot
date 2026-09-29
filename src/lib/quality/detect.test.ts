@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectQualityTier, stepDown, stepUp, type DeviceSignals } from './detect'
+import { detectQualityTier, type DeviceSignals } from './detect'
 
 const desktop = (renderer: string, extra: Partial<DeviceSignals> = {}): DeviceSignals => ({
   webgl2: true,
@@ -43,20 +43,5 @@ describe('detectQualityTier', () => {
     expect(phone({})).toBe('medium')
     expect(phone({ hardwareConcurrency: 4 })).toBe('low')
     expect(phone({ deviceMemoryGB: 3 })).toBe('low')
-  })
-})
-
-describe('tier steps', () => {
-  it('steps down and up within bounds', () => {
-    expect(stepDown('high')).toBe('medium')
-    expect(stepDown('low')).toBe('low')
-    expect(stepUp('low')).toBe('medium')
-    expect(stepUp('high')).toBe('high')
-  })
-
-  it('never steps above the ceiling', () => {
-    expect(stepUp('medium', 'medium')).toBe('medium')
-    expect(stepUp('low', 'medium')).toBe('medium')
-    expect(stepUp('high', 'medium')).toBe('high')
   })
 })

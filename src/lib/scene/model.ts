@@ -1,14 +1,16 @@
 /**
  * Where the stage loads the mascot from, per quality tier. character.json
- * stores repo paths (public/models/…); the browser needs site URLs.
+ * stores repo paths (public/models/…); the browser needs site URLs, which
+ * carry the file's content hash in builds (src/lib/assets/versions.ts).
  */
+import { assetVersions, versionedUrl } from '@/lib/assets/versions'
 import type { Character } from '@/lib/character'
 import type { QualityTier } from '@/lib/quality/detect'
 
-/** "public/models/x.glb" → "/models/x.glb". */
-export function publicUrl(repoPath: string) {
+/** "public/models/x.glb" → "/models/x.glb", plus "?v=<hash>" when the build knows it. */
+export function publicUrl(repoPath: string, versions = assetVersions) {
   if (!repoPath.startsWith('public/')) throw new Error(`${repoPath} is not under public/`)
-  return repoPath.slice('public'.length)
+  return versionedUrl(repoPath.slice('public'.length), repoPath, versions)
 }
 
 export function tierSettings(character: Pick<Character, 'quality'>, tier: QualityTier) {

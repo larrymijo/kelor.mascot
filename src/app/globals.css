@@ -168,3 +168,20 @@ html.cinematic .cinematic-contact:not([data-shown]) {
   opacity: var(--fade, 0);
   background-color: var(--color-black);
 }
+
+/*
+ * Windows high contrast (forced colours). The letterbox, iris and fade are
+ * decorative blacks over the 3D scene, so they keep their colour instead of
+ * turning into system backgrounds. The icon links and the sound switch sit on
+ * the scene with no background, so their system-coloured icons get a system
+ * backplate. Text already gets one from the browser.
+ */
+@media (forced-colors: active) {
+  .cinematic-overlay {
+    forced-color-adjust: none;
+  }
+
+  .forced-plate {
+    background-color: Canvas;
+  }
+}

@@ -11,9 +11,10 @@ import { CameraRig, FOV } from './CameraRig'
 import { CinematicDriver } from './cinematic/CinematicDriver'
 import { OverlayDriver } from './cinematic/OverlayDriver'
 import { Effects } from './Effects'
+import { Backdrop } from './Backdrop'
 import { Floor } from './Floor'
 import { disposeKtx2Loader } from './loaders'
-import { QualityController } from './quality/QualityController'
+import { QualityController, qualityLadder } from './quality/QualityController'
 import { readDeviceSignals } from './quality/signals'
 import { useScene } from './store'
 import { StudioLights } from './StudioLights'
@@ -33,6 +34,10 @@ export interface StageProps {
   onFirstFrame?: () => void
   /** Called when WebGL 2 is not available; the HTML fallback stays. */
   onUnavailable?: () => void
+  /** Called when the browser takes the GPU context away (phones do, in the background). */
+  onContextLost?: () => void
+  /** Called when the context comes back; three rebuilds its GPU state by itself. */
+  onContextRestored?: () => void
   /** Scene content (egg, mascot); kept as children so the stage stays generic. */
   children?: ReactNode
 }
@@ -102,6 +107,8 @@ export default function Stage({
   onClipChange,
   onFirstFrame,
   onUnavailable,
+  onContextLost,
+  onContextRestored,
   children,
 }: StageProps) {
   const wrapper = useRef<HTMLDivElement>(null)
@@ -113,13 +120,15 @@ export default function Stage({
     // ?tier=low|medium|high pins the tier on local and preview builds, for measuring.
     const forced = forcedTier()
     const detected = forced ?? detectQualityTier(signals)
-    useScene.getState().initTier(detected)
+    // The best step of the quality ladder for this tier and screen.
+    useScene.getState().initTier(detected, qualityLadder(detected)[0]!.dpr)
     if (forced) useScene.getState().lockTier()
     return detected
   })
   const [inView, setInView] = useState(true)
   const [pageVisible, setPageVisible] = useState(true)
   const tier = useScene((s) => s.tier)
+  const dpr = useScene((s) => s.dpr)
 
   useEffect(() => {
     if (bootTier === 'unavailable') onUnavailable?.()
@@ -167,21 +176,25 @@ export default function Stage({
   if (bootTier === 'unavailable') return null
 
   const boot = character.quality.tiers[bootTier]
-  const current = character.quality.tiers[tier]
 
   return (
     <div ref={wrapper} className="absolute inset-0" data-quality={tier}>
       <Canvas
         shadows={boot.shadows ? 'percentage' : false}
-        dpr={[1, current.dprMax]}
+        dpr={dpr}
         frameloop={inView && pageVisible ? 'always' : 'never'}
         gl={{ antialias: bootTier === 'low', powerPreference: 'high-performance', stencil: false }}
         camera={{ fov: FOV, near: 0.1, far: 40, position: [0, 1, 4] }}
         onCreated={({ gl }) => {
           gl.toneMapping = AgXToneMapping
+          // three stops drawing while the context is lost and restores it; the
+          // HTML around the stage only has to cover the gap.
+          gl.domElement.addEventListener('webglcontextlost', () => onContextLost?.())
+          gl.domElement.addEventListener('webglcontextrestored', () => onContextRestored?.())
         }}
       >
         <color attach="background" args={[character.colors.brandMono.ink900]} />
+        <Backdrop />
         <CinematicDriver />
         <CameraRig />
         <StudioLights shadows={boot.shadows} shadowMapSize={bootTier === 'high' ? 2048 : 1024} />

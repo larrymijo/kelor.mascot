@@ -16,7 +16,8 @@ type SoundName = 'gulp' | 'whoosh' | 'chord'
 
 /** One-shots by page progress. The gulp and the chord play only going forwards. */
 export const SOUND_CUES: readonly { at: number; sound: SoundName; forwardOnly?: boolean }[] = [
-  { at: 0.2, sound: 'gulp', forwardOnly: true },
+  // The bite: the jaw snaps shut on the viewer (the script's bite cue).
+  { at: 0.175, sound: 'gulp', forwardOnly: true },
   { at: 0.33, sound: 'whoosh' },
   { at: 0.57, sound: 'whoosh' },
   { at: 0.69, sound: 'whoosh' },
@@ -105,6 +106,8 @@ export function createSynth(ctx: AudioContext): Synth {
       tone(at, 520, 180, 0.15, envelope(at, 0.3, 0.005, 0.15))
     },
     gulp(at: number) {
+      // The teeth clack shut, then the swallow.
+      noiseBurst(at, 0.05, filter('highpass', 2400), envelope(at, 0.55, 0.001, 0.045))
       tone(at, 160, 45, 0.45, envelope(at, 0.5, 0.02, 0.5))
       noiseBurst(at, 0.4, filter('lowpass', 400), envelope(at, 0.25, 0.03, 0.35))
     },

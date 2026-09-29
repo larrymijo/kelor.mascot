@@ -106,8 +106,19 @@ describe('sampleTimeline', () => {
   it('grows Kelo during the gulp and shrinks him back by the meet', () => {
     expect(sampleTimeline(0.2, 'desktop').scale).toBe(5)
     expect(sampleTimeline(0.32, 'desktop').scale).toBe(1)
-    expect(sampleTimeline(0.2, 'desktop').expression).toBe('roar')
+    expect(sampleTimeline(0.15, 'desktop').expression).toBe('roar')
+    expect(sampleTimeline(0.2, 'desktop').expression).toBeNull()
     expect(sampleTimeline(0.3, 'desktop').expression).toBeNull()
+  })
+
+  it('opens the jaw wide as he closes in, and bites as the screen goes black', () => {
+    expect(sampleTimeline(0.15, 'desktop').jaw).toBe(1)
+    for (const p of [0, 0.04, 0.22, 0.42, 0.95]) expect(sampleTimeline(p, 'desktop').jaw).toBe(0)
+    expect(crossedCues(0.17, 0.18, 'desktop').map((c) => c.kind)).toEqual(['bite'])
+    expect(crossedCues(0.18, 0.17, 'desktop')).toEqual([])
+    // Reduced motion: no gulp, so no open jaw and no bite.
+    for (const p of steps(200)) expect(sampleTimeline(p, 'reduced').jaw).toBe(0)
+    expect(crossedCues(0, 1, 'reduced').some((c) => c.kind === 'bite')).toBe(false)
   })
 
   it('shows the words only in their acts', () => {

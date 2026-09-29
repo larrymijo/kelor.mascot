@@ -62,7 +62,7 @@ test.describe('scroll cinematic', () => {
       page.screenshot({ path: `scripts/review/out/${id}-${testInfo.project.name}.png` })
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     // Hold the lite model back so the egg can be seen and captured.
-    await page.route('**/models/mascot.lite.glb', async (route) => {
+    await page.route('**/models/mascot.lite.glb*', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 6_000))
       await route.continue()
     })

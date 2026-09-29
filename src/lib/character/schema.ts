@@ -43,7 +43,7 @@ const budgetSchema = z.strictObject({
 const boneSchema = z.strictObject({
   name: boneName,
   parent: boneName.nullable(),
-  role: z.enum(['root', 'spine', 'neck', 'head', 'eye', 'eyelid', 'tail', 'leg', 'arm']),
+  role: z.enum(['root', 'spine', 'neck', 'head', 'eye', 'eyelid', 'jaw', 'tail', 'leg', 'arm']),
   restHead: vec3,
 })
 
@@ -57,6 +57,7 @@ const clipSchema = z.strictObject({
 const qualityTierSchema = z.strictObject({
   model: tierName,
   dprMax: z.number().min(0.5).max(3),
+  dprMin: z.number().min(0.5).max(3),
   shadows: z.boolean(),
   ao: z.enum(['off', 'half', 'full']),
   bloom: z.boolean(),
@@ -203,16 +204,27 @@ export const characterSchema = z
       ...docShape,
       mascot: z.record(z.string(), hexColor),
       eyes: z.strictObject({ sclera: hexColor, iris: hexColor, highlight: hexColor }),
+      mouth: z.strictObject({ teeth: hexColor, inside: hexColor, tongue: hexColor }),
       brandMono: z.record(z.string(), hexColor),
+    }),
+
+    jaw: z.strictObject({
+      ...docShape,
+      maxOpenDeg: degrees(60),
+      openDeg: z.record(snakeName, z.number().min(0).max(60)),
+      lambda,
+      biteS: z.number().positive().max(1),
     }),
 
     egg: z.strictObject({
       ...docShape,
-      shape: z.literal('hexagonal-prism'),
+      shape: z.literal('ovoid'),
       heightM: z.number().positive(),
       radiusM: z.number().positive(),
-      bevelM: z.number().nonnegative(),
-      faceColors: z.array(hexColor).min(1),
+      /** How much narrower the top is than the bottom, 0 for a plain ellipsoid. */
+      taper: z.number().min(0).max(0.4),
+      shellColor: hexColor,
+      speckleColor: hexColor,
       crackGlow: z.string(),
       wobble: z.strictObject({
         maxAngleDeg: degrees(45),
@@ -230,7 +242,9 @@ export const characterSchema = z
         medium: qualityTierSchema,
         low: qualityTierSchema,
       }),
+      dprSteps: z.array(z.number().min(0.5).max(3)).min(1),
       performanceMonitor: z.strictObject({
+        dprLowerFps: posInt,
         lowerFps: posInt,
         upperFps: posInt,
         flipflops: posInt,
@@ -317,6 +331,20 @@ export const characterSchema = z
     c.gaze.headChain.links.forEach((l, i) =>
       requireBone(['gaze', 'headChain', 'links', i, 'bone'], l.bone),
     )
+
+    // One procedural jaw, opened per expression, never beyond its maximum.
+    const jaws = c.skeleton.bones.filter((b) => b.role === 'jaw')
+    if (jaws.length !== 1)
+      issue(['skeleton', 'bones'], `Expected one jaw bone, found ${jaws.length}`)
+    for (const jaw of jaws)
+      if (!procedural.has(jaw.name))
+        issue(['skeleton', 'procedural'], `"${jaw.name}" must be listed in skeleton.procedural`)
+    for (const [name, deg] of Object.entries(c.jaw.openDeg)) {
+      if (!(name in c.expressions.cells))
+        issue(['jaw', 'openDeg', name], `Unknown expression "${name}"`)
+      if (deg > c.jaw.maxOpenDeg)
+        issue(['jaw', 'openDeg', name], `Opens beyond maxOpenDeg (${c.jaw.maxOpenDeg})`)
+    }
     const shareSum = c.gaze.headChain.links.reduce((sum, l) => sum + l.share, 0)
     if (Math.abs(shareSum - 1) > 1e-6) {
       issue(['gaze', 'headChain', 'links'], `Shares must add up to 1 (got ${shareSum})`)
@@ -416,6 +444,8 @@ export const characterSchema = z
     const pm = c.quality.performanceMonitor
     if (pm.lowerFps >= pm.upperFps)
       issue(['quality', 'performanceMonitor'], 'lowerFps must be below upperFps')
+    if (pm.dprLowerFps < pm.lowerFps || pm.dprLowerFps >= pm.upperFps)
+      issue(['quality', 'performanceMonitor'], 'dprLowerFps must lie between lowerFps and upperFps')
   })
 
 export type Character = z.infer<typeof characterSchema>

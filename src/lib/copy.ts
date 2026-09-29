@@ -17,7 +17,7 @@ export const copy = {
     cue: 'Desliza',
     /** Accessible description of the decorative 3D scene. */
     sceneLabel:
-      'Escena 3D: de un huevo hexagonal con los colores del logo de KELOR nace Kelo, un pequeño dinosaurio morado que te sigue con la mirada, crece hasta tragarse la pantalla y vuelve a su tamaño.',
+      'Escena 3D: de un huevo de dinosaurio nace Kelo, un pequeño dinosaurio morado que te sigue con la mirada, crece hasta tragarse la pantalla y vuelve a su tamaño.',
   },
   meet: {
     title: 'Conoce a Kelo',
@@ -28,6 +28,17 @@ export const copy = {
     link: 'Escríbenos',
     // The studio's contact page; switch to the final domain once it exists.
     href: 'https://kelor-interactive.vercel.app/contacto',
+  },
+  notFound: {
+    title: 'Página no encontrada',
+    body: 'Esta página no existe. Kelo te espera en la portada.',
+    back: 'Volver al inicio',
+  },
+  error: {
+    title: 'Algo salió mal',
+    body: 'La página no pudo cargarse. Vuelve a intentarlo en un momento.',
+    retry: 'Reintentar',
+    back: 'Volver al inicio',
   },
   /** Accessible name of the sound switch; its state is aria-pressed. */
   sound: {

@@ -38,8 +38,8 @@
       "maxTriangles": 24000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
-      "maxDrawCalls": 6,
-      "maxMaterials": 5,
+      "maxDrawCalls": 8,
+      "maxMaterials": 7,
       "maxTextures": 5,
       "maxTextureSize": 2048,
       "maxMorphTargets": 0,
@@ -50,8 +50,8 @@
       "maxTriangles": 8000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
-      "maxDrawCalls": 6,
-      "maxMaterials": 5,
+      "maxDrawCalls": 8,
+      "maxMaterials": 7,
       "maxTextures": 4,
       "maxTextureSize": 1024,
       "maxMorphTargets": 0,
@@ -100,13 +100,14 @@
         "role": "arm",
         "restHead": [-0.19, 0.52, 0.12]
       },
-      { "name": "hand_R", "parent": "forearm_R", "role": "arm", "restHead": [-0.21, 0.47, 0.15] }
+      { "name": "hand_R", "parent": "forearm_R", "role": "arm", "restHead": [-0.21, 0.47, 0.15] },
+      { "name": "jaw", "parent": "head", "role": "jaw", "restHead": [0, 0.84, 0.12] }
     ],
-    "procedural": ["eye_L", "eye_R", "eyelid_L", "eyelid_R"]
+    "procedural": ["eye_L", "eye_R", "eyelid_L", "eyelid_R", "jaw"]
   },
 
   "meshes": {
-    "_doc": "Required mesh names (glTF mesh or node name). All are skinned to the single armature. Both eyes share one mesh, each eye weighted 100 % to its eye bone; same for the eyelids. That keeps the model at 6 draw calls.",
+    "_doc": "Required mesh names (glTF mesh or node name). All are skinned to the single armature. Both eyes share one mesh, each eye weighted 100 % to its eye bone; same for the eyelids. The teeth and the mouth each add one: 8 draw calls.",
     "required": [
       {
         "name": "body",
@@ -116,7 +117,7 @@
       {
         "name": "face",
         "material": "face",
-        "_doc": "Thin shell over the face carrying the expression atlas (mouth, brows, blush). Weighted to head."
+        "_doc": "Thin shell over the face carrying the expression atlas (lip line, brows, blush). Cut along the lips like the body and weighted like the skin under it, so its lower part opens with the jaw."
       },
       {
         "name": "eyes",
@@ -137,6 +138,16 @@
         "name": "plates",
         "material": "plates",
         "_doc": "Hexagonal dorsal plates along spine and tail. Emissive, driven by a runtime glow uniform."
+      },
+      {
+        "name": "teeth",
+        "material": "teeth",
+        "_doc": "T-rex style sharp teeth and tusks just inside the lips: the upper row weighted to head, the lower to jaw. Hidden while the mouth is closed."
+      },
+      {
+        "name": "mouth",
+        "material": "mouth",
+        "_doc": "The mouth cavity and tongue behind the lips, coloured by vertex colours: the upper half weighted to head, the lower half and the tongue to jaw."
       }
     ]
   },
@@ -152,7 +163,9 @@
       { "name": "face", "model": "pbr", "textures": ["face_atlas"], "alphaMode": "BLEND" },
       { "name": "eyes", "model": "pbr", "textures": ["eyes_basecolor"] },
       { "name": "highlight", "model": "unlit", "textures": [] },
-      { "name": "plates", "model": "pbr", "textures": [], "emissive": "glow" }
+      { "name": "plates", "model": "pbr", "textures": [], "emissive": "glow" },
+      { "name": "teeth", "model": "pbr", "textures": [] },
+      { "name": "mouth", "model": "pbr", "textures": [] }
     ]
   },
 
@@ -168,7 +181,7 @@
   },
 
   "expressions": {
-    "_doc": "Expressions are cells of a 2x2 atlas on the face material, switched by UV offset (texture.offset in three). Cells are [column, row] with row 0 at the top (glTF UV origin). The face mesh UVs are authored inside cell [0, 0]. No morph targets, no jaw.",
+    "_doc": "Expressions are cells of a 2x2 atlas on the face material, switched by UV offset (texture.offset in three). Cells are [column, row] with row 0 at the top (glTF UV origin). The face mesh UVs are authored inside cell [0, 0]. No morph targets: the mouth opens with the jaw (see jaw), and the atlas carries the lip line, brows and blush.",
     "mesh": "face",
     "texture": "face_atlas",
     "grid": [2, 2],
@@ -259,6 +272,7 @@
       "glow": "#D9C7FF"
     },
     "eyes": { "sclera": "#F7F7F7", "iris": "#151515", "highlight": "#FFFFFF" },
+    "mouth": { "teeth": "#F4EEE2", "inside": "#2A0E33", "tongue": "#D9709F" },
     "brandMono": {
       "ink900": "#151515",
       "ink500": "#545454",
@@ -268,54 +282,66 @@
   },
 
   "egg": {
-    "_doc": "Procedural loader (0 KB of assets): a bevelled hexagonal prism that reads like the logo's isometric cube. Wobbles while the GLB downloads and hatches when the model is ready and at least minDisplayS has passed, so it never flickers.",
-    "shape": "hexagonal-prism",
+    "_doc": "Procedural loader (0 KB of assets): a rounded dinosaur egg, fuller at the bottom (taper), with a shell of embossed polygonal plates, tubercles and speckles computed on the GPU. Wobbles while the GLB downloads and hatches when the model is ready and at least minDisplayS has passed, so it never flickers. radiusM is the widest radius.",
+    "shape": "ovoid",
     "heightM": 0.7,
-    "radiusM": 0.28,
-    "bevelM": 0.03,
-    "faceColors": ["#545454", "#A6A6A6", "#F7F7F7"],
+    "radiusM": 0.27,
+    "taper": 0.14,
+    "shellColor": "#E6DED0",
+    "speckleColor": "#7E7468",
     "crackGlow": "glow",
     "wobble": { "maxAngleDeg": 6, "frequencyHz": 1.4 },
     "minDisplayS": 1.8,
     "hatchDurationS": 1.2
   },
 
+  "jaw": {
+    "_doc": "A T-rex style jaw (phase 7, the owner's request): the lips are cut along the mouth line and the lower jaw hinges on the procedural jaw bone, far back like a T-rex's. openDeg is how far each expression opens it; the scroll script opens it further (up to maxOpenDeg) and the bite snaps it shut in biteS. lambda is how fast it follows.",
+    "maxOpenDeg": 38,
+    "openDeg": { "neutral": 0, "happy": 0, "surprised": 12, "roar": 30 },
+    "lambda": 14,
+    "biteS": 0.12
+  },
   "quality": {
-    "_doc": "Tier picked at boot from device heuristics, then adjusted at runtime with drei's PerformanceMonitor: step down below lowerFps, up above upperFps, lock after flipflops.",
+    "_doc": "Tier picked at boot from device heuristics, then adjusted at runtime with drei's PerformanceMonitor along a ladder (src/lib/quality/ladder.ts): step up above upperFps, lock after flipflops. Within a tier the render pixel ratio steps down first, below dprLowerFps, from dprMax (or the device's) through dprSteps to dprMin; only then does the tier change, below lowerFps.",
     "default": "medium",
     "tiers": {
       "high": {
         "model": "full",
         "dprMax": 2,
+        "dprMin": 1.5,
         "shadows": true,
         "ao": "full",
         "bloom": true,
         "depthOfField": true,
-        "particles": 600,
+        "particles": 48,
         "filmGrain": true
       },
       "medium": {
         "model": "full",
         "dprMax": 1.5,
+        "dprMin": 1,
         "shadows": true,
         "ao": "off",
         "bloom": true,
         "depthOfField": false,
-        "particles": 250,
+        "particles": 32,
         "filmGrain": true
       },
       "low": {
         "model": "lite",
         "dprMax": 1,
+        "dprMin": 1,
         "shadows": false,
         "ao": "off",
         "bloom": false,
         "depthOfField": false,
-        "particles": 80,
+        "particles": 16,
         "filmGrain": false
       }
     },
-    "performanceMonitor": { "lowerFps": 45, "upperFps": 58, "flipflops": 3 }
+    "dprSteps": [2, 1.5, 1.25, 1],
+    "performanceMonitor": { "dprLowerFps": 54, "lowerFps": 45, "upperFps": 58, "flipflops": 3 }
   },
 
   "accessibility": {

@@ -8,7 +8,7 @@
  * Layering, every frame:
  *   1. the layered bones return to their bind pose;
  *   2. the mixer writes whatever the clips key;
- *   3. behave() multiplies gaze, blink and tail offsets on top.
+ *   3. behave() multiplies gaze, blink, tail and jaw offsets on top.
  * Offsets therefore never accumulate, whether or not a clip keys the bone.
  */
 import {
@@ -54,6 +54,14 @@ const LID_FOLLOW = 0.5
 const LID_FOLLOW_RANGE = [degToRad(-8), degToRad(25)] as const
 /** How fast the layers fade in and out when the director changes the weight. */
 const WEIGHT_LAMBDA = 4
+/** The procedural jaw (character.json jaw): a positive turn about its +X opens it. */
+const JAW_BONE = character.skeleton.bones.find((b) => b.role === 'jaw')?.name
+/** A bite closes within biteS: three time constants of the damping. */
+const BITE_LAMBDA = 3 / character.jaw.biteS
+/** The jaw stays shut this long after a bite before it follows again. */
+const BITE_HOLD_S = 0.35
+/** The camera aims this far inside the lips, into the mouth rather than at its edge. */
+const MOUTH_INSET_M = 0.02
 
 export type ExpressionName = keyof typeof cells
 
@@ -75,7 +83,7 @@ export interface RigSnapshot {
   time: number
   expression: ExpressionName | null
   idleClip: string
-  behaviour?: { head: Angles; eyes: Angles[]; weight: number; tail: TailLink[] }
+  behaviour?: { head: Angles; eyes: Angles[]; weight: number; tail: TailLink[]; jawDeg?: number }
 }
 
 function findMaterial(root: Object3D, name: string) {
@@ -119,8 +127,17 @@ export class MascotRig {
   private readonly lids: (Bone | undefined)[]
   private readonly tailBones: Bone[]
   private readonly hips?: Bone
+  private readonly jaw?: Bone
+  /** Teeth and mouth cavity: drawn only while the jaw is open. */
+  private readonly mouthParts: Object3D[] = []
+  private jawDeg = 0
+  private jawExpressionDeg = 0
+  private jawScriptDeg = 0
+  private biting = 0
   /** The mouth in the head bone's space, so it follows every turn of the head. */
   private readonly mouthLocal = new Vector3()
+  /** The lower lip in the jaw bone's space: it drops as the jaw opens. */
+  private readonly lowerMouthLocal = new Vector3()
   private headAngles: Angles = { yaw: 0, pitch: 0 }
   private eyeAngles: Angles[]
   private weight = 0
@@ -163,12 +180,21 @@ export class MascotRig {
     )
     this.tailBones = found(life.tail.bones)
     this.hips = this.bones.get('hips')
+    this.jaw = JAW_BONE ? this.bones.get(JAW_BONE) : undefined
+    this.scene.traverse((object) => {
+      const material = (object as Mesh).material as Material | undefined
+      if (material && !Array.isArray(material) && ['teeth', 'mouth'].includes(material.name))
+        this.mouthParts.push(object)
+    })
     if (this.head) {
-      // At bind the scene root is the model's origin: place the mouth, then keep it in head space.
+      // At bind the scene root is the model's origin: place the mouth, then keep
+      // the upper lip in head space and the lower lip in jaw space, a little
+      // inside the lips, so the middle of the two is the mouth's opening.
       this.scene.updateMatrixWorld(true)
-      this.head.worldToLocal(this.mouthLocal.set(0, MOUTH.y, MOUTH.z))
+      this.head.worldToLocal(this.mouthLocal.set(0, MOUTH.y, MOUTH.z - MOUTH_INSET_M))
+      this.jaw?.worldToLocal(this.lowerMouthLocal.set(0, MOUTH.y, MOUTH.z - MOUTH_INSET_M))
     }
-    for (const bone of [...this.chain, ...this.eyes, ...this.lids, ...this.tailBones]) {
+    for (const bone of [...this.chain, ...this.eyes, ...this.lids, ...this.tailBones, this.jaw]) {
       if (bone) this.bind.set(bone, bone.quaternion.clone())
     }
     this.eyeAngles = this.eyes.map(() => ({ yaw: 0, pitch: 0 }))
@@ -235,6 +261,7 @@ export class MascotRig {
         eyes: this.eyeAngles.map((a) => ({ ...a })),
         weight: this.weight,
         tail: this.tail.map((l) => ({ yaw: { ...l.yaw }, pitch: { ...l.pitch } })),
+        jawDeg: this.jawDeg,
       },
     }
   }
@@ -254,6 +281,7 @@ export class MascotRig {
       this.headAngles = { ...b.head }
       this.eyeAngles = this.eyeAngles.map((a, i) => ({ ...(b.eyes[i] ?? a) }))
       this.weight = b.weight
+      this.jawDeg = b.jawDeg ?? this.jawDeg
       if (b.tail.length === this.tail.length) {
         this.tail = b.tail.map((l) => ({ yaw: { ...l.yaw }, pitch: { ...l.pitch } }))
       }
@@ -266,13 +294,29 @@ export class MascotRig {
     this.mixer.update(dt)
   }
 
-  /** Gaze, blink and tail on top of the clip pose. */
+  /** Gaze, blink, tail and jaw on top of the clip pose. */
   behave(dt: number, frame: BehaviourFrame) {
     this.weight = damp(this.weight, frame.weight, WEIGHT_LAMBDA, dt)
     this.aimHead(dt, frame)
     this.aimEyes(dt, frame)
     this.blink(frame.blink)
     this.swingTail(dt)
+    this.moveJaw(dt)
+  }
+
+  /** How far the scroll script opens the jaw, in degrees; the expression may open it more. */
+  setJawScript(deg: number) {
+    this.jawScriptDeg = Math.min(character.jaw.maxOpenDeg, Math.max(0, deg))
+  }
+
+  /** Snap the jaw shut, faster than it otherwise moves, and hold it a moment. */
+  bite() {
+    this.biting = character.jaw.biteS + BITE_HOLD_S
+  }
+
+  /** Current jaw opening in degrees; for tests and the debug readout. */
+  get jawOpenDeg() {
+    return this.jawDeg
   }
 
   /** Current layer weight; for tests and the debug readout. */
@@ -280,19 +324,27 @@ export class MascotRig {
     return this.weight
   }
 
-  /** Switch the face atlas cell by UV offset. */
+  /** Switch the face atlas cell by UV offset, and open the jaw as the expression wants. */
   setExpression(name: ExpressionName) {
-    if (!this.faceMap || name === this.expression) return
+    if (name === this.expression) return
+    this.jawExpressionDeg = (character.jaw.openDeg as Record<string, number>)[name] ?? 0
+    if (!this.faceMap) return
     this.expression = name
     const [col, row] = cells[name] ?? cells[character.expressions.default as ExpressionName]!
     this.faceMap.offset.set(col / grid[0], row / grid[1])
   }
 
-  /** Where the mouth is in the world right now, whatever the head and the stage are doing. */
+  /**
+   * Where the mouth is in the world right now, whatever the head, the jaw and
+   * the stage are doing: the middle of its opening, just inside the lips.
+   */
   mouthWorld(out: Vector3) {
     if (!this.head) return out.set(0, MOUTH.y, MOUTH.z)
     this.head.updateWorldMatrix(true, false)
-    return this.head.localToWorld(out.copy(this.mouthLocal))
+    this.head.localToWorld(out.copy(this.mouthLocal))
+    if (!this.jaw) return out
+    this.jaw.updateWorldMatrix(true, false)
+    return out.add(this.jaw.localToWorld(_world.copy(this.lowerMouthLocal))).multiplyScalar(0.5)
   }
 
   /** Midpoint between the eyes in the world, for the close-up's focus. */
@@ -381,6 +433,21 @@ export class MascotRig {
       const angle = follow + (LID_CLOSED - follow) * closure
       lid.quaternion.multiply(_offset.setFromEuler(_euler.set(angle, 0, 0, 'YXZ')))
     })
+  }
+
+  /** The jaw follows the wider of the expression and the script, unless a bite shuts it. */
+  private moveJaw(dt: number) {
+    if (!this.jaw) return
+    const biting = this.biting > 0
+    if (biting) this.biting -= dt
+    const target = biting ? 0 : Math.max(this.jawExpressionDeg, this.jawScriptDeg)
+    this.jawDeg = damp(this.jawDeg, target, biting ? BITE_LAMBDA : character.jaw.lambda, dt)
+    // Shut, the mouth is only the painted lip line: nothing inside can show through.
+    const open = this.jawDeg > 0.5
+    for (const part of this.mouthParts) part.visible = open
+    this.jaw.quaternion.multiply(
+      _offset.setFromEuler(_euler.set(degToRad(this.jawDeg), 0, 0, 'YXZ')),
+    )
   }
 
   /** Measure how fast the hips turn and rise, and let the tail lag behind. */

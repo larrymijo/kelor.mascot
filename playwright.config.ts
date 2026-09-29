@@ -1,6 +1,13 @@
-import { defineConfig } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test'
 
 const PORT = 3100
+
+/**
+ * CROSS_BROWSER=1 (the cross-browser CI job) runs the smoke spec in WebKit
+ * on an iPhone profile and in Firefox. Those browsers are installed in CI
+ * only; local runs use the installed Chrome.
+ */
+const crossBrowser = process.env.CROSS_BROWSER === '1'
 
 /**
  * Review captures at phone, tablet and desktop widths. Uses the locally
@@ -19,22 +26,37 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: `http://localhost:${PORT}`,
-    channel: 'chrome',
+    // Playwright skips undefined when merging project options, so the cross-browser
+    // projects can only drop the Chrome channel here.
+    channel: crossBrowser ? undefined : 'chrome',
     trace: 'retain-on-failure',
   },
-  projects: [
-    {
-      name: 'mobile',
-      use: {
-        viewport: { width: 375, height: 812 },
-        deviceScaleFactor: 2,
-        isMobile: true,
-        hasTouch: true,
-      },
-    },
-    { name: 'tablet', use: { viewport: { width: 768, height: 1024 }, hasTouch: true } },
-    { name: 'desktop', use: { viewport: { width: 1280, height: 800 } } },
-  ],
+  projects: crossBrowser
+    ? [
+        {
+          name: 'webkit-iphone',
+          testMatch: 'smoke.spec.ts',
+          use: devices['iPhone 14'],
+        },
+        {
+          name: 'firefox',
+          testMatch: 'smoke.spec.ts',
+          use: devices['Desktop Firefox'],
+        },
+      ]
+    : [
+        {
+          name: 'mobile',
+          use: {
+            viewport: { width: 375, height: 812 },
+            deviceScaleFactor: 2,
+            isMobile: true,
+            hasTouch: true,
+          },
+        },
+        { name: 'tablet', use: { viewport: { width: 768, height: 1024 }, hasTouch: true } },
+        { name: 'desktop', use: { viewport: { width: 1280, height: 800 } } },
+      ],
   webServer: {
     command: `node ./node_modules/next/dist/bin/next start -p ${PORT}`,
     url: `http://localhost:${PORT}`,

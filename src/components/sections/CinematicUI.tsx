@@ -62,7 +62,7 @@ export function CinematicUI() {
             {contact.link}
           </a>
         </p>
-        <p className="text-[0.65rem] text-ink-400">
+        <p className="text-[0.65rem] text-ink-300">
           © {new Date().getFullYear()} {copy.footer.owner}
         </p>
       </section>

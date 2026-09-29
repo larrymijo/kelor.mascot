@@ -7,8 +7,8 @@ import { radialTexture } from './textures'
 
 /**
  * The floor is invisible except for what grounds the character: a real
- * shadow on shadow-capable tiers, a soft blob otherwise, and a faint purple
- * pool of light. No horizon line against the background.
+ * shadow on shadow-capable tiers, a soft blob otherwise, and a quiet glow
+ * under his feet. No horizon line against the backdrop.
  */
 export function Floor({ shadows }: { shadows: boolean }) {
   const blob = useMemo(() => radialTexture(64, 1.6), [])
@@ -19,7 +19,7 @@ export function Floor({ shadows }: { shadows: boolean }) {
       {shadows ? (
         <mesh receiveShadow>
           <planeGeometry args={[8, 8]} />
-          <shadowMaterial transparent opacity={0.5} />
+          <shadowMaterial transparent opacity={0.38} />
         </mesh>
       ) : (
         <mesh position-z={0.002}>
@@ -34,12 +34,12 @@ export function Floor({ shadows }: { shadows: boolean }) {
         </mesh>
       )}
       <mesh position-z={0.001}>
-        <planeGeometry args={[3.2, 3.2]} />
+        <planeGeometry args={[2.2, 2.2]} />
         <meshBasicMaterial
           map={pool}
           color={character.colors.mascot['500']}
           transparent
-          opacity={0.16}
+          opacity={0.09}
           depthWrite={false}
           blending={AdditiveBlending}
           toneMapped={false}

@@ -59,6 +59,8 @@ export interface ChannelSet {
   dofTarget: Channel
   /** 0 drifting, 1 swirling into the mouth. */
   particleSwirl: Channel
+  /** How far the script opens the jaw, 0 to 1 of character.json jaw.maxOpenDeg. */
+  jaw: Channel
   /** 0 scattered, 1 the KELOR mark locked together. */
   logo: Channel
   /** Opacity of the "Conoce a Kelo" words. */
@@ -80,7 +82,10 @@ export interface Span<T> {
 }
 
 /** One-shot moments, fired when scrolling forwards across them. */
-export type Cue = { at: number; kind: 'blink' } | { at: number; kind: 'clip'; clip: 'wave' }
+export type Cue =
+  | { at: number; kind: 'blink' }
+  | { at: number; kind: 'bite' }
+  | { at: number; kind: 'clip'; clip: 'wave' }
 
 export interface Script {
   channels: ChannelSet
@@ -92,7 +97,8 @@ export interface Script {
 const HOLD = (value: number): Channel => [[0, value]]
 
 const SHARED = {
-  expressions: [{ from: 0.1, to: 0.24, value: 'roar' }] as const,
+  // Roaring until the bite: after it the jaw stays shut, and he smiles again.
+  expressions: [{ from: 0.08, to: 0.18, value: 'roar' }] as const,
   gaze: [
     { from: 0.04, to: 0.32, value: 'camera' },
     { from: 0.32, to: 0.55, value: 'camera' },
@@ -100,6 +106,8 @@ const SHARED = {
     { from: 0.67, to: 0.8, value: 'off' },
   ] as const,
   cues: [
+    // The jaw snaps shut on the viewer as the iris closes.
+    { at: 0.175, kind: 'bite' },
     { at: 0.3, kind: 'blink' },
     { at: 0.62, kind: 'blink' },
     { at: 0.88, kind: 'clip', clip: 'wave' },
@@ -123,11 +131,12 @@ export const DESKTOP: Script = {
       [0.85, 380],
       [1, 380],
     ],
+    // Low in the gulp, looking up into the open mouth under the snout.
     elevationDeg: [
       [0, 7],
       [0.04, 7],
-      [0.15, 4],
-      [0.28, 4],
+      [0.13, -8],
+      [0.26, -8],
       [0.33, 10],
       [0.53, 10],
       [0.59, 4],
@@ -249,6 +258,14 @@ export const DESKTOP: Script = {
       [0.71, 1],
       [1, 1],
     ],
+    // Wide open as he closes in, shut by the bite (and the cue's snap).
+    jaw: [
+      [0, 0],
+      [0.05, 0],
+      [0.13, 1],
+      [0.17, 1],
+      [0.21, 0],
+    ],
     particleSwirl: [
       [0, 0],
       [0.04, 0],
@@ -340,6 +357,7 @@ export const REDUCED_MOTION: Script = {
     dof: stills([0, 0, 0, 1, 1, 0]),
     dofTarget: stills([0, 0, 0, 0, 1, 1]),
     particleSwirl: HOLD(0),
+    jaw: HOLD(0),
     logo: stills([0, 0, 0, 0, 0, 1]),
     meetText: stills([0, 0, 1, 0, 0, 0]),
     contactText: stills([0, 0, 0, 0, 0, 1]),

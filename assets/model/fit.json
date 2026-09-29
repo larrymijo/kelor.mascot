@@ -58,6 +58,21 @@
     "offsetM": 0.0015
   },
 
+  "mouth": {
+    "_doc": "The T-rex jaw (character.json jaw) on this snout. The lip line runs at the face's mouth height, from corner to corner at ±halfWidth, the corners raised by smile. The jaw hinges hingeBackM behind the snout tip. The lips are cut exactly along the line; the lower lip reaches cutDepthM under it. cavityHeightM is the half height of the mouth cavity. Teeth sit insetM behind the lip surface, rootM into the gum, raked back rakeDeg so they hide in the closed mouth; the tusks sit at a share of the half width and peek over the lip.",
+    "halfWidth": 0.15,
+    "smile": 0.012,
+    "hingeBackM": 0.24,
+    "cutDepthM": 0.075,
+    "cavityHeightM": 0.06,
+    "teeth": {
+      "upperPerSide": 7,
+      "lowerPerSide": 6,
+      "rootM": 0.004,
+      "row": { "length": 0.026, "radius": 0.0065, "insetM": 0.007, "rakeDeg": 42 },
+      "tusk": { "at": 0.3, "length": 0.034, "radius": 0.0095, "insetM": 0.002, "rakeDeg": 10 }
+    }
+  },
   "plates": {
     "_doc": "Hexagonal plates cast onto the back and tail from these bones, outward along dir (y, z). size in metres, embed is the share of the plate below the skin.",
     "embed": 0.6,

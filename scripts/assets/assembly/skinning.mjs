@@ -17,7 +17,8 @@ export const LEAF_EXTENT = {
   tail_04: [0, -0.035, -0.08],
 }
 
-export const isProcedural = (bone) => bone.role === 'eye' || bone.role === 'eyelid'
+export const isProcedural = (bone) =>
+  bone.role === 'eye' || bone.role === 'eyelid' || bone.role === 'jaw'
 
 /**
  * Influence segment (head to tail) of every deforming bone.
@@ -92,7 +93,7 @@ export function skinRigid(geometry, joint) {
 export function prepare(geometry) {
   const g = geometry.index ? geometry : geometry.toNonIndexed()
   for (const name of Object.keys(g.attributes)) {
-    if (!['position', 'normal', 'uv', 'skinIndex', 'skinWeight'].includes(name)) {
+    if (!['position', 'normal', 'uv', 'skinIndex', 'skinWeight', 'color'].includes(name)) {
       g.deleteAttribute(name)
     }
   }
