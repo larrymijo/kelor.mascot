@@ -165,12 +165,14 @@ export const DESKTOP: Script = {
       [0.85, 0.6],
       [1, 0.6],
     ],
+    // On the mouth until he is back to size: the iris opens on it, and the
+    // pull-back frames his face, not his chest, as he shrinks.
     mouthFocus: [
       [0, 0],
       [0.04, 0],
       [0.09, 1],
-      [0.24, 1],
-      [0.31, 0],
+      [0.31, 1],
+      [0.36, 0],
     ],
     shiftX: [
       [0, 0],
