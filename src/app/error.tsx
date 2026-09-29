@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { Notice, noticeAction } from '@/components/sections/Notice'
 import { copy } from '@/lib/copy'
 
@@ -16,13 +15,10 @@ export default function Error({
   retry: () => void
 }) {
   return (
-    <Notice title={copy.error.title} body={copy.error.body}>
+    <Notice title={copy.error.title} body={copy.error.body} back={copy.error.back}>
       <button type="button" onClick={() => retry()} className={noticeAction}>
         {copy.error.retry}
       </button>
-      <Link href="/" className={noticeAction}>
-        {copy.error.back}
-      </Link>
     </Notice>
   )
 }

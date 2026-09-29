@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { Notice, noticeAction } from '@/components/sections/Notice'
 import { copy } from '@/lib/copy'
 import './globals.css'
@@ -19,13 +18,10 @@ export default function GlobalError({
     <html lang="es">
       <body>
         <title>{`${copy.error.title} · ${copy.brand}`}</title>
-        <Notice title={copy.error.title} body={copy.error.body}>
+        <Notice title={copy.error.title} body={copy.error.body} back={copy.error.back}>
           <button type="button" onClick={() => retry()} className={noticeAction}>
             {copy.error.retry}
           </button>
-          <Link href="/" className={noticeAction}>
-            {copy.error.back}
-          </Link>
         </Notice>
       </body>
     </html>
