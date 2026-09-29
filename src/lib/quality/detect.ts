@@ -1,7 +1,7 @@
 /**
  * Initial quality tier from device signals. Pure and deterministic, so the
  * heuristics are unit tested; the browser-only signal reader lives next to
- * the stage. drei's PerformanceMonitor then steps the tier at runtime.
+ * the stage. At runtime the quality ladder (ladder.ts) steps resolution, then tier.
  *
  * No detect-gpu: it downloads benchmark data from a CDN at runtime.
  */
@@ -45,13 +45,4 @@ export function detectQualityTier(signals: DeviceSignals): QualityTier {
   if (INTEGRATED.test(renderer)) return 'medium'
   if (DISCRETE.test(renderer)) return 'high'
   return 'medium'
-}
-
-export function stepDown(tier: QualityTier): QualityTier {
-  return QUALITY_TIERS[Math.max(0, QUALITY_TIERS.indexOf(tier) - 1)]!
-}
-
-export function stepUp(tier: QualityTier, ceiling: QualityTier = 'high'): QualityTier {
-  const next = Math.min(QUALITY_TIERS.indexOf(tier) + 1, QUALITY_TIERS.indexOf(ceiling))
-  return QUALITY_TIERS[Math.max(next, QUALITY_TIERS.indexOf(tier))]!
 }

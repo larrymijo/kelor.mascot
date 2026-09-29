@@ -41,8 +41,10 @@ export const defaultTweaks: Tweaks = {
 interface SceneState {
   /** Tier chosen at boot; shadows and the model tier stay fixed to it. */
   bootTier: QualityTier
-  /** Current tier after PerformanceMonitor steps (drives DPR and post). */
+  /** Current tier after PerformanceMonitor steps (drives post). */
   tier: QualityTier
+  /** Current render pixel ratio: the quality ladder steps it down before the tier. */
+  dpr: number
   tierLocked: boolean
   reducedMotion: boolean
   modelReady: boolean
@@ -65,8 +67,10 @@ interface SceneState {
   /** Bumped by the debug panel to ask for a blink. */
   blinkRequest: number
 
-  initTier: (tier: QualityTier) => void
+  initTier: (tier: QualityTier, dpr: number) => void
   setTier: (tier: QualityTier) => void
+  /** One step of the quality ladder: a tier and a pixel ratio, ignored once locked. */
+  setQuality: (rung: { tier: QualityTier; dpr: number }) => void
   lockTier: () => void
   setReducedMotion: (value: boolean) => void
   setModelReady: (value: boolean) => void
@@ -85,6 +89,7 @@ interface SceneState {
 export const useScene = create<SceneState>()((set) => ({
   bootTier: 'medium',
   tier: 'medium',
+  dpr: 1,
   tierLocked: false,
   reducedMotion: false,
   modelReady: false,
@@ -100,8 +105,9 @@ export const useScene = create<SceneState>()((set) => ({
   gazeEnabled: true,
   blinkRequest: 0,
 
-  initTier: (tier) => set({ bootTier: tier, tier, tierLocked: false }),
+  initTier: (tier, dpr) => set({ bootTier: tier, tier, dpr, tierLocked: false }),
   setTier: (tier) => set((s) => (s.tierLocked ? s : { tier })),
+  setQuality: ({ tier, dpr }) => set((s) => (s.tierLocked ? s : { tier, dpr })),
   lockTier: () => set({ tierLocked: true }),
   setReducedMotion: (reducedMotion) => set({ reducedMotion }),
   setModelReady: (modelReady) => set({ modelReady }),

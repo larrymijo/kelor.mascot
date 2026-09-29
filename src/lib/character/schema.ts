@@ -57,6 +57,7 @@ const clipSchema = z.strictObject({
 const qualityTierSchema = z.strictObject({
   model: tierName,
   dprMax: z.number().min(0.5).max(3),
+  dprMin: z.number().min(0.5).max(3),
   shadows: z.boolean(),
   ao: z.enum(['off', 'half', 'full']),
   bloom: z.boolean(),
@@ -241,6 +242,7 @@ export const characterSchema = z
         medium: qualityTierSchema,
         low: qualityTierSchema,
       }),
+      dprSteps: z.array(z.number().min(0.5).max(3)).min(1),
       performanceMonitor: z.strictObject({
         lowerFps: posInt,
         upperFps: posInt,

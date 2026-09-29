@@ -303,12 +303,13 @@
     "biteS": 0.12
   },
   "quality": {
-    "_doc": "Tier picked at boot from device heuristics, then adjusted at runtime with drei's PerformanceMonitor: step down below lowerFps, up above upperFps, lock after flipflops.",
+    "_doc": "Tier picked at boot from device heuristics, then adjusted at runtime with drei's PerformanceMonitor along a ladder (src/lib/quality/ladder.ts): step down below lowerFps, up above upperFps, lock after flipflops. Within a tier the render pixel ratio steps down first, from dprMax (or the device's) through dprSteps to dprMin; only then does the tier change.",
     "default": "medium",
     "tiers": {
       "high": {
         "model": "full",
         "dprMax": 2,
+        "dprMin": 1.5,
         "shadows": true,
         "ao": "full",
         "bloom": true,
@@ -319,6 +320,7 @@
       "medium": {
         "model": "full",
         "dprMax": 1.5,
+        "dprMin": 1,
         "shadows": true,
         "ao": "off",
         "bloom": true,
@@ -329,6 +331,7 @@
       "low": {
         "model": "lite",
         "dprMax": 1,
+        "dprMin": 1,
         "shadows": false,
         "ao": "off",
         "bloom": false,
@@ -337,6 +340,7 @@
         "filmGrain": false
       }
     },
+    "dprSteps": [2, 1.5, 1.25, 1],
     "performanceMonitor": { "lowerFps": 45, "upperFps": 58, "flipflops": 3 }
   },
 
