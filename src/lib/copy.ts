@@ -29,6 +29,10 @@ export const copy = {
     // The studio's contact page; switch to the final domain once it exists.
     href: 'https://kelor-interactive.vercel.app/contacto',
   },
+  /** Accessible name of the sound switch; its state is aria-pressed. */
+  sound: {
+    label: 'Sonido',
+  },
   footer: {
     owner: 'KELOR Interactive',
   },

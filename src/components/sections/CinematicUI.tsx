@@ -1,4 +1,5 @@
 import { copy } from '@/lib/copy'
+import { SoundToggle } from './SoundToggle'
 
 /**
  * The words and the screen-space layers of the cinematic. The frame loop
@@ -9,6 +10,7 @@ import { copy } from '@/lib/copy'
  * Without cinematic mode, the overlays are hidden and the words read as a
  * short document after the first screen, so nothing depends on WebGL or on
  * the lazy engine. The contact link is the one gaze target left on the page.
+ * The sound switch shows only in cinematic mode, whose cues it plays.
  */
 export function CinematicUI() {
   const { hero, meet, contact } = copy
@@ -19,6 +21,8 @@ export function CinematicUI() {
       <div aria-hidden="true" className="cinematic-overlay letterbox bottom-0 z-10" />
       <div aria-hidden="true" className="cinematic-overlay iris z-10" />
       <div aria-hidden="true" className="cinematic-overlay fade z-10" />
+
+      <SoundToggle />
 
       <p
         aria-hidden="true"
