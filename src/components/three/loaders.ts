@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * GLTF decoding without a CDN. Meshopt needs nothing here: drei's useGLTF
- * enables the decoder bundled in three-stdlib by default. KTX2 needs a Basis
+ * GLTF decoding without a CDN. Models load through three's own GLTFLoader
+ * with its Meshopt decoder, which is inlined WebAssembly. KTX2 needs a Basis
  * transcoder, served from public/basis (a copy of three's, kept in sync by a
  * test), and a loader that owns a worker pool, so there is one per renderer.
  *
@@ -10,10 +10,11 @@
  * is a separate chunk imported when the upgrade starts, and the transcoder
  * itself is fetched on the first KTX2 texture.
  */
-import type { useGLTF } from '@react-three/drei'
-import { useThree } from '@react-three/fiber'
+import { useLoader, useThree } from '@react-three/fiber'
 import { useMemo } from 'react'
 import type { Camera, Object3D, Scene, WebGLRenderer } from 'three'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
+import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js'
 
 export const TRANSCODER_PATH = '/basis/'
@@ -45,18 +46,27 @@ export function disposeKtx2Loader(renderer: WebGLRenderer) {
   ktx2Loaders.delete(renderer)
 }
 
-/** drei's extendLoader callback and the three-stdlib GLTFLoader it receives. */
-type ExtendLoader = NonNullable<Parameters<typeof useGLTF>[3]>
-type StdlibKTX2Loader = Parameters<Parameters<ExtendLoader>[0]['setKTX2Loader']>[0]
+type LoaderExtension = (loader: GLTFLoader) => void
 
-/** The extendLoader argument for drei's useGLTF, bound to this canvas' renderer. */
+/**
+ * Loads a model with the Meshopt decoder, cached by URL, suspending like any
+ * R3F loader. `extend` adds what a model needs beyond that (KTX2 for the full
+ * one). drei's useGLTF did the same, but it bundled three-stdlib's copy of
+ * the loader and a DRACOLoader these models never use.
+ */
+export function useModel(url: string, extend?: LoaderExtension): GLTF {
+  return useLoader(GLTFLoader, url, (loader) => {
+    loader.setMeshoptDecoder(MeshoptDecoder)
+    extend?.(loader)
+  })
+}
+
+/** The loader extension that decodes KTX2 textures with this canvas' renderer. */
 export function useKtx2Extension(module: KTX2Module) {
   const gl = useThree((s) => s.gl)
-  return useMemo<ExtendLoader>(
+  return useMemo<LoaderExtension>(
     () => (loader) => {
-      // three-stdlib types its own KTX2Loader. three's has the same runtime
-      // shape, and it is the one that pairs with the transcoder we serve.
-      loader.setKTX2Loader(ktx2LoaderFor(gl, module) as unknown as StdlibKTX2Loader)
+      loader.setKTX2Loader(ktx2LoaderFor(gl, module))
     },
     [gl, module],
   )

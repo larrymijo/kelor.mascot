@@ -1,6 +1,5 @@
 'use client'
 
-import { useGLTF } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Suspense, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AnimationClip, Group, Object3D } from 'three'
@@ -12,7 +11,7 @@ import { crossedCues } from '@/lib/cinematic/timeline'
 import { firstPaintUrl, upgradeUrl } from '@/lib/scene/model'
 import { readConnection, shouldUpgrade } from '@/lib/scene/upgrade'
 import { cinematic } from '../cinematic/CinematicDriver'
-import { loadKtx2Module, useKtx2Extension, warmUp } from '../loaders'
+import { loadKtx2Module, useKtx2Extension, useModel, warmUp } from '../loaders'
 import { useScene } from '../store'
 import { BehaviourController } from './BehaviourController'
 import { MascotRig, type RigSnapshot } from './MascotRig'
@@ -30,7 +29,7 @@ type LoadedModel = { scene: Object3D; animations: AnimationClip[] }
  */
 function ModelUpgrade({ url, onReady }: { url: string; onReady: (model: LoadedModel) => void }) {
   const extend = useKtx2Extension(use(loadKtx2Module()))
-  const gltf = useGLTF(url, false, true, extend)
+  const gltf = useModel(url, extend)
   const gl = useThree((s) => s.gl)
   const camera = useThree((s) => s.camera)
   const scene = useThree((s) => s.scene)
@@ -61,7 +60,7 @@ export function Mascot() {
   const bootTier = useScene((s) => s.bootTier)
   const phase = useScene((s) => s.boot.phase)
   // The lite model carries WebP, so it loads with Meshopt alone and no KTX2 code.
-  const lite = useGLTF(firstPaintUrl(character), false, true)
+  const lite = useModel(firstPaintUrl(character))
   const [full, setFull] = useState<{ model: LoadedModel; snapshot: RigSnapshot } | null>(null)
   const rig = useMemo(() => {
     // The physical finish costs fragment work; the low tier keeps plain materials.

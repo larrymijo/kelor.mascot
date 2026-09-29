@@ -25,7 +25,7 @@ Version constraints that matter:
 - React stays on **19.2.x** because @react-three/fiber 9.7 requires `react <19.3`.
 - TypeScript stays on **5.9** and ESLint on **9** until Next 16 officially supports TS 7 and ESLint 10.
 - three is pinned to **0.186.x** because postprocessing 6.39 requires `three <0.187`. Upgrade both together.
-- Studio lighting uses drei `Lightformer`s only: `Environment` presets download HDR files from a CDN.
+- Studio reflections are emissive panels baked once into a cube map (`src/components/three/studioEnvironment.ts`). No HDR files: drei's `Environment` presets download from a CDN, and its module bundles HDR, EXR and gain-map loaders.
 
 ## Hard constraints
 
@@ -134,7 +134,7 @@ public/basis            three's Basis transcoder for KTX2, served locally (kept 
 - Every tier paints the lite model first (`firstPaintUrl` in `src/lib/scene/model.ts`). Its shaders compile while the egg is still up, and `modelReady` waits for that.
 - After the hatch, `shouldUpgrade` in `src/lib/scene/upgrade.ts` decides whether to stream the full model: never on the low tier, with save-data, or on 2G-class connections.
 - `Mascot.tsx` loads the full model inside its own Suspense boundary, compiles it, and swaps it in; `MascotRig.snapshot` and `restore` carry the clip, its time and the expression across.
-- `src/components/three/loaders.ts` owns decoding without a CDN: Meshopt comes with drei, the KTX2 loader is a lazy chunk, and the Basis transcoder is served from `public/basis`.
+- `src/components/three/loaders.ts` owns decoding without a CDN: `useModel` loads through three's GLTFLoader with its Meshopt decoder (not drei's `useGLTF`, which bundles Draco), the KTX2 loader is a lazy chunk, and the Basis transcoder is served from `public/basis`.
 - `StageMount` exposes `data-scene-state`, `data-model` and `data-tier` for tests; `Stage` exposes the live tier as `data-quality`.
 
 ## Model pipeline (phase 3)
