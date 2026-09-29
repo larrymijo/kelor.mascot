@@ -7,10 +7,9 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { character } from '@/lib/character'
 import { degToRad, smoothstep } from '@/lib/math/damp'
 import type { BootPhase } from '@/lib/scene/boot'
-import { crossedCues } from '@/lib/cinematic/timeline'
 import { firstPaintUrl, upgradeUrl } from '@/lib/scene/model'
 import { readConnection, shouldUpgrade } from '@/lib/scene/upgrade'
-import { cinematic } from '../cinematic/CinematicDriver'
+import { live } from '../live/LiveDriver'
 import { loadKtx2Module, useKtx2Extension, useModel, warmUp } from '../loaders'
 import { useScene } from '../store'
 import { BehaviourController } from './BehaviourController'
@@ -18,6 +17,9 @@ import { MascotRig, type RigSnapshot } from './MascotRig'
 import { useBehaviourInput } from './useBehaviourInput'
 
 const easeOutBack = (t: number) => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2
+const H = character.meta.heightM
+/** Carried, he turns most of the way to face the viewer from his three-quarter pose. */
+const CARRIED_FACING = 0.7
 
 type LoadedModel = { scene: Object3D; animations: AnimationClip[] }
 
@@ -52,9 +54,13 @@ function ModelUpgrade({ url, onReady }: { url: string; onReady: (model: LoadedMo
  * can. It stays hidden inside the egg until its shaders are compiled, plays
  * hatch, settles into idle, and then, where the tier and connection allow,
  * swaps to the full model without a visible cut. Each frame the clips play,
- * then the behaviour controller runs the director and lays gaze, blinks and
- * tail on top. Drives the expression atlas and the breathing glow of the
- * dorsal plates.
+ * then the behaviour controller runs the director, the taps and the carry
+ * physics, and lays the carried pose, gaze, blinks, tail and jaw on top.
+ *
+ * His root is a small stack: a pivot at the point where he is held, carrying
+ * the swing and lean; an offset back down to his feet; the squash; and the
+ * hatch's pop and the bite's growth, with his turn. Also drives the
+ * expression atlas and the breathing glow of the dorsal plates.
  */
 export function Mascot() {
   const bootTier = useScene((s) => s.bootTier)
@@ -77,12 +83,15 @@ export function Mascot() {
   const gl = useThree((s) => s.gl)
   const camera = useThree((s) => s.camera)
   const scene = useThree((s) => s.scene)
+  const pivot = useRef<Group>(null)
+  const offset = useRef<Group>(null)
+  const shape = useRef<Group>(null)
   const root = useRef<Group>(null)
   const handledPhase = useRef<BootPhase | null>(null)
   const lastRequest = useRef(0)
   const lastBlink = useRef(0)
   const lastExpression = useRef<string | null>(null)
-  const lastProgress = useRef(0)
+  const lastSnaps = useRef(live.snaps)
   const time = useRef(0)
   // Outlives rig swaps: the director, blink rhythm and gaze target carry on.
   const [behaviour] = useState(() => new BehaviourController())
@@ -128,26 +137,20 @@ export function Mascot() {
       lastBlink.current = scene.blinkRequest
       behaviour.requestBlink()
     }
-    const { sample, progress, variant } = cinematic
-    // One-shot moments of the scroll script, when scrolling forwards across them.
-    if (scene.boot.phase === 'ready') {
-      for (const cue of crossedCues(lastProgress.current, progress, variant)) {
-        if (cue.kind === 'blink') behaviour.requestBlink()
-        else if (cue.kind === 'bite') rig.bite()
-        else rig.play(cue.clip)
-      }
+    // The bite's snap: the jaw slams shut on the viewer.
+    if (live.snaps !== lastSnaps.current) {
+      lastSnaps.current = live.snaps
+      rig.bite()
     }
-    lastProgress.current = progress
-    // The script opens the jaw as he closes in on the viewer; behave() moves it.
-    rig.setJawScript(sample.jaw * character.jaw.maxOpenDeg)
-    const out = behaviour.step(dt, rig, {
+    const { sample } = live
+    const frame = behaviour.step(dt, rig, {
       camera: state.camera,
       size: state.size,
       bootPhase: scene.boot.phase,
       reducedMotion: scene.reducedMotion,
       gazeEnabled: scene.gazeEnabled,
-      script: sample.act === 'hero' ? null : { gaze: sample.gaze, expression: sample.expression },
     })
+    const out = frame.director
     // Mirror the director into the store: edge-triggered, so the debug panel can override.
     if (out.expression !== lastExpression.current) {
       lastExpression.current = out.expression
@@ -156,15 +159,26 @@ export function Mascot() {
     scene.setDirector(out.attention, out.state)
     scene.setClip(rig.currentClip)
 
-    if (root.current) {
+    const body = frame.body
+    if (pivot.current && offset.current && shape.current && root.current) {
+      pivot.current.position.set(body.x, body.y + body.grabY, 0)
+      pivot.current.rotation.set(body.lean.angle, 0, body.swing.angle)
+      offset.current.position.set(0, -body.grabY, 0)
+      // Squashed or stretched, he keeps his volume.
+      const squash = body.squash.angle
+      const wide = 1 / Math.sqrt(squash)
+      shape.current.scale.set(wide, squash, wide)
       const hatch = scene.boot.phase === 'egg' ? 0 : scene.boot.hatchProgress
       root.current.visible = scene.boot.phase !== 'egg'
       const reveal = scene.reducedMotion ? 1 : easeOutBack(smoothstep(0, 0.6, hatch))
       root.current.scale.setScalar((0.55 + 0.45 * reveal) * sample.scale)
-      root.current.rotation.y = degToRad(sample.bodyYawDeg)
-      rig.mouthWorld(cinematic.mouth)
-      rig.eyesWorld(cinematic.focus.eyes)
-      rig.platesWorld(cinematic.focus.plates)
+      root.current.rotation.y = degToRad(sample.bodyYawDeg) * (1 - CARRIED_FACING * frame.carried)
+      rig.mouthWorld(live.mouth)
+      // Where he is, for the overlays, the keyboard button and the tests.
+      const size = H * sample.scale * squash
+      live.kelo.feet.set(body.x, body.y, 0)
+      live.kelo.top.set(body.x, body.y + size, 0)
+      live.kelo.centre.set(body.x, body.y + size * 0.5, 0)
     }
 
     if (scene.clipRequest && scene.clipRequest.id !== lastRequest.current) {
@@ -180,8 +194,14 @@ export function Mascot() {
 
   return (
     <>
-      <group ref={root} visible={false}>
-        <primitive object={rig.scene} />
+      <group ref={pivot}>
+        <group ref={offset}>
+          <group ref={shape}>
+            <group ref={root} visible={false}>
+              <primitive object={rig.scene} />
+            </group>
+          </group>
+        </group>
       </group>
       {upgrade && phase === 'ready' && !full && (
         // A full model that fails to download or decode leaves the lite Kelo in place.

@@ -132,6 +132,19 @@ describe('carry', () => {
     expect(Math.hypot(body.vx, body.vy)).toBeCloseTo(settings.fall.maxThrowMps, 5)
   })
 
+  it('hops lower under a low ceiling, still landing on its spot', () => {
+    const low: Bounds = { ...bounds, yMax: 0.15 }
+    const body = createBody(0)
+    hopTo(body, -0.8, low, settings)
+    let peak = 0
+    for (let t = 0; t < 2; t += 1 / 60) {
+      stepBody(body, 1 / 60, low, settings)
+      peak = Math.max(peak, body.y)
+    }
+    expect(peak).toBeLessThanOrEqual(low.yMax)
+    expect(body.x).toBeCloseTo(-0.8, 1)
+  })
+
   it('hops to a spot on the floor', () => {
     const body = createBody(0)
     hopTo(body, 0.9, bounds, settings)

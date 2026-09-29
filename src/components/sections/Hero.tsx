@@ -5,7 +5,7 @@ import { copy } from '@/lib/copy'
  * The first screen. The fixed stage behind it carries the moment, so the
  * only thing here is the studio's mark in the corner, linking to its site.
  * The screen's height is what places the words after it when the page is
- * read without the cinematic.
+ * read without the live stage.
  */
 export function Hero() {
   return (

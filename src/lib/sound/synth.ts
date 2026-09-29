@@ -1,41 +1,21 @@
 /**
  * Kelo's sound, synthesised with Web Audio, so there are no files to
- * download: a low hum whose rumble opens while he grows, the crack and pop
- * of the hatch, the gulp, a whoosh into each act and a soft chord as the
- * KELOR mark locks (docs/scroll-script.md).
+ * download (docs/interaction-script.md): a low hum whose rumble opens as he
+ * grows in the bite, the crack and pop of the hatch, a boop when tapped, a
+ * growl when he gets grumpy, the whoosh of the lunge, the clack and gulp of
+ * the bite, and a thud when he lands. The scene asks for them through the
+ * sound bus (bus.ts); this module plays them.
  *
  * A chunk of its own, loaded on the first press of the sound toggle. The
  * toggle creates the AudioContext inside that click, as Safari requires, and
  * hands it over: this module never creates one, and nothing here runs
  * before createSynth() is called.
  */
-import { scrollProgress } from '@/lib/cinematic/progress'
-import { smoothstep } from '@/lib/math/damp'
+import { onSound, soundLevels, type SoundCue } from './bus'
 
-type SoundName = 'gulp' | 'whoosh' | 'chord'
-
-/** One-shots by page progress. The gulp and the chord play only going forwards. */
-export const SOUND_CUES: readonly { at: number; sound: SoundName; forwardOnly?: boolean }[] = [
-  // The bite: the jaw snaps shut on the viewer (the script's bite cue).
-  { at: 0.175, sound: 'gulp', forwardOnly: true },
-  { at: 0.33, sound: 'whoosh' },
-  { at: 0.57, sound: 'whoosh' },
-  { at: 0.69, sound: 'whoosh' },
-  { at: 0.9, sound: 'chord', forwardOnly: true },
-]
-/** A jump bigger than this in one frame (keyboard focus, a link) plays no cues at all. */
-const MAX_STEP = 0.1
 /** The shell bursts 30% into the 1.2 s hatch (character.json egg.hatchDurationS). */
 const POP_DELAY_S = 0.36
 const VOLUME = 0.6
-
-/** Cues crossed between two progress values, in the direction of travel. */
-export function crossedSounds(from: number, to: number): SoundName[] {
-  if (Math.abs(to - from) > MAX_STEP) return []
-  return SOUND_CUES.filter(
-    (cue) => (from < cue.at && to >= cue.at) || (!cue.forwardOnly && from >= cue.at && to < cue.at),
-  ).map((cue) => cue.sound)
-}
 
 export interface Synth {
   setEnabled(on: boolean): void
@@ -118,28 +98,53 @@ export function createSynth(ctx: AudioContext): Synth {
       band.frequency.exponentialRampToValueAtTime(600, at + 0.65)
       noiseBurst(at, 0.7, band, envelope(at, 0.18, 0.25, 0.4))
     },
-    chord(at: number) {
-      for (const frequency of [220, 277.18, 329.63, 440]) {
-        tone(at, frequency, frequency, 2.3, envelope(at, 0.08, 0.04, 2.2))
-      }
+    boop(at: number) {
+      // A soft, round blip that rises: a poke on a vinyl toy.
+      tone(at, 520, 880, 0.11, envelope(at, 0.22, 0.004, 0.13))
     },
-  }
+    growl(at: number) {
+      // A low, rough rumble: a buzzing tone and dark noise, shaken by a tremolo.
+      const out = envelope(at, 0.32, 0.06, 0.55)
+      const tremolo = ctx.createGain()
+      tremolo.gain.value = 0.7
+      tremolo.connect(out)
+      const wobble = ctx.createOscillator()
+      wobble.frequency.value = 23
+      const depth = ctx.createGain()
+      depth.gain.value = 0.3
+      wobble.connect(depth).connect(tremolo.gain)
+      wobble.start(at)
+      wobble.stop(at + 0.7)
+      const buzz = ctx.createOscillator()
+      buzz.type = 'sawtooth'
+      buzz.frequency.setValueAtTime(92, at)
+      buzz.frequency.exponentialRampToValueAtTime(68, at + 0.6)
+      buzz.connect(filter('lowpass', 420)).connect(tremolo)
+      buzz.start(at)
+      buzz.stop(at + 0.7)
+      noiseBurst(at, 0.65, filter('lowpass', 300), tremolo)
+    },
+    thud(at: number) {
+      tone(at, 110, 42, 0.22, envelope(at, 0.4, 0.004, 0.22))
+      noiseBurst(at, 0.12, filter('lowpass', 250), envelope(at, 0.2, 0.002, 0.1))
+    },
+  } satisfies Record<SoundCue | 'crack' | 'pop', (at: number) => void>
 
   let enabled = false
   let frame = 0
-  let last = scrollProgress.value
 
   const loop = () => {
-    const p = scrollProgress.value
     const now = ctx.currentTime
-    // The rumble: louder and brighter while he grows and swallows the screen.
-    const grow = smoothstep(0.04, 0.16, p) * (1 - smoothstep(0.24, 0.3, p))
+    // The rumble: louder and brighter as he grows in the bite.
+    const grow = soundLevels.rumble
     humFilter.frequency.setTargetAtTime(260 + 900 * grow, now, 0.1)
     humGain.gain.setTargetAtTime(0.08 + 0.12 * grow, now, 0.1)
-    for (const sound of crossedSounds(last, p)) sounds[sound](now)
-    last = p
     frame = requestAnimationFrame(loop)
   }
+  // Everything the scene asks for, while the sound is on.
+  onSound((cue) => {
+    if (enabled) sounds[cue](ctx.currentTime)
+  })
 
   // The hatch, if the sound is already on while the egg is up.
   const stage = document.querySelector('[data-scene-state]')
@@ -167,7 +172,6 @@ export function createSynth(ctx: AudioContext): Synth {
       master.gain.setTargetAtTime(on ? VOLUME : 0, now, on ? 0.15 : 0.06)
       if (on) {
         void ctx.resume()
-        last = scrollProgress.value
         frame = requestAnimationFrame(loop)
       } else {
         cancelAnimationFrame(frame)

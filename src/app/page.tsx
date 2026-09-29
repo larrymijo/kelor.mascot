@@ -1,14 +1,12 @@
-import { CinematicMount } from '@/components/cinematic/CinematicMount'
 import { QaMount } from '@/components/qa/QaMount'
-import { CinematicUI } from '@/components/sections/CinematicUI'
 import { Hero } from '@/components/sections/Hero'
+import { LiveUI } from '@/components/sections/LiveUI'
 import { StageMount } from '@/components/sections/StageMount'
 
 /**
- * The cinematic page (docs/scroll-script.md). Kelo's stage is fixed behind
- * everything; the first screen, the scroll track and the few words scroll
- * over it. The track only has height in cinematic mode, which the lazy
- * engine switches on once the stage is drawing.
+ * One live screen (docs/interaction-script.md): Kelo's stage fixed behind
+ * everything, the studio mark, the sound switch, and a few words around him.
+ * Without WebGL the words read as a short document after the first screen.
  */
 export default function Home() {
   return (
@@ -17,9 +15,7 @@ export default function Home() {
         <StageMount />
       </div>
       <Hero />
-      <div aria-hidden="true" className="cinematic-track" />
-      <CinematicUI />
-      <CinematicMount />
+      <LiveUI />
       <QaMount />
     </main>
   )

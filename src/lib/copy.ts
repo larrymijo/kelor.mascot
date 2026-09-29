@@ -13,11 +13,19 @@ export const copy = {
   /** The studio's site; switch to the final domain once it exists. */
   studioHref: 'https://kelor-interactive.vercel.app',
   hero: {
-    /** Small scroll cue under the hatched mascot. */
-    cue: 'Desliza',
-    /** Accessible description of the decorative 3D scene. */
+    /** Accessible description of the 3D scene. */
     sceneLabel:
-      'Escena 3D: de un huevo de dinosaurio nace Kelo, un pequeño dinosaurio morado que te sigue con la mirada, crece hasta tragarse la pantalla y vuelve a su tamaño.',
+      'Escena 3D: de un huevo de dinosaurio nace Kelo, un pequeño dinosaurio morado que te sigue con la mirada. Puedes tocarlo y, con el ratón, arrastrarlo; si lo molestas mucho, muerde.',
+  },
+  /** What you can do with Kelo, shown until you first touch him. */
+  hint: {
+    pointer: 'Tócalo o arrástralo',
+    touch: 'Tócalo',
+  },
+  /** The keyboard's way to him: a button over him. */
+  kelo: {
+    label: 'Tocar a Kelo',
+    keys: 'Intro o Espacio para tocarlo; las flechas lo hacen saltar.',
   },
   meet: {
     title: 'Conoce a Kelo',

@@ -8,7 +8,8 @@
  * Layering, every frame:
  *   1. the layered bones return to their bind pose;
  *   2. the mixer writes whatever the clips key;
- *   3. behave() multiplies gaze, blink, tail and jaw offsets on top.
+ *   3. behave() multiplies the carried pose (legs, arms, a wiggle), gaze,
+ *      blink, tail and jaw offsets on top.
  * Offsets therefore never accumulate, whether or not a clip keys the bone.
  */
 import {
@@ -33,7 +34,7 @@ import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import { aimAngles, clampAngles, dampAngles, chainShares, type Angles } from '@/lib/behaviour/gaze'
 import { createTail, stepTail, type TailLink } from '@/lib/behaviour/tail'
 import { character } from '@/lib/character'
-import { MOUTH } from '@/lib/cinematic/acts'
+import { MOUTH } from '@/lib/live/pose'
 import { applyFinish, tuneFinish, type Finish } from './finish'
 import { damp, degToRad } from '@/lib/math/damp'
 
@@ -62,6 +63,21 @@ const BITE_LAMBDA = 3 / character.jaw.biteS
 const BITE_HOLD_S = 0.35
 /** The camera aims this far inside the lips, into the mouth rather than at its edge. */
 const MOUTH_INSET_M = 0.02
+const CARRY = character.interaction.carry
+/** How much of his sideways speed (m/s) the tail feels as a turn (rad/s): it trails behind. */
+const LATERAL_TO_YAW = 1.4
+
+/** What the carried layer shows this frame; the behaviour controller sets it. */
+export interface CarryPose {
+  /** 0 standing to 1 held or flying. */
+  carried: number
+  /** Phase of the legs' kick and the arms' flap (rad). */
+  kick: number
+  /** Side-to-side wiggle of the upper body (rad), for the giggle. */
+  wiggle: number
+  /** 1, or less with reduced motion: calmer kicks and flaps. */
+  stillness: number
+}
 
 export type ExpressionName = keyof typeof cells
 
@@ -109,6 +125,11 @@ const _aim: Angles = { yaw: 0, pitch: 0 }
 const _limited: Angles = { yaw: 0, pitch: 0 }
 const _forward = new Vector3()
 const _world = new Vector3()
+const _sceneQ = new Quaternion()
+const _boneQ = new Quaternion()
+const _axis = new Vector3()
+const X_AXIS = new Vector3(1, 0, 0)
+const Z_AXIS = new Vector3(0, 0, 1)
 
 export class MascotRig {
   readonly scene: Object3D
@@ -147,8 +168,14 @@ export class MascotRig {
   private tail: TailLink[]
   private readonly finish: MeshPhysicalMaterial[]
   private hipsYaw = 0
+  private hipsX = 0
   private hipsY = 0
   private hipsMeasured = false
+  /** The bones the carried layer moves, found by the contract's names. */
+  private readonly spine: Bone[]
+  private readonly legs: { side: number; thigh?: Bone; shin?: Bone; foot?: Bone }[]
+  private readonly arms: { side: number; upper?: Bone; fore?: Bone }[]
+  private readonly carryPose: CarryPose = { carried: 0, kick: 0, wiggle: 0, stillness: 1 }
 
   /**
    * @param options.finish swap in the physical skin and eye finish (medium and
@@ -197,7 +224,32 @@ export class MascotRig {
       this.head.worldToLocal(this.mouthLocal.set(0, MOUTH.y, MOUTH.z - MOUTH_INSET_M))
       this.jaw?.worldToLocal(this.lowerMouthLocal.set(0, MOUTH.y, MOUTH.z - MOUTH_INSET_M))
     }
-    for (const bone of [...this.chain, ...this.eyes, ...this.lids, ...this.tailBones, this.jaw]) {
+    this.spine = found(['spine_02', 'chest'])
+    // Left is +X in character space; each side turns the mirror way.
+    this.legs = (['L', 'R'] as const).map((s) => ({
+      side: s === 'L' ? 1 : -1,
+      thigh: this.bones.get(`thigh_${s}`),
+      shin: this.bones.get(`shin_${s}`),
+      foot: this.bones.get(`foot_${s}`),
+    }))
+    this.arms = (['L', 'R'] as const).map((s) => ({
+      side: s === 'L' ? 1 : -1,
+      upper: this.bones.get(`upperarm_${s}`),
+      fore: this.bones.get(`forearm_${s}`),
+    }))
+    const limbs = [
+      ...this.spine,
+      ...this.legs.flatMap((l) => [l.thigh, l.shin, l.foot]),
+      ...this.arms.flatMap((a) => [a.upper, a.fore]),
+    ]
+    for (const bone of [
+      ...this.chain,
+      ...this.eyes,
+      ...this.lids,
+      ...this.tailBones,
+      this.jaw,
+      ...limbs,
+    ]) {
       if (bone) this.bind.set(bone, bone.quaternion.clone())
     }
     this.eyeAngles = this.eyes.map(() => ({ yaw: 0, pitch: 0 }))
@@ -297,9 +349,10 @@ export class MascotRig {
     this.mixer.update(dt)
   }
 
-  /** Gaze, blink, tail and jaw on top of the clip pose. */
+  /** The carried pose, gaze, blink, tail and jaw on top of the clip pose. */
   behave(dt: number, frame: BehaviourFrame) {
     this.weight = damp(this.weight, frame.weight, WEIGHT_LAMBDA, dt)
+    this.carry()
     this.aimHead(dt, frame)
     this.aimEyes(dt, frame)
     this.blink(frame.blink)
@@ -307,7 +360,12 @@ export class MascotRig {
     this.moveJaw(dt)
   }
 
-  /** How far the scroll script opens the jaw, in degrees; the expression may open it more. */
+  /** How he is being carried this frame (behaviour controller); applied in behave(). */
+  setCarry(pose: CarryPose) {
+    Object.assign(this.carryPose, pose)
+  }
+
+  /** How far the bite or a reaction opens the jaw, in degrees; the expression may open it more. */
   setJawScript(deg: number) {
     this.jawScriptDeg = Math.min(character.jaw.maxOpenDeg, Math.max(0, deg))
   }
@@ -453,20 +511,66 @@ export class MascotRig {
     )
   }
 
-  /** Measure how fast the hips turn and rise, and let the tail lag behind. */
+  /**
+   * Turn a bone about an axis of Kelo's own frame (+X his left, +Y up, +Z
+   * forward), whatever its local axes: the offset is expressed in the bone's
+   * frame and multiplied on, like every other layer.
+   */
+  private turn(bone: Bone | undefined, axis: Vector3, angle: number) {
+    if (!bone || Math.abs(angle) < 1e-5) return
+    bone.updateWorldMatrix(true, false)
+    bone.getWorldQuaternion(_boneQ)
+    _axis.copy(axis).applyQuaternion(_sceneQ).applyQuaternion(_boneQ.invert())
+    bone.quaternion.multiply(_offset.setFromAxisAngle(_axis, angle))
+  }
+
+  /**
+   * Held or flying: legs dangle a little forward with the knees bent and the
+   * toes down, and kick in turn; arms rise and flap. A reaction's wiggle
+   * sways the upper body side to side.
+   */
+  private carry() {
+    const { carried, kick, wiggle, stillness } = this.carryPose
+    if (carried < 1e-3 && Math.abs(wiggle) < 1e-4) return
+    this.scene.updateWorldMatrix(true, false)
+    this.scene.getWorldQuaternion(_sceneQ)
+    this.spine.forEach((bone, i) => this.turn(bone, Z_AXIS, wiggle * (i === 0 ? 0.4 : 0.6)))
+    if (carried < 1e-3) return
+    const dangle = degToRad(CARRY.legDangleDeg) * carried
+    const kickAngle = degToRad(CARRY.legKickDeg) * carried * stillness
+    const raise = degToRad(CARRY.armRaiseDeg) * carried
+    this.legs.forEach(({ side, thigh, shin, foot }, i) => {
+      const swing = Math.sin(kick + i * Math.PI) * kickAngle
+      // Forward is a negative turn about +X: the foot swings towards +Z.
+      this.turn(thigh, X_AXIS, -(0.45 * dangle + swing))
+      this.turn(thigh, Z_AXIS, side * 0.25 * dangle)
+      this.turn(shin, X_AXIS, 0.9 * dangle + 0.5 * Math.max(0, swing))
+      this.turn(foot, X_AXIS, 0.6 * dangle)
+    })
+    this.arms.forEach(({ side, upper, fore }, i) => {
+      const flap = Math.sin(kick * 1.3 + i * Math.PI * 0.5) * 0.35 * raise * stillness
+      this.turn(upper, Z_AXIS, side * (raise + flap))
+      this.turn(fore, Z_AXIS, side * 0.3 * raise)
+    })
+  }
+
+  /** Measure how fast the hips turn, rise and slide, and let the tail lag behind. */
   private swingTail(dt: number) {
     if (!this.hips || this.tailBones.length === 0 || dt <= 0) return
     this.hips.updateWorldMatrix(true, false)
     _forward.set(0, 0, 1).transformDirection(this.hips.matrixWorld)
     const yaw = Math.atan2(_forward.x, _forward.z)
-    const y = this.hips.getWorldPosition(_world).y
+    const { x, y } = this.hips.getWorldPosition(_world)
     if (this.hipsMeasured) {
       let turn = yaw - this.hipsYaw
       if (turn > Math.PI) turn -= 2 * Math.PI
       if (turn < -Math.PI) turn += 2 * Math.PI
-      stepTail(this.tail, turn / dt, (y - this.hipsY) / dt, life.tail, dt)
+      // Sliding sideways swings the tail the other way, like a turn would.
+      const slide = (x - this.hipsX) / dt
+      stepTail(this.tail, turn / dt - slide * LATERAL_TO_YAW, (y - this.hipsY) / dt, life.tail, dt)
     }
     this.hipsYaw = yaw
+    this.hipsX = x
     this.hipsY = y
     this.hipsMeasured = true
     this.tailBones.forEach((bone, i) => {

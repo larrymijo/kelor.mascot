@@ -109,14 +109,18 @@ export function release(body: CarryBody, settings: CarrySettings) {
   }
 }
 
-/** A hop to `x` on the floor, peaking hop.heightM above where he stands. */
+/**
+ * A hop to `x` on the floor, peaking hop.heightM above where he stands, or
+ * lower when the top of the screen is closer: he never hits the ceiling.
+ */
 export function hopTo(body: CarryBody, x: number, bounds: Bounds, settings: CarrySettings) {
   if (body.mode === 'held') return
   const g = settings.fall.gravity
   const to = Math.min(bounds.xMax, Math.max(bounds.xMin, x))
-  const up = Math.sqrt(2 * g * settings.hop.heightM)
+  const apex = Math.max(0.03, Math.min(settings.hop.heightM, 0.9 * bounds.yMax - body.y))
+  const up = Math.sqrt(2 * g * apex)
   // Time up to the apex and down again to the floor.
-  const flight = up / g + Math.sqrt((2 * (settings.hop.heightM + body.y)) / g)
+  const flight = up / g + Math.sqrt((2 * (apex + body.y)) / g)
   body.mode = 'air'
   body.planted = true
   body.vy = up

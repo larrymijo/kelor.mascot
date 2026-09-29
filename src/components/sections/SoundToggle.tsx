@@ -31,7 +31,7 @@ export function SoundToggle() {
       aria-label={copy.sound.label}
       aria-pressed={on}
       onClick={toggle}
-      className="cinematic-control forced-plate top-4 right-4 z-30 min-h-11 min-w-11 items-center justify-center rounded-md text-ink-300 transition-colors duration-200 ease-out-quart hover:text-ink-50 aria-pressed:text-ink-50 sm:top-6 sm:right-6"
+      className="live-control forced-plate top-4 right-4 z-30 min-h-11 min-w-11 items-center justify-center rounded-md text-ink-300 transition-colors duration-200 ease-out-quart hover:text-ink-50 aria-pressed:text-ink-50 sm:top-6 sm:right-6"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" />

@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { logoMarkDataUri, logoMarkWidth } from '@/components/ui/LogoMark'
 import { copy } from '@/lib/copy'
@@ -26,6 +26,9 @@ type SceneState = 'loading' | BootPhase | 'unavailable'
 
 const BRAND_MARK = logoMarkDataUri()
 
+/** While the stage draws, the page is in live mode (html.live, src/app/globals.css). */
+const DRAWING = new Set<SceneState>(['egg', 'hatching', 'ready'])
+
 /** How long a lost GPU context may take to come back before the scene gives up. */
 const CONTEXT_GRACE_MS = 5_000
 
@@ -45,6 +48,12 @@ export function StageMount() {
   const [tier, setTier] = useState<string>('')
   const [attention, setAttention] = useState('camera')
   const [clip, setClip] = useState<string | null>(null)
+
+  // Live mode while the stage draws; a failed stage leaves the plain document.
+  useEffect(() => {
+    document.documentElement.classList.toggle('live', DRAWING.has(state))
+  }, [state])
+  useEffect(() => () => document.documentElement.classList.remove('live'), [])
 
   const onFirstFrame = useCallback(() => {
     setShown(true)

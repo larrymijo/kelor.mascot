@@ -91,60 +91,91 @@
 }
 
 /*
- * Cinematic mode. Without it the page is a short, readable document: the
- * first screen, then the words in normal flow. The lazy engine adds
- * html.cinematic once the stage is drawing; the scroll track then grows, the
- * words become fixed overlays, and the frame loop drives them through CSS
- * variables set on #cinematic-ui (docs/scroll-script.md).
+ * Live mode. Without it the page is a short, readable document: the first
+ * screen, then the words in normal flow. StageMount adds html.live while the
+ * stage is drawing; the words then sit fixed around Kelo on one screen, and
+ * the frame loop drives them through CSS variables set on #live-ui
+ * (docs/interaction-script.md).
  */
-.cinematic-track {
-  height: 0;
-}
-
-.cinematic-overlay,
-.cinematic-cue,
-.cinematic-control {
+.live-overlay,
+.live-hint,
+.live-control,
+.live-kelo {
   display: none;
 }
 
-html.cinematic .cinematic-track {
-  height: 500svh;
-}
-
-html.cinematic .cinematic-overlay {
+html.live .live-overlay {
   display: block;
   position: fixed;
   pointer-events: none;
 }
 
-html.cinematic .cinematic-cue {
+html.live .live-hint {
   display: block;
   position: fixed;
-  opacity: var(--cue, 0);
+  opacity: var(--hint, 0);
+  transition: opacity 600ms var(--ease-out-quart);
+  pointer-events: none;
 }
 
-/* The sound switch only means something while the cinematic runs. */
-html.cinematic .cinematic-control {
+/* The hint names what this device can do. */
+.hint-touch {
+  display: none;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .hint-pointer {
+    display: none;
+  }
+
+  .hint-touch {
+    display: inline;
+  }
+}
+
+/* The sound switch only means something while Kelo is on stage. */
+html.live .live-control {
   display: inline-flex;
   position: fixed;
 }
 
-html.cinematic .cinematic-text {
+html.live .live-text {
   position: fixed;
+  opacity: var(--text, 0);
+  transition: opacity 600ms var(--ease-out-quart);
 }
 
-html.cinematic .cinematic-meet {
-  opacity: var(--meet, 0);
+/* Keyboard focus always shows the words it lands on. */
+html.live .live-text:focus-within {
+  opacity: 1;
 }
 
-html.cinematic .cinematic-contact {
-  opacity: var(--contact, 0);
-}
-
-/* A faded-out link must not catch clicks; keyboard focus still reaches it and
-   brings the finale into view. */
-html.cinematic .cinematic-contact:not([data-shown]) {
+/*
+ * The keyboard's way to Kelo: a button over him, from head to feet, that the
+ * frame loop keeps in place. Invisible to the pointer (the stage handles it);
+ * it only shows its focus ring.
+ */
+html.live .live-kelo {
+  display: block;
+  position: fixed;
+  left: calc(var(--kelo-x, 50vw) - var(--kelo-w, 0px) / 2);
+  top: calc(var(--kelo-y, 50svh) - var(--kelo-h, 0px) / 2);
+  width: var(--kelo-w, 0px);
+  height: var(--kelo-h, 0px);
+  border-radius: 9999px;
+  background: transparent;
   pointer-events: none;
+}
+
+/* Over Kelo the pointer shows that he can be picked up. */
+html[data-kelo-hover] {
+  cursor: grab;
+}
+
+html[data-kelo-held],
+html[data-kelo-held] * {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .letterbox {
@@ -177,7 +208,7 @@ html.cinematic .cinematic-contact:not([data-shown]) {
  * backplate. Text already gets one from the browser.
  */
 @media (forced-colors: active) {
-  .cinematic-overlay {
+  .live-overlay {
     forced-color-adjust: none;
   }
 

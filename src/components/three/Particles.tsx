@@ -23,7 +23,7 @@ import {
 import { character } from '@/lib/character'
 import { degToRad } from '@/lib/math/damp'
 import { seededRandom } from '@/lib/math/random'
-import { cinematic } from './cinematic/CinematicDriver'
+import { live } from './live/LiveDriver'
 import { useScene } from './store'
 
 /** World size of a mote, in metres. */
@@ -132,7 +132,7 @@ export function Particles() {
         uTime: { value: 0 },
         uBurst: { value: 0 },
         uSwirl: { value: 0 },
-        uMouth: { value: cinematic.mouth.clone() },
+        uMouth: { value: live.mouth.clone() },
         uSize: { value: 1 },
         uEggY: { value: EGG_CENTRE_Y },
         uHeight: { value: VOLUME.height },
@@ -160,8 +160,8 @@ export function Particles() {
     // From the moment the shell bursts to the end of the hatch.
     u.uBurst!.value =
       boot.phase === 'hatching' ? Math.min(1, Math.max(0, (boot.hatchProgress - 0.3) / 0.7)) : 0
-    u.uSwirl!.value = cinematic.sample.particleSwirl
-    ;(u.uMouth!.value as typeof cinematic.mouth).copy(cinematic.mouth)
+    u.uSwirl!.value = live.sample.particleSwirl
+    ;(u.uMouth!.value as typeof live.mouth).copy(live.mouth)
     // Pixels per metre at 1 m for this lens and canvas.
     u.uSize!.value =
       (SIZE_M * state.size.height * state.gl.getPixelRatio()) /

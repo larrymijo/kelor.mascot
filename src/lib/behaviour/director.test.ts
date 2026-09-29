@@ -16,7 +16,6 @@ const base = (patch: Partial<DirectorInput> = {}): DirectorInput => ({
   bootPhase: 'ready',
   pointer: null,
   ctaActive: false,
-  tapS: null,
   reducedMotion: false,
   touchFirst: false,
   ...patch,
@@ -45,13 +44,17 @@ describe('director states', () => {
     expect(tracking!.expression).toBe('happy')
   })
 
-  it('stays in tracking on the first screen and enters scroll past it', () => {
-    const [hero, cinematic] = run([
+  it('acts while an interaction leads, and tracks again after', () => {
+    const [before, acting, after] = run([
       base({ nowS: 1 }),
-      base({ nowS: 2, script: { gaze: null, expression: null } }),
+      base({ nowS: 2, override: { gaze: null, expression: 'surprised' } }),
+      base({ nowS: 3 }),
     ])
-    expect(hero!.state).toBe('tracking')
-    expect(cinematic!.state).toBe('scroll')
+    expect(before!.state).toBe('tracking')
+    expect(acting!.state).toBe('acting')
+    expect(acting!.expression).toBe('surprised')
+    expect(after!.state).toBe('tracking')
+    expect(after!.expression).toBe('happy')
   })
 })
 
@@ -144,62 +147,30 @@ describe('touch and reduced motion', () => {
   })
 })
 
-describe('reactions', () => {
-  it('hops once per tap on Kelo and looks surprised for the length of the jump', () => {
-    const outputs = run([
-      base({ nowS: 1, tapS: 1 }),
-      base({ nowS: 1.1, tapS: 1 }),
-      base({ nowS: 1 + settings.hopS + 0.01, tapS: 1 }),
-    ])
-    expect(outputs.map((o) => o.reaction)).toEqual(['hop', null, null])
-    expect(outputs[1]!.expression).toBe('surprised')
-    expect(outputs[2]!.expression).toBe('happy')
-  })
-
-  it('swallows taps made during the egg or the hatch', () => {
-    const outputs = run([
-      base({ bootPhase: 'egg', nowS: 0.5, tapS: 0.5 }),
-      base({ bootPhase: 'hatching', nowS: 1, tapS: 0.9 }),
-      base({ bootPhase: 'ready', nowS: 2, tapS: 0.9 }),
-    ])
-    expect(outputs.map((o) => o.reaction)).toEqual([null, null, null])
-  })
-
-  it('hops even with reduced motion, because the visitor asked for it', () => {
-    const [out] = run([base({ nowS: 1, tapS: 1, reducedMotion: true })])
-    expect(out!.reaction).toBe('hop')
-  })
-})
-
-describe('scroll script', () => {
+describe('interactions', () => {
   const mouse = (lastActiveS: number) => ({ kind: 'mouse' as const, lastActiveS })
 
-  it('imposes the camera and the roar face during the gulp, over an active pointer', () => {
+  it('lets the bite lock his eyes on the viewer with the roar face, over an active pointer', () => {
     const [out] = run([
-      base({ nowS: 3, pointer: mouse(3), script: { gaze: 'camera', expression: 'roar' } }),
+      base({ nowS: 3, pointer: mouse(3), override: { gaze: 'camera', expression: 'roar' } }),
     ])
     expect(out!.attention).toBe('camera')
     expect(out!.expression).toBe('roar')
     expect(out!.gazeWeight).toBe(1)
   })
 
-  it('switches the gaze off for the plates close-up', () => {
-    const [out] = run([base({ nowS: 3, script: { gaze: 'off', expression: null } })])
-    expect(out!.gazeWeight).toBe(0)
-    expect(out!.expression).toBe('happy')
+  it('keeps following the hand while he is carried, surprised', () => {
+    const [out] = run([
+      base({ nowS: 3, pointer: mouse(3), override: { gaze: null, expression: 'surprised' } }),
+    ])
+    expect(out!.attention).toBe('pointer')
+    expect(out!.expression).toBe('surprised')
   })
 
-  it('lets the visitor lead in the finale and never plays look_around', () => {
-    const [cta, idle] = run([
-      base({
-        nowS: 3,
-        ctaActive: true,
-        touchFirst: true,
-        script: { gaze: null, expression: null },
-      }),
-      base({ nowS: 9, touchFirst: true, script: { gaze: null, expression: null } }),
+  it('never plays look_around while an interaction leads', () => {
+    const [out] = run([
+      base({ nowS: 9, touchFirst: true, override: { gaze: null, expression: null } }),
     ])
-    expect(cta!.attention).toBe('cta')
-    expect(idle!.idleClip).toBe('idle')
+    expect(out!.idleClip).toBe('idle')
   })
 })

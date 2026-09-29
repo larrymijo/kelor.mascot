@@ -8,8 +8,8 @@ import { character } from '@/lib/character'
 import { detectQualityTier, type QualityTier } from '@/lib/quality/detect'
 import { bootTimings, stepBoot, type BootPhase } from '@/lib/scene/boot'
 import { CameraRig, FOV } from './CameraRig'
-import { CinematicDriver } from './cinematic/CinematicDriver'
-import { OverlayDriver } from './cinematic/OverlayDriver'
+import { LiveDriver } from './live/LiveDriver'
+import { OverlayDriver } from './live/OverlayDriver'
 import { Effects } from './Effects'
 import { Backdrop } from './Backdrop'
 import { Floor } from './Floor'
@@ -195,7 +195,7 @@ export default function Stage({
       >
         <color attach="background" args={[character.colors.brandMono.ink900]} />
         <Backdrop />
-        <CinematicDriver />
+        <LiveDriver />
         <CameraRig />
         <StudioLights shadows={boot.shadows} shadowMapSize={bootTier === 'high' ? 2048 : 1024} />
         <Floor shadows={boot.shadows} />
