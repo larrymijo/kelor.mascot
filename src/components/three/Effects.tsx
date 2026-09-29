@@ -31,6 +31,8 @@ const BOKEH = 4
 const DOF_FADE = 0.25
 /** How much brighter bloom flares when the shell bursts. */
 const HATCH_FLASH = 2.2
+/** Extra vignette while the egg waits: a spotlight on it, opening as the shell bursts. */
+const EGG_SPOT = 0.3
 
 /**
  * Depth of field that costs nothing while the scroll script keeps it off.
@@ -74,7 +76,8 @@ class ScriptedDepthOfField extends DepthOfFieldEffect {
  * input: merged into the effects pass it would read the scene before them.
  *
  * The cinematic drives the effects each frame, never through React:
- * vignette darkness per act, a bloom flare when the egg bursts, and, where
+ * vignette darkness per act (closing in on the egg like a spotlight until it
+ * hatches), a bloom flare when the shell bursts, and, where
  * the tier allows it, depth of field that focuses on the eyes and then the
  * plates in the close-ups. It stays mounted, so reaching the close-ups never
  * recompiles the composer. There is no chromatic aberration: postprocessing
@@ -106,7 +109,12 @@ export function Effects({ tier }: { tier: QualityTier }) {
   useFrame(() => {
     const { sample } = cinematic
     const scene = useScene.getState()
-    if (vignette.current) vignette.current.darkness = sample.vignette
+    if (vignette.current) {
+      const { phase, hatchProgress } = scene.boot
+      const spot =
+        phase === 'egg' ? 1 : phase === 'hatching' ? 1 - smoothstep(0.3, 0.8, hatchProgress) : 0
+      vignette.current.darkness = sample.vignette + EGG_SPOT * spot
+    }
     if (bloom.current) {
       const { phase, hatchProgress } = scene.boot
       const flash =
