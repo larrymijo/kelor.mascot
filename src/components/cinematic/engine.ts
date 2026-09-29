@@ -89,10 +89,18 @@ export function startCinematic(): () => void {
   }
   link?.addEventListener('focus', onFocus)
 
-  // The track grew when the class was added: measure again.
+  // The track grew when the class was added: measure again, and again when
+  // its height settles. With reduced motion, the global safety net turns
+  // every style change into a 0.01 ms transition, so the track only reaches
+  // its height a frame after this runs: measured once, the page looked one
+  // screen tall and the first scroll jumped straight to the finale.
   ScrollTrigger.refresh()
+  const track = document.querySelector('.cinematic-track')
+  const settled = new ResizeObserver(() => ScrollTrigger.refresh())
+  if (track) settled.observe(track)
 
   return () => {
+    settled.disconnect()
     link?.removeEventListener('focus', onFocus)
     reveal?.scrollTrigger?.kill()
     reveal?.kill()
