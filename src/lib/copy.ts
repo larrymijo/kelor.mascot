@@ -29,6 +29,17 @@ export const copy = {
     // The studio's contact page; switch to the final domain once it exists.
     href: 'https://kelor-interactive.vercel.app/contacto',
   },
+  notFound: {
+    title: 'Página no encontrada',
+    body: 'Esta página no existe. Kelo te espera en la portada.',
+    back: 'Volver al inicio',
+  },
+  error: {
+    title: 'Algo salió mal',
+    body: 'La página no pudo cargarse. Vuelve a intentarlo en un momento.',
+    retry: 'Reintentar',
+    back: 'Volver al inicio',
+  },
   /** Accessible name of the sound switch; its state is aria-pressed. */
   sound: {
     label: 'Sonido',
