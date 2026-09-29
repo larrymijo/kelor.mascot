@@ -33,6 +33,10 @@ export interface StageProps {
   onFirstFrame?: () => void
   /** Called when WebGL 2 is not available; the HTML fallback stays. */
   onUnavailable?: () => void
+  /** Called when the browser takes the GPU context away (phones do, in the background). */
+  onContextLost?: () => void
+  /** Called when the context comes back; three rebuilds its GPU state by itself. */
+  onContextRestored?: () => void
   /** Scene content (egg, mascot); kept as children so the stage stays generic. */
   children?: ReactNode
 }
@@ -102,6 +106,8 @@ export default function Stage({
   onClipChange,
   onFirstFrame,
   onUnavailable,
+  onContextLost,
+  onContextRestored,
   children,
 }: StageProps) {
   const wrapper = useRef<HTMLDivElement>(null)
@@ -179,6 +185,10 @@ export default function Stage({
         camera={{ fov: FOV, near: 0.1, far: 40, position: [0, 1, 4] }}
         onCreated={({ gl }) => {
           gl.toneMapping = AgXToneMapping
+          // three stops drawing while the context is lost and restores it; the
+          // HTML around the stage only has to cover the gap.
+          gl.domElement.addEventListener('webglcontextlost', () => onContextLost?.())
+          gl.domElement.addEventListener('webglcontextrestored', () => onContextRestored?.())
         }}
       >
         <color attach="background" args={[character.colors.brandMono.ink900]} />

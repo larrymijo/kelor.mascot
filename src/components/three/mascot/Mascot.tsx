@@ -4,6 +4,7 @@ import { useGLTF } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Suspense, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AnimationClip, Group, Object3D } from 'three'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { character } from '@/lib/character'
 import { degToRad, smoothstep } from '@/lib/math/damp'
 import type { BootPhase } from '@/lib/scene/boot'
@@ -181,9 +182,12 @@ export function Mascot() {
         <primitive object={rig.scene} />
       </group>
       {upgrade && phase === 'ready' && !full && (
-        <Suspense fallback={null}>
-          <ModelUpgrade url={upgrade} onReady={adoptFull} />
-        </Suspense>
+        // A full model that fails to download or decode leaves the lite Kelo in place.
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <ModelUpgrade url={upgrade} onReady={adoptFull} />
+          </Suspense>
+        </ErrorBoundary>
       )}
     </>
   )

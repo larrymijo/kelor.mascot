@@ -1,7 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { LogoMark } from '@/components/ui/LogoMark'
 import { copy } from '@/lib/copy'
 import type { BootPhase } from '@/lib/scene/boot'
@@ -14,12 +15,17 @@ const Experience = dynamic(() => import('@/components/three/Experience'), {
 
 type SceneState = 'loading' | BootPhase | 'unavailable'
 
+/** How long a lost GPU context may take to come back before the scene gives up. */
+const CONTEXT_GRACE_MS = 5_000
+
 /**
  * Client boundary of the hero scene. Shows the static brand mark until the
- * canvas draws its first frame, then cross-fades to it. Without WebGL the
- * mark simply stays. `data-scene-state`, `data-model`, `data-tier`,
- * `data-attention` and `data-clip` expose the boot phase, the live model, the
- * detected quality tier, where Kelo looks and what he plays to tests.
+ * canvas draws its first frame, then cross-fades to it. Without WebGL, or
+ * when the 3D chunk or the model fails to load, the mark simply stays; it
+ * also covers a lost GPU context until the context comes back.
+ * `data-scene-state`, `data-model`, `data-tier`, `data-attention` and
+ * `data-clip` expose the boot phase, the live model, the detected quality
+ * tier, where Kelo looks and what he plays to tests.
  */
 export function StageMount() {
   const [state, setState] = useState<SceneState>('loading')
@@ -34,7 +40,24 @@ export function StageMount() {
     setState((current) => (current === 'loading' ? 'egg' : current))
   }, [])
   const onPhaseChange = useCallback((phase: BootPhase) => setState(phase), [])
-  const onUnavailable = useCallback(() => setState('unavailable'), [])
+  // No WebGL, a chunk or model that failed to load, or a lost context that
+  // never came back: the brand mark returns and the page stays a document.
+  const onUnavailable = useCallback(() => {
+    setState('unavailable')
+    setShown(false)
+  }, [])
+  // A lost GPU context shows the brand mark until it comes back, and gives
+  // up on the scene if it has not come back within a few seconds.
+  const lostTimer = useRef<number | null>(null)
+  const onContextLost = useCallback(() => {
+    setShown(false)
+    lostTimer.current = window.setTimeout(onUnavailable, CONTEXT_GRACE_MS)
+  }, [onUnavailable])
+  const onContextRestored = useCallback(() => {
+    if (lostTimer.current !== null) window.clearTimeout(lostTimer.current)
+    lostTimer.current = null
+    setShown(true)
+  }, [])
 
   return (
     <div
@@ -64,15 +87,19 @@ export function StageMount() {
         <div
           className={`absolute inset-0 transition-opacity duration-700 ${shown ? 'opacity-100' : 'opacity-0'}`}
         >
-          <Experience
-            onFirstFrame={onFirstFrame}
-            onPhaseChange={onPhaseChange}
-            onModelChange={setModel}
-            onBootTier={setTier}
-            onAttentionChange={setAttention}
-            onClipChange={setClip}
-            onUnavailable={onUnavailable}
-          />
+          <ErrorBoundary onError={onUnavailable}>
+            <Experience
+              onFirstFrame={onFirstFrame}
+              onPhaseChange={onPhaseChange}
+              onModelChange={setModel}
+              onBootTier={setTier}
+              onAttentionChange={setAttention}
+              onClipChange={setClip}
+              onUnavailable={onUnavailable}
+              onContextLost={onContextLost}
+              onContextRestored={onContextRestored}
+            />
+          </ErrorBoundary>
         </div>
       )}
     </div>
