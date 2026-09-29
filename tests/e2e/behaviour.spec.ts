@@ -56,17 +56,20 @@ test.describe('behaviour', () => {
       'No hover or hardware keyboard on the phone profile',
     )
     await ready(page)
+    await expect(page.locator('html.cinematic')).toHaveCount(1, { timeout: 20_000 })
     const cta = page.getByRole('link', { name: CTA })
 
-    await cta.hover()
+    // The brand mark, the sound switch, then the contact link, whose focus
+    // brings the finale (where it lives) into view.
+    for (let i = 0; i < 3; i++) await page.keyboard.press('Tab')
+    await expect(cta).toBeFocused()
+    await expect(page.locator('#contact')).toHaveAttribute('data-shown', '', { timeout: 10_000 })
     await expect(stage(page)).toHaveAttribute('data-attention', 'cta')
+
+    await cta.blur()
     await page.mouse.move(5, 5)
     await expect(stage(page)).toHaveAttribute('data-attention', 'pointer')
-
-    // The brand mark comes first, then the contact link.
-    await page.keyboard.press('Tab')
-    await page.keyboard.press('Tab')
-    await expect(cta).toBeFocused()
+    await cta.hover()
     await expect(stage(page)).toHaveAttribute('data-attention', 'cta')
   })
 
@@ -88,7 +91,11 @@ test.describe('behaviour', () => {
   test('ignores clicks on the CTA itself', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'One profile is enough')
     await ready(page)
+    await expect(page.locator('html.cinematic')).toHaveCount(1, { timeout: 20_000 })
     const cta = page.getByRole('link', { name: CTA })
+    // The link lives in the finale: focusing it brings the finale into view.
+    await cta.focus()
+    await expect(page.locator('#contact')).toHaveAttribute('data-shown', '', { timeout: 10_000 })
     // Cancel the navigation inside the page, so the stage stays there to be checked.
     await cta.evaluate((link) => link.addEventListener('click', (event) => event.preventDefault()))
     await cta.click()
