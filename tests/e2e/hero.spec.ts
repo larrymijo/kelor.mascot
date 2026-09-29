@@ -44,18 +44,19 @@ test.describe('3D hero', () => {
     expect(errors).toEqual([])
   })
 
-  test('keyboard users reach the brand mark, then the contact link, with a visible focus ring', async ({
+  test('keyboard users reach the brand mark, the sound switch and the contact link, with a visible focus ring', async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name === 'mobile', 'No hardware keyboard on the phone profile')
     await page.goto('/')
-    await page.keyboard.press('Tab')
+    // The sound switch exists only in cinematic mode, which the lazy engine turns on.
+    await expect(page.locator('html.cinematic')).toHaveCount(1, { timeout: 40_000 })
     const focused = page.locator(':focus')
-    await expect(focused).toHaveAccessibleName(/KELOR Interactive/)
-    expect(await focused.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe('none')
-    await page.keyboard.press('Tab')
-    await expect(focused).toHaveAccessibleName(CTA)
-    expect(await focused.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe('none')
+    for (const name of [/KELOR Interactive/, /Sonido/, CTA]) {
+      await page.keyboard.press('Tab')
+      await expect(focused).toHaveAccessibleName(name)
+      expect(await focused.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe('none')
+    }
   })
 
   test('cuts straight to the mascot with reduced motion', async ({ page }) => {
