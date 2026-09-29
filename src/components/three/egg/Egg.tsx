@@ -7,9 +7,9 @@ import { character } from '@/lib/character'
 import { degToRad, smoothstep } from '@/lib/math/damp'
 import { useScene } from '../store'
 import { buildEggPieces } from './geometry'
+import { EggShell } from './shell'
 
 const egg = character.egg
-const [darkFace, lightFace, capFace] = egg.faceColors as [string, string, string]
 const glow = new Color(
   character.colors.mascot[egg.crackGlow as keyof typeof character.colors.mascot],
 )
@@ -18,39 +18,47 @@ const easeIn = (t: number) => t * t
 const easeOut = (t: number) => 1 - (1 - t) * (1 - t)
 
 /**
- * The loader: rocks on its base while the mascot downloads, its cracks
- * widening and glowing with load progress, then splits like the two halves
- * of the logo when the boot sequence hatches. Reduced motion: no rocking or
+ * The loader, a dinosaur egg: rocks on its base while the mascot downloads,
+ * its cracks widening and glowing brighter with load progress, then breaks
+ * along them into two halves and a cap when the boot sequence hatches.
+ * Until then it is one seamless shell with the cracks drawn on it; the
+ * pieces only appear for the burst. Reduced motion: no rocking, pulse or
  * flash, and the boot machine cuts straight to the mascot.
  */
 export function Egg() {
   const phase = useScene((s) => s.boot.phase)
   const pieces = useMemo(() => buildEggPieces(egg), [])
+  const shell = useMemo(() => new EggShell(egg, glow), [])
   const group = useRef<Group>(null)
-  /** Pivot groups on the outer bottom edge of each half, so they tip over outwards. */
+  const whole = useRef<Mesh>(null)
+  /** Pivot groups on the outer edge of each half, so they tip over outwards. */
   const left = useRef<Group>(null)
   const right = useRef<Group>(null)
-  const cap = useRef<Mesh>(null)
+  /** Pivot at the cap's centre, so it spins about itself as it pops. */
+  const cap = useRef<Group>(null)
   const core = useRef<Mesh>(null)
   const coreMaterial = useRef<MeshStandardMaterial>(null)
   const time = useRef(0)
 
   useEffect(
     () => () => {
-      for (const geometry of [pieces.left, pieces.right, pieces.cap, pieces.core])
+      for (const geometry of [pieces.whole, pieces.left, pieces.right, pieces.cap, pieces.core])
         geometry.dispose()
     },
     [pieces],
   )
+  useEffect(() => () => shell.dispose(), [shell])
 
   useFrame((_, delta) => {
-    if (!group.current || !left.current || !right.current || !cap.current || !core.current) return
+    if (!group.current || !whole.current || !left.current || !right.current) return
+    if (!cap.current || !core.current) return
     const scene = useScene.getState()
     const reduced = scene.reducedMotion
     time.current += Math.min(delta, 0.1)
     const t = time.current
     const progress = scene.loadProgress
     const hatch = scene.boot.phase === 'egg' ? 0 : scene.boot.hatchProgress
+    const broken = hatch > 0
 
     // Rocking from the base, stronger as the download nears the end.
     const amplitude = reduced
@@ -60,8 +68,19 @@ export function Egg() {
     group.current.rotation.z = amplitude * Math.sin(phaseAngle)
     group.current.rotation.x = amplitude * 0.35 * Math.sin(phaseAngle * 0.7 + 1.3)
 
-    // Cracks open a little with progress, then the halves fall outwards.
-    const gap = 0.004 + 0.012 * progress
+    // Whole while it waits; the pieces take over for the burst.
+    whole.current.visible = !broken
+    left.current.visible = broken
+    right.current.visible = broken
+    cap.current.visible = broken
+
+    // The cracks widen with progress and pulse, then flare as the shell bursts.
+    const pulse = reduced ? 0 : 0.35 * Math.sin(t * 4) * progress
+    const flash = reduced ? 0 : Math.sin(Math.min(1, hatch * 2.2) * Math.PI) * 7
+    shell.setCracks(Math.min(1, progress + hatch), 0.45 + 1.6 * progress + pulse + flash)
+
+    // The halves fall outwards and the cap pops, spinning.
+    const gap = 0.006
     const fall = easeIn(smoothstep(0.1, 0.9, hatch))
     const hinge = pieces.halfWidth
     const slide = easeOut(hatch) * 0.12
@@ -80,11 +99,8 @@ export function Egg() {
     right.current.scale.setScalar(shrink)
     cap.current.scale.setScalar(shrink)
 
-    // Core glow: follows progress, pulses gently, flashes on hatch.
-    const pulse = reduced ? 0 : 0.35 * Math.sin(t * 4) * progress
-    const flash = reduced ? 0 : Math.sin(Math.min(1, hatch * 2.2) * Math.PI) * 7
-    if (coreMaterial.current)
-      coreMaterial.current.emissiveIntensity = 0.6 + 2.4 * progress + pulse + flash
+    // The core shows through the gaps as the pieces part, and flashes.
+    if (coreMaterial.current) coreMaterial.current.emissiveIntensity = 1 + 2 * progress + flash
     core.current.scale.setScalar(1 - smoothstep(0.35, 0.7, hatch))
   })
 
@@ -97,22 +113,43 @@ export function Egg() {
           ref={coreMaterial}
           color="#000000"
           emissive={glow}
-          emissiveIntensity={0.6}
+          emissiveIntensity={1}
         />
       </mesh>
-      <group ref={left} position-x={-pieces.halfWidth}>
-        <mesh geometry={pieces.left} position-x={pieces.halfWidth} castShadow receiveShadow>
-          <meshStandardMaterial color={darkFace} roughness={0.55} metalness={0} />
-        </mesh>
+      <mesh
+        ref={whole}
+        geometry={pieces.whole}
+        material={shell.material}
+        castShadow
+        receiveShadow
+      />
+      <group ref={left} position-x={-pieces.halfWidth} visible={false}>
+        <mesh
+          geometry={pieces.left}
+          material={shell.material}
+          position-x={pieces.halfWidth}
+          castShadow
+          receiveShadow
+        />
       </group>
-      <group ref={right} position-x={pieces.halfWidth}>
-        <mesh geometry={pieces.right} position-x={-pieces.halfWidth} castShadow receiveShadow>
-          <meshStandardMaterial color={lightFace} roughness={0.55} metalness={0} />
-        </mesh>
+      <group ref={right} position-x={pieces.halfWidth} visible={false}>
+        <mesh
+          geometry={pieces.right}
+          material={shell.material}
+          position-x={-pieces.halfWidth}
+          castShadow
+          receiveShadow
+        />
       </group>
-      <mesh ref={cap} geometry={pieces.cap} position-y={pieces.capCenterY} castShadow receiveShadow>
-        <meshStandardMaterial color={capFace} roughness={0.5} metalness={0} />
-      </mesh>
+      <group ref={cap} position-y={pieces.capCenterY} visible={false}>
+        <mesh
+          geometry={pieces.cap}
+          material={shell.material}
+          position-y={-pieces.capCenterY}
+          castShadow
+          receiveShadow
+        />
+      </group>
     </group>
   )
 }

@@ -208,11 +208,13 @@ export const characterSchema = z
 
     egg: z.strictObject({
       ...docShape,
-      shape: z.literal('hexagonal-prism'),
+      shape: z.literal('ovoid'),
       heightM: z.number().positive(),
       radiusM: z.number().positive(),
-      bevelM: z.number().nonnegative(),
-      faceColors: z.array(hexColor).min(1),
+      /** How much narrower the top is than the bottom, 0 for a plain ellipsoid. */
+      taper: z.number().min(0).max(0.4),
+      shellColor: hexColor,
+      speckleColor: hexColor,
       crackGlow: z.string(),
       wobble: z.strictObject({
         maxAngleDeg: degrees(45),

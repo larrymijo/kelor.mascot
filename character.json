@@ -268,12 +268,13 @@
   },
 
   "egg": {
-    "_doc": "Procedural loader (0 KB of assets): a bevelled hexagonal prism that reads like the logo's isometric cube. Wobbles while the GLB downloads and hatches when the model is ready and at least minDisplayS has passed, so it never flickers.",
-    "shape": "hexagonal-prism",
+    "_doc": "Procedural loader (0 KB of assets): a rounded dinosaur egg, fuller at the bottom (taper), with a shell of embossed polygonal plates, tubercles and speckles computed on the GPU. Wobbles while the GLB downloads and hatches when the model is ready and at least minDisplayS has passed, so it never flickers. radiusM is the widest radius.",
+    "shape": "ovoid",
     "heightM": 0.7,
-    "radiusM": 0.28,
-    "bevelM": 0.03,
-    "faceColors": ["#545454", "#A6A6A6", "#F7F7F7"],
+    "radiusM": 0.27,
+    "taper": 0.14,
+    "shellColor": "#E6DED0",
+    "speckleColor": "#7E7468",
     "crackGlow": "glow",
     "wobble": { "maxAngleDeg": 6, "frequencyHz": 1.4 },
     "minDisplayS": 1.8,

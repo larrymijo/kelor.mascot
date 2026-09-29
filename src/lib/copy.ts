@@ -17,7 +17,7 @@ export const copy = {
     cue: 'Desliza',
     /** Accessible description of the decorative 3D scene. */
     sceneLabel:
-      'Escena 3D: de un huevo hexagonal con los colores del logo de KELOR nace Kelo, un pequeño dinosaurio morado que te sigue con la mirada, crece hasta tragarse la pantalla y vuelve a su tamaño.',
+      'Escena 3D: de un huevo de dinosaurio nace Kelo, un pequeño dinosaurio morado que te sigue con la mirada, crece hasta tragarse la pantalla y vuelve a su tamaño.',
   },
   meet: {
     title: 'Conoce a Kelo',
