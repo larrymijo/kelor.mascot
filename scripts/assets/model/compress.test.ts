@@ -7,6 +7,7 @@ import { compressionIO, compressModel, ktxArgs } from './compress.mjs'
 const contract = raw as unknown as {
   files: { full: string; lite: string }
   skeleton: { bones: unknown[] }
+  meshes: { required: unknown[] }
 }
 
 /**
@@ -27,12 +28,12 @@ describe('compressModel', () => {
       const root = doc.getRoot()
 
       // One skin, not one per mesh: a scene-wide quantisation volume is what
-      // keeps the six meshes sharing a single skeleton upload per frame.
+      // keeps every mesh sharing a single skeleton upload per frame.
       expect(root.listSkins()).toHaveLength(1)
       expect(root.listSkins()[0]!.listJoints()).toHaveLength(contract.skeleton.bones.length)
 
       const meshes = root.listMeshes()
-      expect(meshes).toHaveLength(6)
+      expect(meshes).toHaveLength(contract.meshes.required.length)
       for (const mesh of meshes) {
         for (const prim of mesh.listPrimitives()) {
           expect(prim.getAttribute('JOINTS_0'), `${mesh.getName()} lost its joints`).toBeTruthy()
