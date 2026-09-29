@@ -23,9 +23,10 @@ describe('character.json', () => {
     expect(character).toEqual(parseCharacter(raw))
   })
 
-  it('declares the 28 canonical bones with a single root', () => {
+  it('declares the 29 canonical bones (28 and the jaw) with a single root', () => {
     const { bones, rootBone } = character.skeleton
-    expect(bones).toHaveLength(28)
+    expect(bones).toHaveLength(29)
+    expect(bones.filter((b) => b.role === 'jaw').map((b) => b.parent)).toEqual(['head'])
     expect(bones.filter((b) => b.parent === null).map((b) => b.name)).toEqual([rootBone])
   })
 

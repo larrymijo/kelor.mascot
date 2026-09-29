@@ -43,7 +43,7 @@ const budgetSchema = z.strictObject({
 const boneSchema = z.strictObject({
   name: boneName,
   parent: boneName.nullable(),
-  role: z.enum(['root', 'spine', 'neck', 'head', 'eye', 'eyelid', 'tail', 'leg', 'arm']),
+  role: z.enum(['root', 'spine', 'neck', 'head', 'eye', 'eyelid', 'jaw', 'tail', 'leg', 'arm']),
   restHead: vec3,
 })
 
@@ -203,7 +203,16 @@ export const characterSchema = z
       ...docShape,
       mascot: z.record(z.string(), hexColor),
       eyes: z.strictObject({ sclera: hexColor, iris: hexColor, highlight: hexColor }),
+      mouth: z.strictObject({ teeth: hexColor, inside: hexColor, tongue: hexColor }),
       brandMono: z.record(z.string(), hexColor),
+    }),
+
+    jaw: z.strictObject({
+      ...docShape,
+      maxOpenDeg: degrees(60),
+      openDeg: z.record(snakeName, z.number().min(0).max(60)),
+      lambda,
+      biteS: z.number().positive().max(1),
     }),
 
     egg: z.strictObject({
@@ -319,6 +328,20 @@ export const characterSchema = z
     c.gaze.headChain.links.forEach((l, i) =>
       requireBone(['gaze', 'headChain', 'links', i, 'bone'], l.bone),
     )
+
+    // One procedural jaw, opened per expression, never beyond its maximum.
+    const jaws = c.skeleton.bones.filter((b) => b.role === 'jaw')
+    if (jaws.length !== 1)
+      issue(['skeleton', 'bones'], `Expected one jaw bone, found ${jaws.length}`)
+    for (const jaw of jaws)
+      if (!procedural.has(jaw.name))
+        issue(['skeleton', 'procedural'], `"${jaw.name}" must be listed in skeleton.procedural`)
+    for (const [name, deg] of Object.entries(c.jaw.openDeg)) {
+      if (!(name in c.expressions.cells))
+        issue(['jaw', 'openDeg', name], `Unknown expression "${name}"`)
+      if (deg > c.jaw.maxOpenDeg)
+        issue(['jaw', 'openDeg', name], `Opens beyond maxOpenDeg (${c.jaw.maxOpenDeg})`)
+    }
     const shareSum = c.gaze.headChain.links.reduce((sum, l) => sum + l.share, 0)
     if (Math.abs(shareSum - 1) > 1e-6) {
       issue(['gaze', 'headChain', 'links'], `Shares must add up to 1 (got ${shareSum})`)

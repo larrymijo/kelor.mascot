@@ -38,8 +38,8 @@
       "maxTriangles": 24000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
-      "maxDrawCalls": 6,
-      "maxMaterials": 5,
+      "maxDrawCalls": 8,
+      "maxMaterials": 7,
       "maxTextures": 5,
       "maxTextureSize": 2048,
       "maxMorphTargets": 0,
@@ -50,8 +50,8 @@
       "maxTriangles": 8000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
-      "maxDrawCalls": 6,
-      "maxMaterials": 5,
+      "maxDrawCalls": 8,
+      "maxMaterials": 7,
       "maxTextures": 4,
       "maxTextureSize": 1024,
       "maxMorphTargets": 0,
@@ -100,13 +100,14 @@
         "role": "arm",
         "restHead": [-0.19, 0.52, 0.12]
       },
-      { "name": "hand_R", "parent": "forearm_R", "role": "arm", "restHead": [-0.21, 0.47, 0.15] }
+      { "name": "hand_R", "parent": "forearm_R", "role": "arm", "restHead": [-0.21, 0.47, 0.15] },
+      { "name": "jaw", "parent": "head", "role": "jaw", "restHead": [0, 0.84, 0.12] }
     ],
-    "procedural": ["eye_L", "eye_R", "eyelid_L", "eyelid_R"]
+    "procedural": ["eye_L", "eye_R", "eyelid_L", "eyelid_R", "jaw"]
   },
 
   "meshes": {
-    "_doc": "Required mesh names (glTF mesh or node name). All are skinned to the single armature. Both eyes share one mesh, each eye weighted 100 % to its eye bone; same for the eyelids. That keeps the model at 6 draw calls.",
+    "_doc": "Required mesh names (glTF mesh or node name). All are skinned to the single armature. Both eyes share one mesh, each eye weighted 100 % to its eye bone; same for the eyelids. The teeth and the mouth each add one: 8 draw calls.",
     "required": [
       {
         "name": "body",
@@ -116,7 +117,7 @@
       {
         "name": "face",
         "material": "face",
-        "_doc": "Thin shell over the face carrying the expression atlas (mouth, brows, blush). Weighted to head."
+        "_doc": "Thin shell over the face carrying the expression atlas (lip line, brows, blush). Cut along the lips like the body and weighted like the skin under it, so its lower part opens with the jaw."
       },
       {
         "name": "eyes",
@@ -137,6 +138,16 @@
         "name": "plates",
         "material": "plates",
         "_doc": "Hexagonal dorsal plates along spine and tail. Emissive, driven by a runtime glow uniform."
+      },
+      {
+        "name": "teeth",
+        "material": "teeth",
+        "_doc": "T-rex style sharp teeth and tusks just inside the lips: the upper row weighted to head, the lower to jaw. Hidden while the mouth is closed."
+      },
+      {
+        "name": "mouth",
+        "material": "mouth",
+        "_doc": "The mouth cavity and tongue behind the lips, coloured by vertex colours: the upper half weighted to head, the lower half and the tongue to jaw."
       }
     ]
   },
@@ -152,7 +163,9 @@
       { "name": "face", "model": "pbr", "textures": ["face_atlas"], "alphaMode": "BLEND" },
       { "name": "eyes", "model": "pbr", "textures": ["eyes_basecolor"] },
       { "name": "highlight", "model": "unlit", "textures": [] },
-      { "name": "plates", "model": "pbr", "textures": [], "emissive": "glow" }
+      { "name": "plates", "model": "pbr", "textures": [], "emissive": "glow" },
+      { "name": "teeth", "model": "pbr", "textures": [] },
+      { "name": "mouth", "model": "pbr", "textures": [] }
     ]
   },
 
@@ -168,7 +181,7 @@
   },
 
   "expressions": {
-    "_doc": "Expressions are cells of a 2x2 atlas on the face material, switched by UV offset (texture.offset in three). Cells are [column, row] with row 0 at the top (glTF UV origin). The face mesh UVs are authored inside cell [0, 0]. No morph targets, no jaw.",
+    "_doc": "Expressions are cells of a 2x2 atlas on the face material, switched by UV offset (texture.offset in three). Cells are [column, row] with row 0 at the top (glTF UV origin). The face mesh UVs are authored inside cell [0, 0]. No morph targets: the mouth opens with the jaw (see jaw), and the atlas carries the lip line, brows and blush.",
     "mesh": "face",
     "texture": "face_atlas",
     "grid": [2, 2],
@@ -259,6 +272,7 @@
       "glow": "#D9C7FF"
     },
     "eyes": { "sclera": "#F7F7F7", "iris": "#151515", "highlight": "#FFFFFF" },
+    "mouth": { "teeth": "#F4EEE2", "inside": "#2A0E33", "tongue": "#D9709F" },
     "brandMono": {
       "ink900": "#151515",
       "ink500": "#545454",
@@ -281,6 +295,13 @@
     "hatchDurationS": 1.2
   },
 
+  "jaw": {
+    "_doc": "A T-rex style jaw (phase 7, the owner's request): the lips are cut along the mouth line and the lower jaw hinges on the procedural jaw bone, far back like a T-rex's. openDeg is how far each expression opens it; the scroll script opens it further (up to maxOpenDeg) and the bite snaps it shut in biteS. lambda is how fast it follows.",
+    "maxOpenDeg": 38,
+    "openDeg": { "neutral": 0, "happy": 0, "surprised": 12, "roar": 30 },
+    "lambda": 14,
+    "biteS": 0.12
+  },
   "quality": {
     "_doc": "Tier picked at boot from device heuristics, then adjusted at runtime with drei's PerformanceMonitor: step down below lowerFps, up above upperFps, lock after flipflops.",
     "default": "medium",
