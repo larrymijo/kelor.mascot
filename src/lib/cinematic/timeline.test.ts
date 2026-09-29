@@ -89,7 +89,6 @@ describe('sampleTimeline', () => {
       const sample = sampleTimeline(p, 'reduced')
       expect(sample.scale).toBe(1)
       expect(sample.iris).toBe(0)
-      expect(sample.aberration).toBe(0)
       expect(sample.particleSwirl).toBe(0)
       // No orbit: the camera only ever sits at one of the still shots.
       expect(stills.has(sample.azimuthDeg)).toBe(true)

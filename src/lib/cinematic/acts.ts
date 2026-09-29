@@ -51,7 +51,6 @@ export interface ChannelSet {
   /** Height of each letterbox bar, share of the viewport. */
   letterbox: Channel
   vignette: Channel
-  aberration: Channel
   /** Multiplier on the plates' resting glow. */
   plateGlow: Channel
   /** Depth of field strength, 0 to 1. */
@@ -225,13 +224,6 @@ export const DESKTOP: Script = {
       [0.8, 0.6],
       [0.9, 0.5],
     ],
-    aberration: [
-      [0, 0],
-      [0.04, 0],
-      [0.16, 1],
-      [0.2, 0.4],
-      [0.28, 0],
-    ],
     plateGlow: [
       [0, 1],
       [0.04, 1],
@@ -344,7 +336,6 @@ export const REDUCED_MOTION: Script = {
     iris: HOLD(0),
     letterbox: HOLD(0),
     vignette: HOLD(0.6),
-    aberration: HOLD(0),
     plateGlow: stills([1, 1, 1.4, 1.4, 2, 1.2]),
     dof: stills([0, 0, 0, 1, 1, 0]),
     dofTarget: stills([0, 0, 0, 0, 1, 1]),
