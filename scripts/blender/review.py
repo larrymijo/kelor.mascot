@@ -1,8 +1,10 @@
 """Headless Blender step: review renders of the final contract GLB.
 
 Renders, with Cycles on CPU, the rest pose from four sides, the topology,
-the bone layout, a face close-up and every clip at mid-pose. The images go
-to the review folder that CI commits back to the branch.
+the bone layout, a face close-up, the jaw open at the roar's angle, and every
+clip at mid-pose. The images go to the review folder that CI commits back to
+the branch. Like the site, the renders hide the teeth and the mouth cavity
+while the jaw is shut.
 
 Run (Blender 5.2 LTS):
   blender -b --factory-startup --python-exit-code 1 -P scripts/blender/review.py -- \
@@ -17,7 +19,7 @@ import sys
 import time
 
 import bpy
-from mathutils import Vector
+from mathutils import Quaternion, Vector
 
 T0 = time.time()
 
@@ -136,12 +138,17 @@ def main():
     out = os.path.join(root, args.out)
     os.makedirs(out, exist_ok=True)
     fit = json.load(open(os.path.join(root, "assets/model/fit.json"), encoding="utf-8"))
+    contract = json.load(open(os.path.join(root, "character.json"), encoding="utf-8"))
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=os.path.join(root, args.model))
     armature = next(o for o in bpy.context.scene.objects if o.type == "ARMATURE")
     meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
     body = next(o for o in meshes if o.name.startswith("body"))
+    # The site draws the teeth and the cavity only while the jaw is open.
+    mouth_parts = [o for o in meshes if o.name.startswith(("teeth", "mouth"))]
+    for part in mouth_parts:
+        part.hide_render = True
     actions = sorted(bpy.data.actions, key=lambda a: a.name)
     if armature.animation_data:
         armature.animation_data.action = None
@@ -171,6 +178,27 @@ def main():
     face_target = head + Vector((0, 0, 0.22))
     aim(camera, face_target, distance * 0.42, 0, 4)
     render(scene, os.path.join(out, "face-closeup.png"))
+
+    # The jaw open as far as the roar opens it. A turn about +X opens it in
+    # glTF and in Blender alike (the Y-up to Z-up conversion turns about X).
+    jaw_bone = next((b for b in armature.data.bones if b.name == "jaw"), None)
+    if jaw_bone:
+        rest = jaw_bone.matrix_local.to_quaternion()
+        axis = armature.matrix_world.to_quaternion().inverted() @ Vector((1, 0, 0))
+        opening = Quaternion(axis, math.radians(contract["jaw"]["openDeg"]["roar"]))
+        jaw = armature.pose.bones["jaw"]
+        jaw.rotation_mode = "QUATERNION"
+        jaw.rotation_quaternion = rest.inverted() @ opening @ rest
+        for part in mouth_parts:
+            part.hide_render = False
+        bpy.context.view_layer.update()
+        for name, azimuth, elevation in (("front", 0, -2), ("three-quarter", 30, 2)):
+            aim(camera, face_target, distance * 0.45, azimuth, elevation)
+            render(scene, os.path.join(out, f"jaw-open-{name}.png"))
+        jaw.rotation_quaternion = (1, 0, 0, 0)
+        for part in mouth_parts:
+            part.hide_render = True
+        bpy.context.view_layer.update()
 
     # Topology: an emissive wireframe copy over the body.
     wire = body.copy()
@@ -209,7 +237,7 @@ def main():
     for obj in spheres + [ghost]:
         bpy.data.objects.remove(obj, do_unlink=True)
     for mesh in meshes:
-        mesh.hide_render = False
+        mesh.hide_render = mesh in mouth_parts
 
     # Clips at mid-pose.
     for action in actions:
