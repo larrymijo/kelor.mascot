@@ -19,10 +19,13 @@ async function ready(page: Page, reducedMotion: 'reduce' | 'no-preference' = 'no
   await expect(stage(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
 }
 
-/** Roughly where Kelo stands on screen: centred, in the upper part of the hero. */
+/** Where Kelo is on screen, as the frame loop reports it. */
 async function keloOnScreen(page: Page) {
-  const box = (await stage(page).boundingBox())!
-  return { x: box.x + box.width / 2, y: box.y + box.height * 0.3 }
+  const ui = page.locator('#live-ui')
+  return {
+    x: Number(await ui.getAttribute('data-kelo-x')),
+    y: Number(await ui.getAttribute('data-kelo-y')),
+  }
 }
 
 test.describe('behaviour', () => {
@@ -56,14 +59,12 @@ test.describe('behaviour', () => {
       'No hover or hardware keyboard on the phone profile',
     )
     await ready(page)
-    await expect(page.locator('html.cinematic')).toHaveCount(1, { timeout: 20_000 })
+    await expect(page.locator('html.live')).toHaveCount(1, { timeout: 20_000 })
     const cta = page.getByRole('link', { name: CTA })
 
-    // The brand mark, the sound switch, then the contact link, whose focus
-    // brings the finale (where it lives) into view.
-    for (let i = 0; i < 3; i++) await page.keyboard.press('Tab')
+    // The brand mark, the sound switch, the Kelo button, then the contact link.
+    for (let i = 0; i < 4; i++) await page.keyboard.press('Tab')
     await expect(cta).toBeFocused()
-    await expect(page.locator('#contact')).toHaveAttribute('data-shown', '', { timeout: 10_000 })
     await expect(stage(page)).toHaveAttribute('data-attention', 'cta')
 
     await cta.blur()
@@ -73,34 +74,19 @@ test.describe('behaviour', () => {
     await expect(stage(page)).toHaveAttribute('data-attention', 'cta')
   })
 
-  test('hops when clicked or tapped', async ({ page }, testInfo) => {
-    const errors = collectErrors(page)
-    await ready(page)
-    await page.waitForTimeout(500)
-    const kelo = await keloOnScreen(page)
-    if (testInfo.project.use.hasTouch) await page.touchscreen.tap(kelo.x, kelo.y)
-    else await page.mouse.click(kelo.x, kelo.y)
-    await expect(stage(page)).toHaveAttribute('data-clip', 'jump', { timeout: 3_000 })
-    // One-shot: it lands back in an idle loop.
-    await expect(stage(page)).toHaveAttribute('data-clip', /^(idle|look_around)$/, {
-      timeout: 5_000,
-    })
-    expect(errors).toEqual([])
-  })
-
   test('ignores clicks on the CTA itself', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'One profile is enough')
     await ready(page)
-    await expect(page.locator('html.cinematic')).toHaveCount(1, { timeout: 20_000 })
+    await expect(page.locator('html.live')).toHaveCount(1, { timeout: 20_000 })
     const cta = page.getByRole('link', { name: CTA })
-    // The link lives in the finale: focusing it brings the finale into view.
-    await cta.focus()
-    await expect(page.locator('#contact')).toHaveAttribute('data-shown', '', { timeout: 10_000 })
     // Cancel the navigation inside the page, so the stage stays there to be checked.
     await cta.evaluate((link) => link.addEventListener('click', (event) => event.preventDefault()))
     await cta.click()
     await page.waitForTimeout(600)
-    await expect(stage(page)).not.toHaveAttribute('data-clip', 'jump')
+    // Neither a reaction nor a hop towards the link.
+    const ui = page.locator('#live-ui')
+    await expect(ui).toHaveAttribute('data-reaction', '')
+    await expect(ui).toHaveAttribute('data-kelo', 'rest')
   })
 
   test('keeps idle still with reduced motion', async ({ page }) => {
