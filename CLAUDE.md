@@ -45,17 +45,17 @@ Version constraints that matter:
 
 ## Budgets
 
-| Metric                                            | Budget                                                          |
-| ------------------------------------------------- | --------------------------------------------------------------- |
-| Initial JS (excluding the lazily loaded 3D chunk) | ≤ 150 kB gzip                                                   |
-| Deferred 3D JS (the stage chunk)                  | ≤ 420 kB gzip                                                   |
-| Cinematic JS (the lazy scroll engine chunk)       | ≤ 70 kB gzip                                                    |
-| LCP (4G, mid-range phone)                         | < 2.0 s                                                         |
-| CLS                                               | 0                                                               |
-| TBT                                               | < 200 ms                                                        |
-| Mascot GLB                                        | lite ≤ 250 kB (Meshopt + WebP), full ≤ 1500 kB (Meshopt + KTX2) |
-| Frame rate                                        | 60 fps on Intel integrated GPU at quality `medium`              |
-| Lighthouse accessibility                          | ≥ 95                                                            |
+| Metric                                            | Budget                                                               |
+| ------------------------------------------------- | -------------------------------------------------------------------- |
+| Initial JS (excluding the lazily loaded 3D chunk) | ≤ 150 kB gzip                                                        |
+| Deferred 3D JS (the stage chunk)                  | ≤ 420 kB gzip                                                        |
+| Cinematic JS (the lazy scroll engine chunk)       | ≤ 70 kB gzip                                                         |
+| LCP (4G, mid-range phone)                         | < 2.0 s                                                              |
+| CLS                                               | 0                                                                    |
+| TBT (throttled phone, `pnpm perf:budget`)         | page < 200 ms until the 3D chunk is requested; 3D boot ≤ 2 s (D-094) |
+| Mascot GLB                                        | lite ≤ 250 kB (Meshopt + WebP), full ≤ 1500 kB (Meshopt + KTX2)      |
+| Frame rate                                        | 60 fps on Intel integrated GPU at quality `medium`                   |
+| Lighthouse accessibility                          | ≥ 95                                                                 |
 
 Model budgets (triangles, bones, textures, draw calls, clips) live in `character.json` and are enforced by `pnpm validate:model`. JS budgets are enforced by `pnpm size` after a build.
 
@@ -65,9 +65,10 @@ Full bible, canonical names and name candidates: `.claude/skills/kelor-mascot/SK
 
 - Chibi bipedal dinosaur: big head (~40 % of height), rounded body, short legs, small arms, expressive tail with 4 bones.
 - Purple is the accent (tokens `mascot-700/500/300` + `mascot-glow`) over the logo's monochrome base. **UI stays monochrome**; purple is for the mascot, glows and the CTA.
-- Brand DNA: hexagonal dorsal plates that can light up, and a hexagonal egg as its origin.
+- Brand DNA: hexagonal dorsal plates that can light up, a rounded dinosaur egg as his origin, and the hexagonal KELOR mark in the finale.
 - Big eyes as separate geometry (spheres with pupils and eyelids) plus fixed highlights. The eyes follow the cursor.
-- Expressions via a UV-offset texture atlas (neutral, happy, surprised, roar). No sculpted morph targets, no articulated jaw.
+- Expressions via a UV-offset texture atlas (neutral, happy, surprised, roar). No morph targets.
+- A T-rex jaw: one `jaw` bone opens the mouth on sharp teeth and tusks; he bites the viewer in the gulp.
 - No hair, thin spikes or separate fingers: closed, rounded shapes only.
 - Must be clearly original. Never resemble well-known purple dinosaurs or dragons.
 
@@ -76,11 +77,11 @@ Full bible, canonical names and name candidates: `.claude/skills/kelor-mascot/SK
 `character.json` is the single source of truth, validated by `src/lib/character/schema.ts` (Zod) in tests. Never hard-code its values elsewhere.
 
 - Units metres, +Y up, +Z forward, origin at the feet, height 1.2 m.
-- 28 bones with exact names (`root`, `hips`, `spine_01`… `tail_04`, `eye_L`, `eyelid_R`…). Eye and eyelid bones are procedural: clips must not key them.
-- Meshes: `body`, `face`, `eyes`, `eyelids`, `eye_highlights`, `plates`. The egg is procedural and never ships in the GLB.
+- 29 bones with exact names (`root`, `hips`, `spine_01`… `tail_04`, `eye_L`, `eyelid_R`, `jaw`…). Eye, eyelid and jaw bones are procedural: clips must not key them.
+- Meshes: `body`, `face`, `eyes`, `eyelids`, `eye_highlights`, `plates`, `teeth`, `mouth` (8 draw calls, 7 materials). The egg is procedural and never ships in the GLB.
 - Clips: `idle`, `hatch`, `look_around`, `roar`, `jump`, `wave`, at 30 fps, no root motion.
 - Gaze: eyes fast (±35°/±25°), neck + head slow (±40°/±25°), frame-rate independent damping, applied after the mixer as a layer on top of the clip.
-- Quality tiers `high` / `medium` / `low`, picked at boot and adjusted with drei's `PerformanceMonitor`.
+- Quality tiers `high` / `medium` / `low`, picked at boot and adjusted with drei's `PerformanceMonitor` along a ladder that lowers the pixel ratio before the tier.
 
 ## Layout
 
@@ -144,6 +145,17 @@ public/basis            three's Basis transcoder for KTX2, served locally (kept 
 - Blender never runs locally. The Model workflow runs on feature-branch pushes that touch the source, fit, pipeline or contract, and commits `public/models` plus `assets/review/phase-3` (renders, `pipeline.log`, `summary.json`) back to the branch: `git pull` before pushing again.
 - Review every run through the committed renders: rest views, face close-up, topology, bone heads and each clip at mid-pose.
 - Locally, `node scripts/assets/model/run.mjs --until rig` runs the Node steps into `build/model`.
+- `node scripts/assets/model/reassemble.mjs [--public] [--raw]` rebuilds the lite model from HEAD's committed body with the current assembly code, no Blender, to tune the jaw, eyes or plates before spending a CI run. `--public` overwrites the committed lite model for a preview: `git checkout -- public/models/mascot.lite.glb` before committing.
+
+## Performance and QA (phase 7)
+
+- Resilience: `StageMount` wraps the 3D experience in an error boundary. A failed chunk, model or WebGL leaves `data-scene-state="unavailable"` and the brand mark; a failed full model keeps lite. A lost WebGL context shows the brand mark until it is restored. `not-found.tsx`, `error.tsx` and `global-error.tsx` are Spanish.
+- The loading brand mark is an `<img>` data URI, so it is the LCP element at first paint.
+- `src/lib/quality/ladder.ts` builds the quality ladder (tier and pixel-ratio steps); `QualityController` walks it one step at a time.
+- `src/lib/security/csp.ts` builds the Content Security Policy that `next.config.ts` sends in production builds; see its comment before adding any source.
+- `next.config.ts` hashes the models and the Basis transcoder (`src/lib/assets`): models load as `?v=<hash>`, the transcoder from `/basis/<hash>/`, both cached `immutable`. Run Next from the repo root: the config imports `./src/...`, which Next resolves from the working directory.
+- The studio is `Backdrop.tsx` (a screen-space halo), `Floor.tsx`, `studioEnvironment.ts` (reflection panels baked into a cube map) and `Particles.tsx` (a few motes by tier).
+- `?qa` (local and preview builds) opens a panel that plays the cinematic, measures frames per checkpoint and copies a report; the owner runs it on real devices. `docs/qa.md` is the release-gate matrix.
 
 ## Commands
 
@@ -154,7 +166,9 @@ corepack pnpm validate:model   # validate GLBs in public/models against characte
 corepack pnpm build:model      # full model pipeline (CI; needs Blender)
 corepack pnpm build:placeholder # placeholder GLBs into build/placeholder (--public to overwrite the model)
 corepack pnpm size             # bundle report and JS budgets (after build)
-corepack pnpm e2e              # Playwright: 3D hero, cinematic checkpoints, reduced motion, keyboard, sound, captures (after build)
+corepack pnpm e2e              # Playwright: hero, cinematic checkpoints, loading, resilience, CSP, accessibility, captures (after build)
+corepack pnpm perf             # load and frame-rate probe: owner's laptop and a throttled phone (after build)
+corepack pnpm perf:budget      # the TBT budgets on the throttled phone: page and 3D boot (after build)
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same checks plus the e2e suite on every PR and uploads the captures as an artifact.
+CI (`.github/workflows/ci.yml`) runs the same checks plus the e2e suite on every PR and uploads the captures as an artifact. It also runs Lighthouse (mobile, pinned `npx @lhci/cli`, config in `lighthouserc.json`), the smoke spec in WebKit and Firefox (`CROSS_BROWSER=1`), and `pnpm audit --prod`.

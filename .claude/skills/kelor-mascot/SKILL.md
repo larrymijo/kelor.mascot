@@ -9,7 +9,7 @@ The machine-readable contract is `character.json` at the repo root. This skill e
 
 ## Identity
 
-An adorable, chibi, bipedal dinosaur hatched from a hexagonal egg. Curious, warm, a little clumsy; it notices you (the eyes follow the cursor) and reacts with small, readable gestures. It is the living version of the KELOR logo: the logo's isometric hexagon becomes its egg and its dorsal plates.
+An adorable, chibi, bipedal dinosaur hatched from a real dinosaur egg. Curious, warm, a little clumsy; it notices you (the eyes follow the cursor) and reacts with small, readable gestures, and it has a T-rex bite. It is the living version of the KELOR logo: the logo's isometric hexagon becomes its dorsal plates and, in the finale, the mark that frames it.
 
 ## Silhouette and proportions
 
@@ -28,21 +28,23 @@ The silhouette must read at 64 px: big head, round body, tail. If it does not re
 ## Shape language (hard rules)
 
 - Closed, rounded, soft forms only. Minimum bevel on every edge.
-- **No** hair, fur, feathers, thin spikes, horns, wings, claws, teeth rows, separate fingers or toes.
-- **No** morph targets and **no** articulated jaw. Mouth shapes live in the expression atlas.
-- Dorsal plates are the only "sharp" element, and they are hexagons with rounded corners.
+- **No** hair, fur, feathers, thin spikes, horns, wings, claws, separate fingers or toes.
+- **No** morph targets. The mouth is a T-rex jaw on one `jaw` bone: shut at rest behind a smiling lip line, it opens on a row of sharp teeth with two tusks for the roar and the bite. Teeth never show at rest.
+- The dorsal plates and the teeth are the only sharp elements; the plates are hexagons with rounded corners.
 
 ## Colour
 
 Purple is the accent over the monochrome logo base. Tokens (mirrored in `src/app/globals.css`):
 
-| Token                                        | Hex                                           | Use                                              |
-| -------------------------------------------- | --------------------------------------------- | ------------------------------------------------ |
-| `mascot-700`                                 | `#4A1FA8`                                     | shadow side, plate base, deep accents            |
-| `mascot-500`                                 | `#7A3FE4`                                     | main skin, CTA background                        |
-| `mascot-300`                                 | `#B794FF`                                     | belly, cheeks, rim light tint                    |
-| `mascot-glow`                                | `#D9C7FF`                                     | emissive plates, egg cracks, particles           |
-| `ink-900` / `ink-500` / `ink-300` / `ink-50` | `#151515` / `#545454` / `#A6A6A6` / `#F7F7F7` | logo greys: UI, egg shell, eye sclera and pupils |
+| Token                                        | Hex                                           | Use                                    |
+| -------------------------------------------- | --------------------------------------------- | -------------------------------------- |
+| `mascot-700`                                 | `#4A1FA8`                                     | shadow side, plate base, deep accents  |
+| `mascot-500`                                 | `#7A3FE4`                                     | main skin, CTA background              |
+| `mascot-300`                                 | `#B794FF`                                     | belly, cheeks, rim light tint          |
+| `mascot-glow`                                | `#D9C7FF`                                     | emissive plates, egg cracks, particles |
+| `ink-900` / `ink-500` / `ink-300` / `ink-50` | `#151515` / `#545454` / `#A6A6A6` / `#F7F7F7` | logo greys: UI, eye sclera and pupils  |
+| egg shell / speckles                         | `#E6DED0` / `#7E7468`                         | the egg, a warm dinosaur-egg cream     |
+| teeth / mouth / tongue                       | `#F4EEE2` / `#2A0E33` / `#D9709F`             | inside the jaw (`colors.mouth`)        |
 
 - The **UI stays monochrome**. Purple only appears on the mascot, glows and the primary CTA.
 - White text on `mascot-500` passes WCAG AA (≈ 5.7:1). Never put purple text on the dark background for body copy.
@@ -50,7 +52,8 @@ Purple is the accent over the monochrome logo base. Tokens (mirrored in `src/app
 ## Brand DNA
 
 - **Hexagonal dorsal plates** along spine and tail, 5 to 7 plates decreasing in size. They glow (`plates` material, emissive `mascot-glow`), driven by a runtime uniform: breathing pulse at idle, full glow on roar and CTA hover.
-- **Hexagonal egg** as its origin: a bevelled hexagonal prism whose three visible faces use the logo greys, so it reads as the logo's isometric cube. It is procedural in code (0 KB of assets) and never ships in the GLB.
+- **Dinosaur egg** as its origin: a rounded ovoid (0.7 m tall, 0.27 m radius) whose shader draws a cream shell with plates, tubercles and speckles, and glowing cracks along which it opens into a cap and two halves. It is procedural in code (0 KB of assets) and never ships in the GLB.
+- The **KELOR mark** closes the story: its two halves lock together behind him in the finale.
 
 ## Eyes
 
@@ -58,26 +61,28 @@ Purple is the accent over the monochrome logo base. Tokens (mirrored in `src/app
 - Upper eyelids in one `eyelids` mesh, weighted to `eyelid_L` / `eyelid_R`, rotating closed by `gaze.blink.closedAngleDeg`.
 - Catchlights in `eye_highlights`: unlit discs weighted to `head`, so they stay fixed while the eyes rotate. They sit on the iris of an eye looking at the viewer (the main one upper left, 14 mm, a small one lower right), clear of the open lid; on the white sclera a catchlight is invisible. At runtime they skip tone mapping so they stay pure white.
 - On medium and high tiers the eyes get a glassy clearcoat cornea and the skin a soft clearcoat and sheen, the vinyl-toy finish; low keeps the GLB's plain materials.
-- Eye and eyelid bones are **procedural**. Animation clips must never key them; the validator fails the GLB if they do.
+- Eye, eyelid and jaw bones are **procedural**. Animation clips must never key them; the validator fails the GLB if they do.
 
 ## Expressions
 
-A 2x2 atlas (`face_atlas`) on the `face` shell, switched by UV offset:
+A 2x2 atlas (`face_atlas`) on the `face` shell carries the lip line and the blush, switched by UV offset; the jaw opens the mouth (`character.json` `jaw.openDeg`):
 
-| Expression  | Cell [col, row] | Notes                                       |
-| ----------- | --------------- | ------------------------------------------- |
-| `neutral`   | [0, 0]          | soft closed smile, default                  |
-| `happy`     | [1, 0]          | open smile, blush                           |
-| `surprised` | [0, 1]          | small round mouth, raised brows             |
-| `roar`      | [1, 1]          | wide open mouth, no teeth, determined brows |
+| Expression  | Cell [col, row] | Notes                                             |
+| ----------- | --------------- | ------------------------------------------------- |
+| `neutral`   | [0, 0]          | closed smiling lip line, blush; jaw shut, default |
+| `happy`     | [1, 0]          | lifted smile, stronger blush; jaw shut            |
+| `surprised` | [0, 1]          | jaw open 12°, light blush                         |
+| `roar`      | [1, 1]          | jaw open 30° on the teeth and tusks, light blush  |
+
+The scroll script can open the jaw to its full 38°, and a bite snaps it shut and holds it for 0.35 s.
 
 ## Canonical names
 
 Use these names exactly, in Blender, in the GLB and in code.
 
-- **Bones (28)**: `root`, `hips`, `spine_01`, `spine_02`, `chest`, `neck_01`, `neck_02`, `head`, `eye_L`, `eye_R`, `eyelid_L`, `eyelid_R`, `tail_01`…`tail_04`, `thigh_L/R`, `shin_L/R`, `foot_L/R`, `upperarm_L/R`, `forearm_L/R`, `hand_L/R`. Left is +X; the character faces +Z.
-- **Meshes (6)**: `body`, `face`, `eyes`, `eyelids`, `eye_highlights`, `plates`.
-- **Materials (5)**: `body`, `face`, `eyes`, `highlight`, `plates`.
+- **Bones (29)**: `root`, `hips`, `spine_01`, `spine_02`, `chest`, `neck_01`, `neck_02`, `head`, `jaw`, `eye_L`, `eye_R`, `eyelid_L`, `eyelid_R`, `tail_01`…`tail_04`, `thigh_L/R`, `shin_L/R`, `foot_L/R`, `upperarm_L/R`, `forearm_L/R`, `hand_L/R`. Left is +X; the character faces +Z.
+- **Meshes (8)**: `body`, `face`, `eyes`, `eyelids`, `eye_highlights`, `plates`, `teeth`, `mouth`.
+- **Materials (7)**: `body`, `face`, `eyes`, `highlight`, `plates`, `teeth`, `mouth`.
 - **Textures (5)**: `body_basecolor`, `body_orm` (AO baked in R), `body_normal` (full tier only), `face_atlas`, `eyes_basecolor`.
 - **Clips (6)**: `idle`, `hatch`, `look_around`, `roar`, `jump`, `wave`. 30 fps, no root motion.
 - **Files**: `public/models/mascot.full.glb`, `public/models/mascot.lite.glb`.
@@ -90,8 +95,8 @@ Use these names exactly, in Blender, in the GLB and in code.
 | Triangles             | ≤ 8 000          | ≤ 24 000         |
 | Bones                 | ≤ 32             | ≤ 32             |
 | Influences per vertex | ≤ 4              | ≤ 4              |
-| Draw calls            | ≤ 6              | ≤ 6              |
-| Materials             | ≤ 5              | ≤ 5              |
+| Draw calls            | ≤ 8              | ≤ 8              |
+| Materials             | ≤ 7              | ≤ 7              |
 | Textures              | ≤ 4, max 1024 px | ≤ 5, max 2048 px |
 | Morph targets         | 0                | 0                |
 | Total clip length     | ≤ 30 s           | ≤ 30 s           |
@@ -104,24 +109,24 @@ corepack pnpm validate:model --file path/to/model.glb --tier full
 
 ## Model pipeline (phase 3)
 
-The real Kelo comes from the owner's image-to-3D source through `corepack pnpm build:model` (see `scripts/blender/README.md`): normalise, fit the 28-bone rig to measured landmarks, retopologise with Quadriflow, bake base colour, AO and normals, bind with automatic weights capped per role, then add the procedural eyes, lids, catchlights, plates and face shell with the same code as the phase 2 placeholder. Tune it through `assets/model/fit.json`, never by hand-editing GLBs. The review renders in `assets/review/phase-3` are the acceptance evidence. The placeholder generator stays as a fallback (`build:placeholder --public`). On stage the body stands in a 22 degree three-quarter turn and the gaze layer turns the head back to the viewer.
+The real Kelo comes from the owner's image-to-3D source through `corepack pnpm build:model` (see `scripts/blender/README.md`): normalise, fit the 29-bone rig to measured landmarks, retopologise with Quadriflow, bake base colour, AO and normals, bind with automatic weights capped per role, then add the procedural eyes, lids, catchlights, plates, face shell and jaw (the lip cut, jaw weights, teeth, tusks and mouth cavity) with the same code as the phase 2 placeholder. Tune it through `assets/model/fit.json`, never by hand-editing GLBs. The review renders in `assets/review/phase-3` are the acceptance evidence. The placeholder generator stays as a fallback (`build:placeholder --public`). On stage the body stands in a 22 degree three-quarter turn and the gaze layer turns the head back to the viewer.
 
 ## Runtime behaviour (phases 5 and 6)
 
 - **Gaze** is a layer applied after `AnimationMixer.update`, added on top of the clip pose, never replacing it. Eyes are fast (λ 14, ±35° yaw, ±25° pitch). Neck and head share the slow rotation (λ 5, ±40° yaw, ±25° pitch; shares 0.2 / 0.2 / 0.6). Damping is frame-rate independent: `x += (target - x) * (1 - exp(-λ·dt))`. Looking at the camera aims at a point at least 3 m away (times his scale) on the same line, so the eyes stay parallel instead of crossing in the close-ups.
 - **Life**: breathing (`idle`), tail inertia, random blinks every 2 to 6 s, return to camera after 4 s without a pointer, look at the CTA on hover, hop (`jump`) on click. On touch devices it follows the finger and runs `look_around` when idle.
-- **Director**: state machine `egg → hatch → tracking → scroll pose`, blending clip weights. Implemented in phase 5 (`src/lib/behaviour/director.ts`). In phase 6 the scroll state takes gaze and expression from the scroll script (`docs/scroll-script.md`): the roar face as he swallows the screen, happy afterwards, a blink as he comes back out, the wave in the finale. The hop plays only when a click or tap lands on Kelo, and `data-gaze-target` elements draw his look on hover and keyboard focus.
+- **Director**: state machine `egg → hatch → tracking → scroll pose`, blending clip weights. Implemented in phase 5 (`src/lib/behaviour/director.ts`). In phase 6 the scroll state takes gaze and expression from the scroll script (`docs/scroll-script.md`): the roar face and an opening jaw as he swallows the screen, a bite on the viewer at 0.175, happy afterwards, a blink as he comes back out, the wave in the finale. The hop plays only when a click or tap lands on Kelo, and `data-gaze-target` elements draw his look on hover and keyboard focus.
 - **Reduced motion**: no camera orbit, no particles or grain, the hatch is a cut, gaze is calmer (λ × 0.5). Content never depends on the animation.
 
 ## Originality guardrails
 
 There are famous purple dinosaurs and dragons. The mascot must never be mistaken for one. Avoid:
 
-- A green or yellow belly, a toothy wide grin, spots, a rounded "T. rex costume" posture with tiny head (children's TV purple dinosaur).
+- A green or yellow belly, a toothy grin at rest, spots, a rounded "T. rex costume" posture with tiny head (children's TV purple dinosaur).
 - Wings, horns, a pointed snout or a flame-tipped tail (video-game purple dragon).
 - Saddles, shells, collars, big noses or a long neck (other famous cartoon dinosaurs).
 
-What makes it ours: violet-blue hue (not red-purple), glowing **hexagonal** plates, the logo-grey hexagonal egg, huge low-set eyes, mitten limbs, and the tail as the main body-language channel. When reviewing concept art, compare the silhouette side by side with those references and reject anything that could be confused with them.
+What makes it ours: violet-blue hue (not red-purple), glowing **hexagonal** plates, the speckled cream egg that opens along glowing cracks, huge low-set eyes, mitten limbs, and the tail as the main body-language channel. When reviewing concept art, compare the silhouette side by side with those references and reject anything that could be confused with them.
 
 ## Concept art brief (the owner generates the images)
 
