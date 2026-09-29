@@ -70,7 +70,7 @@ export function createContractDocument({ contract, bones = contract.skeleton.bon
 }
 
 /**
- * The five contract materials. Each texture is { data, mimeType }.
+ * The seven contract materials. Each texture is { data, mimeType }.
  * @param {ReturnType<typeof createContractDocument>} ctx
  * @param {{ bodyOrm: any, bodyBaseColor: any, bodyNormal?: any, faceAtlas: any, eyesBaseColor: any }} textures
  */
@@ -117,7 +117,19 @@ export function addContractMaterials(ctx, textures) {
     .setRoughnessFactor(0.4)
     .setMetallicFactor(0)
 
-  return { body, face, eyes, highlight, plates }
+  // Glossy ivory teeth; the mouth takes its colours from its vertices.
+  const teeth = doc
+    .createMaterial('teeth')
+    .setBaseColorFactor([...toLinear(colors.mouth.teeth), 1])
+    .setRoughnessFactor(0.3)
+    .setMetallicFactor(0)
+  const mouth = doc
+    .createMaterial('mouth')
+    .setBaseColorFactor([1, 1, 1, 1])
+    .setRoughnessFactor(0.55)
+    .setMetallicFactor(0)
+
+  return { body, face, eyes, highlight, plates, teeth, mouth }
 }
 
 /** Add a skinned, single-primitive mesh as a child of the armature node. */
@@ -133,6 +145,9 @@ export function addSkinnedMesh(ctx, name, geometry, material) {
     .setAttribute('TEXCOORD_0', accessor(Float32Array.from(a.uv.array), 'VEC2'))
     .setAttribute('JOINTS_0', accessor(joints, 'VEC4'))
     .setAttribute('WEIGHTS_0', accessor(Float32Array.from(a.skinWeight.array), 'VEC4'))
+  // Linear vertex colours, for meshes coloured without a texture (the mouth).
+  if (a.color) primitive.setAttribute('COLOR_0', accessor(Float32Array.from(a.color.array), 'VEC3'))
+  primitive
     .setIndices(
       accessor(
         a.position.count > 65535 ? Uint32Array.from(index) : Uint16Array.from(index),

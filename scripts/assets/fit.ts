@@ -66,6 +66,32 @@ export const fitSchema = z
       down: z.number().positive().max(0.3),
       offsetM: z.number().positive().max(0.01),
     }),
+    mouth: z.strictObject({
+      ...docShape,
+      halfWidth: z.number().positive().max(0.3),
+      smile: z.number().min(-0.05).max(0.05),
+      hingeBackM: z.number().positive().max(0.5),
+      cutDepthM: z.number().positive().max(0.2),
+      cavityHeightM: z.number().positive().max(0.15),
+      teeth: z.strictObject({
+        upperPerSide: z.number().int().min(0).max(12),
+        lowerPerSide: z.number().int().min(0).max(12),
+        rootM: z.number().min(0).max(0.02),
+        row: z.strictObject({
+          length: z.number().positive().max(0.08),
+          radius: z.number().positive().max(0.03),
+          insetM: z.number().min(0).max(0.03),
+          rakeDeg: z.number().min(0).max(80),
+        }),
+        tusk: z.strictObject({
+          at: z.number().min(0).max(1),
+          length: z.number().positive().max(0.1),
+          radius: z.number().positive().max(0.03),
+          insetM: z.number().min(0).max(0.03),
+          rakeDeg: z.number().min(0).max(80),
+        }),
+      }),
+    }),
     plates: z.strictObject({
       ...docShape,
       embed: z.number().min(0).max(0.9),

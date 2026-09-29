@@ -148,6 +148,19 @@ export const sdf = {
     const t = Math.min(1, Math.max(0, (k - 0.15) / 0.95))
     return t * t * (3 - 2 * t) - 0.5
   },
+  /** Stroke along a polyline of [x, y] points, `width` wide. */
+  polyline: (points, width) => (x, y) => {
+    let best = Infinity
+    for (let i = 0; i < points.length - 1; i++) {
+      const [ax, ay] = points[i]
+      const [bx, by] = points[i + 1]
+      const dx = bx - ax
+      const dy = by - ay
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)))
+      best = Math.min(best, Math.hypot(x - ax - t * dx, y - ay - t * dy))
+    }
+    return best - width / 2
+  },
   /** Stroke of an elliptical arc between angles a0 and a1 (radians, y down). */
   arc: (cx, cy, rx, ry, a0, a1, width) => (x, y) => {
     let best = Infinity

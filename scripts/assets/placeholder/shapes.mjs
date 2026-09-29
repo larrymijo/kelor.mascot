@@ -11,6 +11,27 @@ import { seg } from '../assembly/features.mjs'
 /** Front-projected area of the face shell, shared with the atlas painter. */
 export const FACE_PATCH = { xMin: -0.175, xMax: 0.175, yMin: 0.78, yMax: 0.97 }
 
+/**
+ * The placeholder's mouth for the T-rex jaw (see assembly/mouth.mjs): on
+ * the snout's front, hinged behind it. The placeholder is not cut open;
+ * its teeth and cavity only honour the contract.
+ */
+export const PLACEHOLDER_MOUTH = {
+  y: 0.85,
+  halfWidth: 0.09,
+  smile: 0.006,
+  hinge: [0, 0.86, 0.14],
+  cutDepthM: 0.05,
+  cavityHeightM: 0.035,
+  teeth: {
+    upperPerSide: 5,
+    lowerPerSide: 4,
+    rootM: 0.003,
+    row: { length: 0.018, radius: 0.005, insetM: 0.006, rakeDeg: 42 },
+    tusk: { at: 0.3, length: 0.024, radius: 0.007, insetM: 0.002, rakeDeg: 10 },
+  },
+}
+
 /** Snout volume; the face shell sits on its front. */
 const SNOUT = { center: [0, 0.88, 0.22], radii: [0.17, 0.11, 0.12] }
 

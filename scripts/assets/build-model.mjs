@@ -6,7 +6,8 @@
  * with the same tested code as the placeholder: eyeballs, lids and
  * catchlights at eye positions found by raycasting the head, hexagonal
  * plates cast onto the back and tail, a face shell cut from the real snout
- * for the expression atlas, the five materials and the contract clips.
+ * for the expression atlas, the T-rex jaw (lips cut open, jaw weights, mouth
+ * cavity, teeth), the seven materials and the contract clips.
  */
 import { NodeIO } from '@gltf-transform/core'
 import * as THREE from 'three'
@@ -15,6 +16,7 @@ import {
   addContractMaterials,
   addSkinnedMesh,
   createContractDocument,
+  toLinear,
   writeGlb,
 } from './assembly/document.mjs'
 import { EYE, eyeball, eyelid, highlights, plate, projectFaceUvs } from './assembly/features.mjs'
@@ -25,6 +27,15 @@ import {
   merge,
   skinRigid,
 } from './assembly/skinning.mjs'
+import {
+  cutLips,
+  lipLine,
+  lipSkin,
+  mouthCavity,
+  surfaceCaster,
+  teeth,
+  weightJaw,
+} from './assembly/mouth.mjs'
 import { eyesBaseColor, faceAtlas } from './assembly/textures.mjs'
 import { heightMap } from './model/landmarks.mjs'
 import { PLACEHOLDER_CLIPS } from './placeholder-clips.mjs'
@@ -320,6 +331,19 @@ export function placePlates(cast, fit, bones) {
   })
 }
 
+/**
+ * The mouth of the T-rex jaw on this snout: the lip line at the face's mouth
+ * height, and the hinge far back behind the snout tip, like a T-rex's.
+ */
+export function placeMouth(fit, landmarks) {
+  const y = fit.face.mouthY ?? landmarks.mouthY
+  return {
+    ...fit.mouth,
+    y,
+    hinge: [0, y + 0.01, landmarks.snoutTip[2] - fit.mouth.hingeBackM],
+  }
+}
+
 /** Front-facing skin around the mouth, pushed out a little, for the expression atlas. */
 export function faceShellFromBody(body, fit, landmarks) {
   const mouthY = fit.face.mouthY ?? landmarks.mouthY
@@ -331,6 +355,8 @@ export function faceShellFromBody(body, fit, landmarks) {
   }
   const pos = body.attributes.position
   const nrm = body.attributes.normal
+  const joints = body.attributes.skinIndex
+  const weights = body.attributes.skinWeight
   const index = body.index.array
   const a = new THREE.Vector3()
   const b = new THREE.Vector3()
@@ -338,6 +364,8 @@ export function faceShellFromBody(body, fit, landmarks) {
   const faceNormal = new THREE.Vector3()
   const positions = []
   const normals = []
+  const skinIndex = []
+  const skinWeight = []
   for (let t = 0; t < index.length; t += 3) {
     a.fromBufferAttribute(pos, index[t])
     b.fromBufferAttribute(pos, index[t + 1])
@@ -354,6 +382,11 @@ export function faceShellFromBody(body, fit, landmarks) {
         .addScaledVector(n, fit.face.offsetM)
       positions.push(p.x, p.y, p.z)
       normals.push(n.x, n.y, n.z)
+      // The shell moves exactly like the skin under it, jaw included.
+      for (let k = 0; k < 4; k++) {
+        skinIndex.push(joints ? joints.getComponent(vi, k) : 0)
+        skinWeight.push(weights ? weights.getComponent(vi, k) : k === 0 ? 1 : 0)
+      }
     }
   }
   if (positions.length === 0) throw new Error('The face patch found no front-facing skin')
@@ -364,6 +397,8 @@ export function faceShellFromBody(body, fit, landmarks) {
     'uv',
     new THREE.Float32BufferAttribute(new Float32Array((positions.length / 3) * 2), 2),
   )
+  shell.setAttribute('skinIndex', new THREE.BufferAttribute(Uint16Array.from(skinIndex), 4))
+  shell.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeight, 4))
   shell.setIndex([...Array(positions.length / 3).keys()])
   return { shell, patch, mouthY }
 }
@@ -379,8 +414,10 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
   const geometry = await readBody(body, contract)
   const cast = raycaster(geometry)
   const eyes = placeEyes(cast, contract, fit, rig.landmarks)
+  const mouth = placeMouth(fit, rig.landmarks)
   const bones = rig.bones.map((bone) => {
     const side = bone.name.slice(-1)
+    if (bone.role === 'jaw') return { ...bone, restHead: mouth.hinge }
     return bone.role === 'eye' || bone.role === 'eyelid' ? { ...bone, restHead: eyes[side] } : bone
   })
 
@@ -404,9 +441,15 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
     fit.rig.weightSmoothing.factor,
   )
 
+  // The jaw: cast the lip line on the intact snout, then cut the lips open
+  // and hand the lower lip and chin to the jaw bone.
+  const lips = lipLine(surfaceCaster(geometry), mouth)
+  const { seam } = cutLips(geometry, mouth)
+  weightJaw(geometry, new Set(seam.map((pair) => pair.below)), mouth, jointOf('jaw'))
+  const mouthSkin = lipSkin(geometry, seam)
+
   const { shell, patch, mouthY } = faceShellFromBody(geometry, fit, rig.landmarks)
   projectFaceUvs(shell, patch, 1 / contract.expressions.grid[0])
-  skinRigid(shell, jointOf('head'))
 
   const detail = settings.detail
   const eyeMesh = merge(
@@ -429,12 +472,21 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
   const plates = merge(
     placePlates(cast, fit, bones).map((p) => skinRigid(plate(p), jointOf(p.bone))),
   )
+  const mouthColours = {
+    inside: toLinear(contract.colors.mouth.inside),
+    tongue: toLinear(contract.colors.mouth.tongue),
+  }
+  const teethMesh = merge(
+    teeth(lips, mouth, mouthSkin, toLinear(contract.colors.mouth.teeth), detail),
+  )
+  const mouthMesh = merge(mouthCavity(lips, mouth, mouthSkin, mouthColours, detail))
 
   const { colors } = contract
   const layout = {
     patch,
     offsetY: mouthY - ATLAS_DESIGN.mouthY,
     scale: fit.face.halfWidth / ATLAS_DESIGN.halfWidth,
+    lip: { y: mouth.y, halfWidth: mouth.halfWidth, smile: mouth.smile },
   }
   const materials = addContractMaterials(ctx, {
     bodyOrm: textures.orm,
@@ -452,6 +504,8 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
   addSkinnedMesh(ctx, 'eyelids', lids, materials.body)
   addSkinnedMesh(ctx, 'eye_highlights', catchlights, materials.highlight)
   addSkinnedMesh(ctx, 'plates', plates, materials.plates)
+  addSkinnedMesh(ctx, 'teeth', teethMesh, materials.teeth)
+  addSkinnedMesh(ctx, 'mouth', mouthMesh, materials.mouth)
   addContractClips(ctx, PLACEHOLDER_CLIPS)
 
   return {
