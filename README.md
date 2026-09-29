@@ -69,22 +69,6 @@ Each failed rule prints the measured value, the budget and a hint on how to fix 
 
 Append `?debug` to any local or preview URL to open a leva panel (lights, bloom, grain, plate glow, quality tier, expressions, every clip) and an FPS meter. It never loads on the production deployment, and visitors never download it.
 
-## Workflow
-
-- One branch and one PR per phase (`feat/phase-<n>-<slug>`), Conventional Commits, one commit per logical unit.
-- CI (`.github/workflows/ci.yml`) runs typecheck, lint, format check, unit tests, strict model validation, placeholder freshness, a production build, the bundle budget and the Playwright suite on every PR, and uploads the captures as the review-captures artifact.
-- Every PR gets a Vercel preview and follows `.github/pull_request_template.md`, including the performance and accessibility checklists.
-- No secrets in the repository. Configuration that needs a key is documented with the variable name and where to set it.
-
-## Deploying on Vercel
-
-1. Go to https://vercel.com/new and import `larrymijo/kelor.mascot`. The repository is private: if it is not listed, use "Adjust GitHub App Permissions" to give Vercel access to it.
-2. Keep the detected framework preset (Next.js) and the default build settings.
-3. Add the environment variable `ENABLE_EXPERIMENTAL_COREPACK` with value `1` (all environments), so Vercel uses the exact pnpm version from `packageManager`.
-4. Deploy. Node.js 24 is selected automatically from `engines` in `package.json`.
-5. Keep "Automatically expose System Environment Variables" enabled (the default): the debug panel reads `NEXT_PUBLIC_VERCEL_ENV` to stay off production.
-
-Pull requests then get preview deployments automatically, and `main` deploys to production.
 
 ## Docs
 
