@@ -204,7 +204,13 @@ export const characterSchema = z
       ...docShape,
       mascot: z.record(z.string(), hexColor),
       eyes: z.strictObject({ sclera: hexColor, iris: hexColor, highlight: hexColor }),
-      mouth: z.strictObject({ teeth: hexColor, inside: hexColor, tongue: hexColor }),
+      mouth: z.strictObject({
+        teeth: hexColor,
+        tusk: hexColor,
+        gums: hexColor,
+        inside: hexColor,
+        tongue: hexColor,
+      }),
       brandMono: z.record(z.string(), hexColor),
     }),
 
@@ -214,6 +220,60 @@ export const characterSchema = z
       openDeg: z.record(snakeName, z.number().min(0).max(60)),
       lambda,
       biteS: z.number().positive().max(1),
+    }),
+
+    interaction: z.strictObject({
+      ...docShape,
+      taps: z.strictObject({
+        streakS: z.number().positive().max(10),
+        biteAt: z.int().min(2).max(20),
+        dragThresholdPx: z.number().positive().max(50),
+      }),
+      reactions: z
+        .array(
+          z.strictObject({
+            name: snakeName,
+            clip: snakeName.nullable(),
+            expression: snakeName,
+            jawDeg: z.number().min(0).max(60),
+            durationS: z.number().positive().max(5),
+            wiggleDeg: z.number().min(0).max(30),
+            sound: z.enum(['boop', 'growl']).nullable(),
+          }),
+        )
+        .min(1),
+      desktop: z.strictObject({ ...docShape, minWidthPx: posInt }),
+      carry: z.strictObject({
+        ...docShape,
+        followHz: z.number().positive().max(30),
+        lengthM: z.number().positive().max(3),
+        dampingRatio: z.number().positive().max(2),
+        maxSwingDeg: degrees(89),
+        maxLeanDeg: degrees(60),
+        legDangleDeg: degrees(90),
+        legKickDeg: degrees(90),
+        armRaiseDeg: degrees(120),
+        stretch: z.number().min(0).max(0.5),
+        blendS: z.number().positive().max(2),
+      }),
+      fall: z.strictObject({
+        ...docShape,
+        gravity: z.number().positive().max(50),
+        airDrag: z.number().min(0).max(10),
+        restitution: z.number().min(0).max(1),
+        friction: z.number().min(0).max(50),
+        maxThrowMps: z.number().positive().max(30),
+        landSquash: z.number().positive().max(1),
+        squashHz: z.number().positive().max(20),
+        squashDamping: z.number().positive().max(2),
+        marginM: z.number().min(0).max(1),
+      }),
+      hop: z.strictObject({
+        ...docShape,
+        heightM: z.number().positive().max(2),
+        stepM: z.number().positive().max(2),
+      }),
+      bite: z.strictObject({ ...docShape, durationS: z.number().positive().max(10) }),
     }),
 
     egg: z.strictObject({
@@ -434,6 +494,15 @@ export const characterSchema = z
         `Clips add up to ${total} s, over budgets.full.maxAnimationSeconds`,
       )
     }
+    c.interaction.reactions.forEach((reaction, i) => {
+      if (reaction.clip && !clipNames.has(reaction.clip))
+        issue(['interaction', 'reactions', i, 'clip'], `Unknown clip "${reaction.clip}"`)
+      if (!(reaction.expression in c.expressions.cells))
+        issue(
+          ['interaction', 'reactions', i, 'expression'],
+          `Unknown expression "${reaction.expression}"`,
+        )
+    })
     if (!clipNames.has(c.accessibility.reducedMotion.idleClip)) {
       issue(['accessibility', 'reducedMotion', 'idleClip'], 'Must name a required clip')
     }

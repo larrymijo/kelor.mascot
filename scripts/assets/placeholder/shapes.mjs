@@ -24,11 +24,16 @@ export const PLACEHOLDER_MOUTH = {
   cutDepthM: 0.05,
   cavityHeightM: 0.035,
   teeth: {
-    upperPerSide: 5,
-    lowerPerSide: 4,
+    upperPerSide: 6,
+    lowerPerSide: 5,
     rootM: 0.003,
-    row: { length: 0.018, radius: 0.005, insetM: 0.006, rakeDeg: 42 },
-    tusk: { at: 0.3, length: 0.024, radius: 0.007, insetM: 0.002, rakeDeg: 10 },
+    row: { length: 0.019, radius: 0.0048, thickness: 0.6, insetM: 0.006, rakeDeg: 40 },
+    tusks: {
+      upper: { at: 0.36, length: 0.032, radius: 0.0075, clearanceM: 0.001, curl: 0.25 },
+      lower: { at: 0.55, length: 0.017, radius: 0.0052, clearanceM: 0.001, curl: 0.18 },
+      rings: 5,
+    },
+    gums: { radiusM: 0.0045, depth: 1.4, insetM: 0.006 },
   },
 }
 

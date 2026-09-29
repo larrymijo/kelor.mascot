@@ -4,7 +4,6 @@
  *
  *   initial      scripts in the prerendered HTML (every visitor, before interaction)
  *   deferred 3D  chunks of the page's dynamic import (the stage, fetched after hydration)
- *   cinematic    the scroll engine (GSAP, Lenis), loaded once the stage draws
  *   on demand    other lazy chunks: the ?debug panel, and the KTX2 loader that
  *                only medium and high tiers fetch with the full model
  *   legacy       nomodule polyfills that modern browsers never download
@@ -25,10 +24,7 @@ import { gzipSync } from 'node:zlib'
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 /** Budgets in kB gzip. See CLAUDE.md and docs/decisions.md (D-019, D-021). */
-export const BUDGETS = { initialKB: 150, deferred3dKB: 420, cinematicKB: 70 }
-
-/** Strings that survive minification in the cinematic engine's chunks. */
-const CINEMATIC_MARKERS = ['kelo-cinematic', 'ScrollTrigger', 'SplitText', 'lenis-smooth']
+export const BUDGETS = { initialKB: 150, deferred3dKB: 420 }
 
 const gzipKB = (bytes) => gzipSync(bytes, { level: 9 }).length / 1024
 const round = (n) => Math.round(n * 10) / 10
@@ -61,16 +57,13 @@ export function measureBundle(nextDir) {
     .filter((file) => file.endsWith('.js'))
     .map((file) => {
       const bytes = readFileSync(join(chunkDir, file))
-      const text = bytes.toString('utf8')
       const kind = initial.has(file)
         ? 'initial'
         : legacy.has(file)
           ? 'legacy'
           : deferred.has(file)
             ? 'deferred 3D'
-            : CINEMATIC_MARKERS.some((marker) => text.includes(marker))
-              ? 'cinematic'
-              : 'on demand'
+            : 'on demand'
       return { file, kind, gzipKB: round(gzipKB(bytes)) }
     })
     .sort((a, b) => b.gzipKB - a.gzipKB)
@@ -80,14 +73,12 @@ export function measureBundle(nextDir) {
   const totals = {
     initial: total('initial'),
     deferred3d: total('deferred 3D'),
-    cinematic: total('cinematic'),
     onDemand: total('on demand'),
     legacy: total('legacy'),
   }
   const checks = [
     { id: 'initial JS', actual: totals.initial, budget: BUDGETS.initialKB },
     { id: 'deferred 3D JS', actual: totals.deferred3d, budget: BUDGETS.deferred3dKB },
-    { id: 'cinematic JS', actual: totals.cinematic, budget: BUDGETS.cinematicKB },
   ].map((check) => ({ ...check, ok: check.actual <= check.budget }))
   return { chunks, totals, checks, ok: checks.every((c) => c.ok) }
 }

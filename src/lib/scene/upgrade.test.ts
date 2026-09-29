@@ -33,5 +33,7 @@ describe('shouldUpgrade', () => {
     expect(shouldUpgrade(full, { saveData: true })).toBe(false)
     expect(shouldUpgrade(full, { effectiveType: '2g' })).toBe(false)
     expect(shouldUpgrade(full, { effectiveType: 'slow-2g' })).toBe(false)
+    // Phones and tablets keep the lite model.
+    expect(shouldUpgrade(full, { effectiveType: '4g', coarsePointer: true })).toBe(false)
   })
 })

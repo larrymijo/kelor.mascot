@@ -13,7 +13,7 @@ const brandMark = (page: Page) => page.getByTestId('logo-glow').locator('xpath=.
 /** The page as a plain document: the words and the contact link, no error screen. */
 async function expectReadable(page: Page) {
   await expect(page.getByText('This page couldn’t load')).toHaveCount(0)
-  await expect(page.locator('html.cinematic')).toHaveCount(0)
+  await expect(page.locator('html.live')).toHaveCount(0)
   await expect(brandMark(page)).toHaveClass(/opacity-100/)
   await expect(page.getByRole('heading', { level: 1, name: 'Conoce a Kelo' })).toBeAttached()
   const link = page.getByRole('link', { name: 'Escríbenos' })

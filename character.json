@@ -35,10 +35,10 @@
     "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. File sizes are compressed (Meshopt geometry; WebP on lite, KTX2 on full). Lite keeps its phase 4 budget; full returned to 1500 kB in phase 6 for a 2048 px base colour and a 1024 px normal map, since it streams in after first paint. Draw calls = mesh primitives rendered once (shadow passes excluded).",
     "full": {
       "maxFileKB": 1500,
-      "maxTriangles": 24000,
+      "maxTriangles": 32000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
-      "maxDrawCalls": 8,
+      "maxDrawCalls": 9,
       "maxMaterials": 7,
       "maxTextures": 5,
       "maxTextureSize": 2048,
@@ -47,10 +47,10 @@
     },
     "lite": {
       "maxFileKB": 250,
-      "maxTriangles": 8000,
+      "maxTriangles": 11000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
-      "maxDrawCalls": 8,
+      "maxDrawCalls": 9,
       "maxMaterials": 7,
       "maxTextures": 4,
       "maxTextureSize": 1024,
@@ -107,7 +107,7 @@
   },
 
   "meshes": {
-    "_doc": "Required mesh names (glTF mesh or node name). All are skinned to the single armature. Both eyes share one mesh, each eye weighted 100 % to its eye bone; same for the eyelids. The teeth and the mouth each add one: 8 draw calls.",
+    "_doc": "Required mesh names (glTF mesh or node name). All are skinned to the single armature. Both eyes share one mesh, each eye weighted 100 % to its eye bone; same for the eyelids. The teeth, the tusks and the mouth each add one: 9 draw calls.",
     "required": [
       {
         "name": "body",
@@ -142,7 +142,12 @@
       {
         "name": "teeth",
         "material": "teeth",
-        "_doc": "T-rex style sharp teeth and tusks just inside the lips: the upper row weighted to head, the lower to jaw. Hidden while the mouth is closed."
+        "_doc": "T-rex style blade teeth in the gums just inside the lips: the upper row weighted like the upper lip, the lower like the jaw. Hidden while the mouth is closed."
+      },
+      {
+        "name": "tusks",
+        "material": "teeth",
+        "_doc": "Two upper tusks hanging over the lower lip and two lower tusks rising over the upper lip, with growth rings, ivory to white. Always shown: they are what the closed mouth shows of the jaw."
       },
       {
         "name": "mouth",
@@ -272,7 +277,13 @@
       "glow": "#D9C7FF"
     },
     "eyes": { "sclera": "#F7F7F7", "iris": "#151515", "highlight": "#FFFFFF" },
-    "mouth": { "teeth": "#F4EEE2", "inside": "#2A0E33", "tongue": "#D9709F" },
+    "mouth": {
+      "teeth": "#F4EEE2",
+      "tusk": "#E4D5B8",
+      "gums": "#A2477E",
+      "inside": "#2A0E33",
+      "tongue": "#D9709F"
+    },
     "brandMono": {
       "ink900": "#151515",
       "ink500": "#545454",
@@ -301,6 +312,95 @@
     "openDeg": { "neutral": 0, "happy": 0, "surprised": 12, "roar": 30 },
     "lambda": 14,
     "biteS": 0.12
+  },
+  "interaction": {
+    "_doc": "Kelo alive on one screen (phase 8, docs/interaction-script.md). Taps within streakS of each other build a streak; each tap plays the reaction for its place in the streak, and on desktop the tap numbered biteAt makes him bite the screen. Past the last reaction, touch devices repeat it. A press that moves further than dragThresholdPx is a drag (desktop only).",
+    "taps": { "streakS": 2.5, "biteAt": 6, "dragThresholdPx": 6 },
+    "reactions": [
+      {
+        "name": "giggle",
+        "clip": null,
+        "expression": "happy",
+        "jawDeg": 8,
+        "durationS": 0.9,
+        "wiggleDeg": 7,
+        "sound": "boop"
+      },
+      {
+        "name": "hop",
+        "clip": "jump",
+        "expression": "surprised",
+        "jawDeg": 0,
+        "durationS": 1.1,
+        "wiggleDeg": 0,
+        "sound": "boop"
+      },
+      {
+        "name": "stare",
+        "clip": null,
+        "expression": "neutral",
+        "jawDeg": 0,
+        "durationS": 1.3,
+        "wiggleDeg": 0,
+        "sound": null
+      },
+      {
+        "name": "grumpy",
+        "clip": null,
+        "expression": "roar",
+        "jawDeg": 14,
+        "durationS": 1.2,
+        "wiggleDeg": 3,
+        "sound": "growl"
+      },
+      {
+        "name": "grumpier",
+        "clip": "roar",
+        "expression": "roar",
+        "jawDeg": 24,
+        "durationS": 1.4,
+        "wiggleDeg": 4,
+        "sound": "growl"
+      }
+    ],
+    "desktop": {
+      "_doc": "Dragging and the bite need a fine pointer that can hover, on a screen at least minWidthPx wide.",
+      "minWidthPx": 768
+    },
+    "carry": {
+      "_doc": "Being held: the grab point follows the pointer on a critically damped spring (followHz); the body hangs from it like a pendulum (lengthM, dampingRatio), swinging with the hand's sideways acceleration up to maxSwingDeg and leaning with its vertical speed up to maxLeanDeg. Legs dangle and kick, arms rise, and the body stretches along fast motion.",
+      "followHz": 5,
+      "lengthM": 0.55,
+      "dampingRatio": 0.22,
+      "maxSwingDeg": 40,
+      "maxLeanDeg": 14,
+      "legDangleDeg": 26,
+      "legKickDeg": 16,
+      "armRaiseDeg": 60,
+      "stretch": 0.07,
+      "blendS": 0.2
+    },
+    "fall": {
+      "_doc": "Let go, he keeps the hand's velocity (up to maxThrowMps): gravity and air drag pull him down, the screen edges bounce him back. On the floor he bounces with restitution, slides to a stop with friction, and squashes to landSquash of his height, springing back at squashHz. marginM keeps him inside the screen.",
+      "gravity": 14,
+      "airDrag": 0.6,
+      "restitution": 0.3,
+      "friction": 5,
+      "maxThrowMps": 5,
+      "landSquash": 0.82,
+      "squashHz": 3.2,
+      "squashDamping": 0.32,
+      "marginM": 0.05
+    },
+    "hop": {
+      "_doc": "The single-pointer alternative to dragging: a click on empty floor, or an arrow key with Kelo focused, makes him hop there (arrow keys stepM at a time).",
+      "heightM": 0.22,
+      "stepM": 0.35
+    },
+    "bite": {
+      "_doc": "The full-screen bite on the tap numbered taps.biteAt (desktop, no reduced motion): src/lib/live/bite.ts keys it over durationS.",
+      "durationS": 3.4
+    }
   },
   "quality": {
     "_doc": "Tier picked at boot from device heuristics, then adjusted at runtime with drei's PerformanceMonitor along a ladder (src/lib/quality/ladder.ts): step up above upperFps, lock after flipflops. Within a tier the render pixel ratio steps down first, below dprLowerFps, from dprMax (or the device's) through dprSteps to dprMin; only then does the tier change, below lowerFps.",

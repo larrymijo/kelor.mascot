@@ -1,25 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSynth, crossedSounds } from './synth'
-
-describe('crossedSounds', () => {
-  it('plays the bite and gulp going forwards only', () => {
-    expect(crossedSounds(0.17, 0.18)).toEqual(['gulp'])
-    expect(crossedSounds(0.18, 0.17)).toEqual([])
-  })
-
-  it('plays act whooshes in both directions', () => {
-    expect(crossedSounds(0.32, 0.34)).toEqual(['whoosh'])
-    expect(crossedSounds(0.34, 0.32)).toEqual(['whoosh'])
-  })
-
-  it('plays the chord as the mark locks', () => {
-    expect(crossedSounds(0.89, 0.91)).toEqual(['chord'])
-  })
-
-  it('stays quiet on a jump, such as keyboard focus sending the page to the finale', () => {
-    expect(crossedSounds(0.1, 0.95)).toEqual([])
-  })
-})
+import { playSound } from './bus'
+import { createSynth } from './synth'
 
 type Param = Record<
   'setValueAtTime' | 'exponentialRampToValueAtTime' | 'setTargetAtTime' | 'cancelScheduledValues',
@@ -112,5 +93,24 @@ describe('createSynth', () => {
     synth.setEnabled(false)
     expect(master.gain.setTargetAtTime).toHaveBeenLastCalledWith(0, 0, 0.06)
     expect(cancelAnimationFrame).toHaveBeenCalled()
+  })
+
+  it('plays what the scene asks for only while it is on', () => {
+    const { context } = fakeContext()
+    const oscillators: unknown[] = []
+    const make = context.createOscillator
+    context.createOscillator = () => {
+      const oscillator = make()
+      oscillators.push(oscillator)
+      return oscillator
+    }
+    const synth = createSynth(context as unknown as AudioContext)
+    const humOscillators = oscillators.length
+    playSound('boop')
+    expect(oscillators.length).toBe(humOscillators)
+    synth.setEnabled(true)
+    playSound('boop')
+    expect(oscillators.length).toBe(humOscillators + 1)
+    synth.setEnabled(false)
   })
 })

@@ -34,7 +34,7 @@ async function recordPhases(page: Page) {
 }
 
 test.describe('progressive loading', () => {
-  test('paints the lite model first and upgrades where the tier allows', async ({
+  test('paints the lite model first and upgrades on desktops where the tier allows', async ({
     page,
     baseURL,
   }, testInfo) => {
@@ -47,8 +47,9 @@ test.describe('progressive loading', () => {
     expect(seen.models[0]).toBe('/models/mascot.lite.glb')
 
     const tier = await stage(page).getAttribute('data-tier')
-    if (tier === 'low') {
-      // The low tier keeps the lite model for good.
+    const touch = await page.evaluate(() => matchMedia('(pointer: coarse)').matches)
+    if (tier === 'low' || touch) {
+      // The low tier, and phones and tablets, keep the lite model for good.
       await page.waitForTimeout(3_000)
       expect(seen.models).not.toContain('/models/mascot.full.glb')
       await expect(stage(page)).toHaveAttribute('data-model', 'lite')

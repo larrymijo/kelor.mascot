@@ -3,9 +3,10 @@
  * Performance probe for the production build, with the Playwright and Chrome
  * already installed for the e2e suite (nothing is downloaded).
  *
- *   fps profiles   pin a quality tier with ?tier=, scroll to each checkpoint
- *                  of the scroll script and count animation frames, uncapped
- *                  (headless Chrome has no vsync), so headroom above 60 shows
+ *   fps profiles   pin a quality tier with ?tier=, play the live moments
+ *                  (idle, carrying him in circles, the bite) and count
+ *                  animation frames, uncapped (headless Chrome has no vsync),
+ *                  so headroom above 60 shows
  *   load profiles  record FCP, LCP and its element, CLS, an estimate of TBT
  *                  (long tasks from FCP until 3 s after Kelo is ready), when
  *                  the egg and Kelo appear, and the bytes by kind
@@ -36,15 +37,8 @@ import { blockingTime, checkTbt, median, resourceKind } from './perf-metrics.mjs
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const OUT_DIR = join(REPO_ROOT, 'scripts', 'review', 'out')
 
-/** Checkpoints of docs/scroll-script.md reachable by scrolling, with their act. */
-export const CHECKPOINTS = [
-  { id: 'hero', act: 'hero', progress: 0 },
-  { id: 'gulp', act: 'gulp', progress: 0.15 },
-  { id: 'meet', act: 'meet', progress: 0.42 },
-  { id: 'eyes', act: 'detail', progress: 0.61 },
-  { id: 'plates', act: 'detail', progress: 0.74 },
-  { id: 'finale', act: 'finale', progress: 0.95 },
-]
+/** The live scene's moments the fps profiles measure (docs/interaction-script.md). */
+export const MOMENTS = ['idle', 'drag', 'bite']
 
 const LAPTOP = { viewport: { width: 1280, height: 650 }, deviceScaleFactor: 1.5 }
 const PHONE = {
@@ -130,7 +124,7 @@ async function runFps(browser, baseUrl, profile) {
   const page = await context.newPage()
   await page.goto(baseUrl + profile.query)
   await page.waitForSelector('[data-scene-state="ready"]', { timeout: 60_000 })
-  await page.waitForSelector('html.cinematic', { timeout: 30_000 })
+  await page.waitForSelector('html.live', { timeout: 30_000 })
   // Let the full model stream in and the monitor's settle window pass.
   await page.waitForSelector('[data-model="full"]', { timeout: 60_000 }).catch(() => {})
   await page.waitForTimeout(3_000)
@@ -138,18 +132,37 @@ async function runFps(browser, baseUrl, profile) {
     const c = document.querySelector('canvas')
     return c ? `${c.width}x${c.height}` : 'none'
   })
-  const shots = []
-  for (const checkpoint of CHECKPOINTS) {
-    await page.evaluate(
-      (p) => window.scrollTo(0, p * (document.documentElement.scrollHeight - window.innerHeight)),
-      checkpoint.progress,
-    )
-    await page
-      .waitForSelector(`#cinematic-ui[data-act="${checkpoint.act}"]`, { timeout: 10_000 })
-      .catch(() => {})
-    await page.waitForTimeout(1_800)
-    shots.push({ id: checkpoint.id, ...(await page.evaluate(sampleFrames, 2_500)) })
+  const kelo = async () => {
+    const ui = page.locator('#live-ui')
+    return {
+      x: Number(await ui.getAttribute('data-kelo-x')),
+      y: Number(await ui.getAttribute('data-kelo-y')),
+    }
   }
+  const shots = []
+  shots.push({ id: 'idle', ...(await page.evaluate(sampleFrames, 2_500)) })
+
+  // Carry him in circles while measuring: the physics, the carried pose and his shadow.
+  const start = await kelo()
+  await page.mouse.move(start.x, start.y - 40)
+  await page.mouse.down()
+  const carrying = page.evaluate(sampleFrames, 2_500)
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 30) * Math.PI * 2
+    await page.mouse.move(start.x - 180 + 160 * Math.cos(a), start.y - 60 + 50 * Math.sin(a))
+    await page.waitForTimeout(40)
+  }
+  shots.push({ id: 'drag', ...(await carrying) })
+  await page.mouse.up()
+  await page.waitForTimeout(2_500)
+
+  // Six taps: the lunge and the snap.
+  const at = await kelo()
+  for (let i = 0; i < 6; i++) {
+    await page.mouse.click(at.x, at.y)
+    await page.waitForTimeout(250)
+  }
+  shots.push({ id: 'bite', ...(await page.evaluate(sampleFrames, 2_000)) })
   const quality = await page.getAttribute('[data-quality]', 'data-quality')
   await context.close()
   return { canvas, quality, shots }

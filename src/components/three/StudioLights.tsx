@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import type { DirectionalLight } from 'three'
 import { character } from '@/lib/character'
-import { cinematic } from './cinematic/CinematicDriver'
+import { live } from './live/LiveDriver'
 import { useScene } from './store'
 import { useStudioEnvironment, type StudioPanel } from './studioEnvironment'
 
@@ -30,9 +30,10 @@ interface StudioLightsProps {
  * and a procedural environment (Lightformers rendered once) for reflections
  * on the glossy eyes. No HDR files, no network.
  *
- * Each frame the key and rim follow the act's multipliers from the scroll
- * script, and the key's shadow frustum and position grow with Kelo's scale,
- * so his shadow is never clipped when he towers over the camera in the gulp.
+ * Each frame the key and rim follow the live pose's multipliers, and the
+ * key light moves with Kelo and grows with his scale, so his shadow stays
+ * sharp wherever he is dragged and is never clipped when he towers over the
+ * camera in the bite.
  */
 export function StudioLights({ shadows, shadowMapSize }: StudioLightsProps) {
   const tweaks = useScene((s) => s.tweaks)
@@ -42,14 +43,20 @@ export function StudioLights({ shadows, shadowMapSize }: StudioLightsProps) {
   const lastScale = useRef(0)
 
   useFrame(() => {
-    const { sample } = cinematic
+    const { sample } = live
     const { keyIntensity, rimIntensity } = useScene.getState().tweaks
     if (key.current) {
       key.current.intensity = keyIntensity * sample.keyLight
       const scale = Math.max(1, sample.scale)
+      const { x } = live.kelo.feet
+      key.current.position.set(...KEY_POSITION).multiplyScalar(scale)
+      key.current.position.x += x
+      if (key.current.target.position.x !== x) {
+        key.current.target.position.x = x
+        key.current.target.updateMatrixWorld()
+      }
       if (scale !== lastScale.current) {
         lastScale.current = scale
-        key.current.position.set(...KEY_POSITION).multiplyScalar(scale)
         const camera = key.current.shadow.camera
         camera.left = SHADOW.left * scale
         camera.right = SHADOW.right * scale

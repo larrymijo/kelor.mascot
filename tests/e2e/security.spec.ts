@@ -3,10 +3,10 @@ import { expect, test } from '@playwright/test'
 /**
  * The Content Security Policy (src/lib/security/csp.ts) holds for the whole
  * experience: the full model with its KTX2 textures (Basis transcoder in a
- * Blob worker), the scroll engine, the sound and every act of the cinematic.
+ * Blob worker), the sound, taps, carrying him and the bite.
  */
 test.describe('security headers', () => {
-  test('serves a Content Security Policy that the whole cinematic respects', async ({
+  test('serves a Content Security Policy that the whole experience respects', async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'One profile is enough')
@@ -27,15 +27,28 @@ test.describe('security headers', () => {
     const stage = page.locator('[data-scene-state]')
     await expect(stage).toHaveAttribute('data-scene-state', 'ready', { timeout: 40_000 })
     await expect(stage).toHaveAttribute('data-model', 'full', { timeout: 40_000 })
-    await expect(page.locator('html.cinematic')).toHaveCount(1, { timeout: 20_000 })
+    await expect(page.locator('html.live')).toHaveCount(1)
     await page.getByRole('button', { name: 'Sonido' }).click()
-    for (const progress of [0.15, 0.42, 0.61, 0.95]) {
-      await page.evaluate(
-        (p) => window.scrollTo(0, p * (document.documentElement.scrollHeight - window.innerHeight)),
-        progress,
-      )
-      await page.waitForTimeout(1_200)
+    await page.waitForTimeout(1_000)
+    const ui = page.locator('#live-ui')
+    const x = Number(await ui.getAttribute('data-kelo-x'))
+    const y = Number(await ui.getAttribute('data-kelo-y'))
+    // Carry him, drop him, then six taps: every reaction and the bite, with sound.
+    await page.mouse.move(x, y - 40)
+    await page.mouse.down()
+    await page.mouse.move(x - 200, y - 100, { steps: 12 })
+    await page.mouse.up()
+    await expect(ui).toHaveAttribute('data-kelo', 'rest', { timeout: 5_000 })
+    const at = {
+      x: Number(await ui.getAttribute('data-kelo-x')),
+      y: Number(await ui.getAttribute('data-kelo-y')),
     }
+    for (let i = 0; i < 6; i++) {
+      await page.mouse.click(at.x, at.y)
+      await page.waitForTimeout(450)
+    }
+    await expect(ui).toHaveAttribute('data-biting', 'true')
+    await expect(ui).toHaveAttribute('data-biting', 'false', { timeout: 6_000 })
     expect(violations).toEqual([])
   })
 })

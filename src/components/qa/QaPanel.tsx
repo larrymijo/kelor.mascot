@@ -3,15 +3,6 @@
 import { useState } from 'react'
 import { formatQaReport, summariseFrames, type QaReport, type QaShot } from '@/lib/qa/report'
 
-/** Checkpoints of docs/scroll-script.md reachable by scrolling. */
-const CHECKPOINTS = [
-  { id: 'hero', progress: 0 },
-  { id: 'gulp', progress: 0.15 },
-  { id: 'meet', progress: 0.42 },
-  { id: 'eyes', progress: 0.61 },
-  { id: 'plates', progress: 0.74 },
-  { id: 'finale', progress: 0.95 },
-] as const
 const SETTLE_MS = 1_800
 const MEASURE_MS = 3_000
 
@@ -80,6 +71,39 @@ async function loadMetrics() {
 }
 
 const stage = () => document.querySelector<HTMLElement>('[data-scene-state]')
+const kelo = () => {
+  const ui = document.getElementById('live-ui')
+  return { x: Number(ui?.dataset.keloX ?? 0), y: Number(ui?.dataset.keloY ?? 0) }
+}
+
+/**
+ * A pointer event as a mouse or finger would send it, on whatever is under
+ * the point; Kelo listens on the window, so it bubbles up to him.
+ */
+function pointer(type: 'pointerdown' | 'pointermove' | 'pointerup', x: number, y: number) {
+  const target = document.elementFromPoint(x, y) ?? document.body
+  target.dispatchEvent(
+    new PointerEvent(type, {
+      clientX: x,
+      clientY: y,
+      pointerId: 1,
+      isPrimary: true,
+      pointerType: 'mouse',
+      button: 0,
+      bubbles: true,
+    }),
+  )
+}
+
+async function tapKelo() {
+  const { x, y } = kelo()
+  pointer('pointerdown', x, y)
+  pointer('pointerup', x, y)
+}
+
+/** A fine pointer that hovers, on a wide screen: where dragging and the bite exist. */
+const desktop = () =>
+  matchMedia('(pointer: fine)').matches && matchMedia('(hover: hover)').matches && innerWidth >= 768
 const quality = () => document.querySelector<HTMLElement>('[data-quality]')?.dataset.quality ?? '?'
 const canvasSize = () => {
   const canvas = document.querySelector('canvas')
@@ -87,10 +111,11 @@ const canvasSize = () => {
 }
 
 /**
- * Performance QA on a real device: scrolls the cinematic through its
- * checkpoints, measures frames at each, and gathers the device, the quality
- * the page chose, and the load timings into a report to copy. Not in the
- * production build.
+ * Performance QA on a real device: plays the live moments (Kelo idle; on
+ * desktop carried in circles and the bite, on touch screens a run of taps),
+ * measures frames through each, and gathers the device, the quality the page
+ * chose, and the load timings into a report to copy. Not in the production
+ * build.
  */
 export default function QaPanel() {
   const [status, setStatus] = useState<'idle' | 'running' | 'done'>('idle')
@@ -103,14 +128,41 @@ export default function QaPanel() {
     while (stage()?.dataset.sceneState !== 'ready') await wait(250)
     await wait(SETTLE_MS)
     const shots: QaShot[] = []
-    for (const checkpoint of CHECKPOINTS) {
-      const max = document.documentElement.scrollHeight - window.innerHeight
-      window.scrollTo({ top: checkpoint.progress * max, behavior: 'instant' })
-      await wait(SETTLE_MS)
-      const frames = summariseFrames(await frameTimes(MEASURE_MS))
-      shots.push({ id: checkpoint.id, quality: quality(), canvas: canvasSize(), ...frames })
+    const measure = async (id: string, during?: Promise<void>) => {
+      const [deltas] = await Promise.all([frameTimes(MEASURE_MS), during])
+      shots.push({ id, quality: quality(), canvas: canvasSize(), ...summariseFrames(deltas) })
     }
-    window.scrollTo({ top: 0, behavior: 'instant' })
+    await measure('idle')
+    if (desktop()) {
+      // Carried in circles: the physics, the carried pose and his shadow.
+      const start = kelo()
+      pointer('pointerdown', start.x, start.y - 40)
+      const circles = (async () => {
+        for (let i = 0; i < 70; i++) {
+          const a = (i / 35) * Math.PI * 2
+          pointer('pointermove', start.x - 160 + 140 * Math.cos(a), start.y - 60 + 40 * Math.sin(a))
+          await wait(40)
+        }
+      })()
+      await measure('drag', circles)
+      const end = kelo()
+      pointer('pointerup', end.x, end.y)
+      await wait(SETTLE_MS + 700)
+      // Six taps: the lunge and the snap.
+      for (let i = 0; i < 6; i++) {
+        await tapKelo()
+        await wait(250)
+      }
+      await measure('bite')
+    } else {
+      const taps = (async () => {
+        for (let i = 0; i < 5; i++) {
+          await tapKelo()
+          await wait(550)
+        }
+      })()
+      await measure('taps', taps)
+    }
     setReport({
       at: new Date().toISOString(),
       userAgent: navigator.userAgent,
@@ -156,7 +208,7 @@ export default function QaPanel() {
           </button>
         )}
       </div>
-      {status === 'running' && <p>Scrolling through the acts; keep the tab in front.</p>}
+      {status === 'running' && <p>Playing with Kelo; keep the tab in front and the mouse still.</p>}
       {report && (
         <table className="border-separate border-spacing-x-2">
           <thead>

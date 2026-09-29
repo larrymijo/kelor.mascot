@@ -5,7 +5,7 @@ import { useMemo, useRef } from 'react'
 import { Color, ShaderMaterial } from 'three'
 import { character } from '@/lib/character'
 import { smoothstep } from '@/lib/math/damp'
-import { cinematic } from './cinematic/CinematicDriver'
+import { live } from './live/LiveDriver'
 
 const INK = character.colors.brandMono.ink900
 /** The halo: the page's ink lifted a little, with a trace of the mascot's violet. */
@@ -74,7 +74,7 @@ export function Backdrop() {
     const u = material.current?.uniforms
     if (!u) return
     u.uAspect!.value = state.size.width / state.size.height
-    u.uStrength!.value = 1 - smoothstep(GULP_SCALE.from, GULP_SCALE.to, cinematic.sample.scale)
+    u.uStrength!.value = 1 - smoothstep(GULP_SCALE.from, GULP_SCALE.to, live.sample.scale)
   })
 
   return (

@@ -7,7 +7,8 @@
  *   concept describes, with the same values on both so the face shell never
  *   reads as a separate patch;
  * - eyes: a glossy clearcoat cornea over the iris, so they look wet and alive
- *   in the close-ups.
+ *   in the close-ups;
+ * - teeth and tusks: hard, glossy enamel that catches the studio's light.
  *
  * Maps, colours and factors are carried over, and the texture objects are
  * shared, so the expression atlas offset keeps working on the face.
@@ -32,6 +33,7 @@ export interface Finish {
 export const DEFAULT_FINISH: Finish = { skinCoat: 0.2, skinSheen: 0.25 }
 
 const SKIN = new Set(['body', 'face'])
+const UPGRADED = new Set([...SKIN, 'eyes', 'teeth'])
 // A deep violet sheen: a pale one veils every grazing angle and washes the skin out.
 const SHEEN_COLOR = new Color(character.colors.mascot['500'])
 
@@ -50,6 +52,11 @@ function upgrade(source: MeshStandardMaterial) {
     material.clearcoatRoughness = 0.45
     material.sheenColor.copy(SHEEN_COLOR)
     material.sheenRoughness = 0.7
+  } else if (source.name === 'teeth') {
+    // Enamel: a hard, glossy coat, so every tooth and tusk catches a highlight.
+    material.clearcoat = 1
+    material.clearcoatRoughness = 0.08
+    material.roughness = Math.min(material.roughness, 0.35)
   } else {
     // The cornea: a hard, glassy coat over the painted iris.
     material.clearcoat = 1
@@ -68,7 +75,7 @@ function upgrade(source: MeshStandardMaterial) {
 }
 
 /**
- * Swap the skin, face and eye materials of a rig's scene for physical ones.
+ * Swap the skin, face, eye and teeth materials of a rig's scene for physical ones.
  * Returns the new materials, for tuning and disposal.
  */
 export function applyFinish(root: Object3D): MeshPhysicalMaterial[] {
@@ -77,7 +84,7 @@ export function applyFinish(root: Object3D): MeshPhysicalMaterial[] {
     const mesh = object as Mesh
     if (!mesh.isMesh || Array.isArray(mesh.material)) return
     const material = mesh.material as MeshStandardMaterial
-    if (!SKIN.has(material.name) && material.name !== 'eyes') return
+    if (!UPGRADED.has(material.name)) return
     let next = replaced.get(material)
     if (!next) {
       next = upgrade(material)

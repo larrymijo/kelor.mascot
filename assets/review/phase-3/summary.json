@@ -84,14 +84,14 @@
         "full": {
           "triangles": 16190,
           "textureSize": 1024,
-          "seconds": 17.9,
+          "seconds": 13.8,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 4600,
           "textureSize": 512,
-          "seconds": 6,
+          "seconds": 4.8,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -114,7 +114,7 @@
           ]
         },
         "mouthY": 0.801,
-        "kB": 1975
+        "kB": 2217
       },
       "lite": {
         "repairedVertices": 233,
@@ -132,14 +132,14 @@
           ]
         },
         "mouthY": 0.801,
-        "kB": 538
+        "kB": 583
       }
     },
     "compress": {
       "full": {
-        "beforeKB": 1975,
-        "afterKB": 1302,
-        "savedPercent": 39,
+        "beforeKB": 2217,
+        "afterKB": 1334,
+        "savedPercent": 44,
         "textures": [
           {
             "name": "body_orm",
@@ -174,9 +174,9 @@
         ]
       },
       "lite": {
-        "beforeKB": 538,
-        "afterKB": 212,
-        "savedPercent": 61
+        "beforeKB": 583,
+        "afterKB": 221,
+        "savedPercent": 62
       }
     },
     "validate": {

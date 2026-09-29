@@ -4,10 +4,12 @@
  * plays, which face it pulls and when it reacts. It owns no three.js objects
  * and mutates one memory object, so it is unit tested and allocation-free.
  *
- *   egg ──▶ hatch ──▶ tracking ──▶ scroll
+ *   egg ──▶ hatch ──▶ tracking ⇄ acting
  *
- * scroll is the cinematic past the first screen: the scroll script may then
- * impose Kelo's attention and expression, and he never plays look_around.
+ * acting is while an interaction leads (docs/interaction-script.md): a
+ * reaction to a tap, being carried, the bite. It may impose Kelo's look and
+ * face, and he never plays look_around. Taps themselves are read by
+ * interaction.ts; the director only hears what they impose.
  *
  * Attention in tracking, highest priority first: a hovered or focused
  * data-gaze-target (the CTA), an active pointer, then idle. Idle faces the
@@ -18,7 +20,7 @@ import type { Character } from '@/lib/character'
 import { between, type Random } from '@/lib/math/random'
 import type { BootPhase } from '@/lib/scene/boot'
 
-export type DirectorState = 'egg' | 'hatch' | 'tracking' | 'scroll'
+export type DirectorState = 'egg' | 'hatch' | 'tracking' | 'acting'
 export type Attention = 'camera' | 'pointer' | 'cta' | 'glance'
 export type PointerKind = 'mouse' | 'pen' | 'touch'
 export type Expression = 'neutral' | 'happy' | 'surprised' | 'roar'
@@ -30,17 +32,16 @@ export interface DirectorInput {
   pointer: { kind: PointerKind; lastActiveS: number } | null
   /** A data-gaze-target element is hovered or has keyboard focus. */
   ctaActive: boolean
-  /** Time of the latest click or tap that landed on Kelo, or null. */
-  tapS: number | null
   reducedMotion: boolean
   /** Coarse primary pointer: a phone or tablet, even before the first touch. */
   touchFirst: boolean
   /**
-   * Past the first screen, what the scroll script imposes (docs/scroll-script.md);
-   * null keeps the director on its own. A null field leaves that choice free.
+   * What an interaction imposes while it leads (a reaction, being carried,
+   * the bite); null keeps the director on its own. A null field leaves that
+   * choice free.
    */
-  script?: {
-    gaze: 'camera' | 'pointer' | 'cta' | 'off' | null
+  override?: {
+    gaze: 'camera' | null
     expression: Expression | null
   } | null
 }
@@ -54,16 +55,12 @@ export interface DirectorOutput {
   gazeWeight: number
   idleClip: 'idle' | 'look_around'
   expression: Expression
-  /** A reaction to start on this step; reported once. */
-  reaction: 'hop' | null
 }
 
 export interface DirectorSettings {
   returnToCameraAfterS: number
   lookAroundIntervalS: readonly [number, number]
   glanceHoldS: number
-  /** How long the surprised face lasts after a hop: the jump clip's length. */
-  hopS: number
   reducedMotionIdleClip: 'idle' | 'look_around'
 }
 
@@ -75,19 +72,15 @@ export interface DirectorMemory {
   idleSinceS: number
   nextGlanceS: number
   glanceUntilS: number
-  handledTapS: number
-  surprisedUntilS: number
 }
 
 export function directorSettings(
-  character: Pick<Character, 'gaze' | 'clips' | 'accessibility'>,
+  character: Pick<Character, 'gaze' | 'accessibility'>,
 ): DirectorSettings {
-  const jump = character.clips.required.find((clip) => clip.name === 'jump')
   return {
     returnToCameraAfterS: character.gaze.idle.returnToCameraAfterS,
     lookAroundIntervalS: character.gaze.idle.lookAroundIntervalS,
     glanceHoldS: character.gaze.idle.glanceHoldS,
-    hopS: jump?.durationS ?? 0.8,
     reducedMotionIdleClip:
       character.accessibility.reducedMotion.idleClip === 'look_around' ? 'look_around' : 'idle',
   }
@@ -102,13 +95,10 @@ export function createDirector(): DirectorMemory {
       gazeWeight: 0,
       idleClip: 'idle',
       expression: 'neutral',
-      reaction: null,
     },
     idleSinceS: -Infinity,
     nextGlanceS: Infinity,
     glanceUntilS: -Infinity,
-    handledTapS: -Infinity,
-    surprisedUntilS: -Infinity,
   }
 }
 
@@ -128,16 +118,6 @@ export function stepDirector(
   const out = memory.out
   const { nowS } = input
   out.state = stateFor(input.bootPhase)
-  out.reaction = null
-
-  // Clicks inside the egg or mid-hatch are consumed, never replayed later.
-  if (input.tapS !== null && input.tapS > memory.handledTapS) {
-    memory.handledTapS = input.tapS
-    if (out.state === 'tracking') {
-      out.reaction = 'hop'
-      memory.surprisedUntilS = nowS + settings.hopS
-    }
-  }
 
   if (out.state !== 'tracking') {
     out.attention = 'camera'
@@ -148,16 +128,16 @@ export function stepDirector(
     return out
   }
 
-  const script = input.script ?? null
-  if (script) out.state = 'scroll'
-  // The script imposes a fixed look: at the camera, or no gaze at all.
-  if (script?.gaze === 'camera' || script?.gaze === 'off') {
+  const override = input.override ?? null
+  if (override) out.state = 'acting'
+  // An interaction may lock his eyes on the viewer.
+  if (override?.gaze === 'camera') {
     out.attention = 'camera'
     out.idleClip = 'idle'
-    out.gazeWeight = script.gaze === 'off' ? 0 : 1
+    out.gazeWeight = 1
     memory.idleSinceS = -Infinity
     memory.glanceUntilS = -Infinity
-    out.expression = script.expression ?? (nowS < memory.surprisedUntilS ? 'surprised' : 'happy')
+    out.expression = override.expression ?? 'happy'
     return out
   }
 
@@ -180,7 +160,7 @@ export function stepDirector(
     if (input.reducedMotion) {
       out.attention = 'camera'
       out.idleClip = settings.reducedMotionIdleClip
-    } else if (touch && !script) {
+    } else if (touch && !override) {
       out.attention = 'camera'
       out.idleClip = 'look_around'
     } else {
@@ -198,6 +178,6 @@ export function stepDirector(
   }
 
   out.gazeWeight = out.idleClip === 'look_around' ? LOOK_AROUND_GAZE_WEIGHT : 1
-  out.expression = script?.expression ?? (nowS < memory.surprisedUntilS ? 'surprised' : 'happy')
+  out.expression = override?.expression ?? 'happy'
   return out
 }
