@@ -4,7 +4,9 @@
  *
  *   0.0–0.5  anticipation: he crouches, turns to you and growls, jaw ajar;
  *   0.5–1.45 the lunge: he grows to five times his size, the camera drops
- *            under his snout and widens, the jaw opens wide, motes swirl in;
+ *            a little under his snout and widens, stopping in front of the
+ *            teeth so the whole ring of fangs frames the shot; the jaw opens
+ *            wide, motes swirl in;
  *   1.45–1.6 a tremble with the jaw at its widest, then the snap: the jaw
  *            slams shut, the camera shakes, light flashes on the teeth;
  *   1.5–2.25 the iris closes on his mouth to black; he is reset while dark;
@@ -54,9 +56,9 @@ export const BITE: BiteScript = {
     distance: [
       [0, 1],
       [0.5, 1.06],
-      [1.45, 0.2],
-      [1.72, 0.08],
-      [RESET_S, 0.08],
+      [1.45, 0.38],
+      [1.72, 0.3],
+      [RESET_S, 0.3],
       [JUST_AFTER, 1],
     ],
     mouthFocus: [
@@ -69,8 +71,8 @@ export const BITE: BiteScript = {
     elevationDeg: [
       [0, 7],
       [0.5, 9],
-      [1.35, -8],
-      [RESET_S, -8],
+      [1.35, -4],
+      [RESET_S, -4],
       [JUST_AFTER, 7],
     ],
     fovDeg: [
