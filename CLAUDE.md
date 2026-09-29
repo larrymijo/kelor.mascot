@@ -2,23 +2,23 @@
 
 # KELOR Interactive: promotional site with a 3D mascot
 
-Promotional website for KELOR Interactive. The star is a 3D mascot, **Kelo**: an adorable chibi bipedal dinosaur, purple, that follows the cursor with its eyes inside a cinematic, scroll-driven experience. Goals, in order: it must look very 3D, load exceptionally fast, and feel cinematic.
+Promotional website for KELOR Interactive. The star is a 3D mascot, **Kelo**: an adorable chibi bipedal dinosaur, purple, that hatches from its egg and lives on one screen: it follows the cursor with its eyes, reacts to taps, can be carried around on desktop, and bites the screen when pestered. Goals, in order: it must look very 3D, load exceptionally fast, and feel alive.
 
 The site copy is **Spanish** (`lang="es"`). Code, file names, commits, PRs and repo docs are **English**.
 
 ## Stack (pinned; see `docs/decisions.md` for why)
 
-| Area              | Choice                                                                                               |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| Framework         | Next.js 16.3 (App Router, Turbopack), React 19.2.x, TypeScript 5.9                                   |
-| Styling           | Tailwind CSS v4 (tokens in `src/app/globals.css`)                                                    |
-| 3D (phase 2+)     | three r186, @react-three/fiber 9, @react-three/drei 10, @react-three/postprocessing 3 (bundles N8AO) |
-| Motion (phase 6+) | GSAP 3.15 (ScrollTrigger, SplitText), Lenis                                                          |
-| Debug             | leva (dev only, never in production bundles)                                                         |
-| Tests             | Vitest 5 for pure logic, Playwright for captures (uses installed Chrome)                             |
-| Assets (phase 3+) | gltf-transform, KTX-Software 4.4+, sharp, headless Blender (CPU)                                     |
-| Tooling           | pnpm 12 via corepack, ESLint 9 flat config, Prettier 3                                               |
-| Hosting           | Vercel; the models ship from `public/` on Vercel's CDN                                               |
+| Area                  | Choice                                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------------------------- |
+| Framework             | Next.js 16.3 (App Router, Turbopack), React 19.2.x, TypeScript 5.9                                   |
+| Styling               | Tailwind CSS v4 (tokens in `src/app/globals.css`)                                                    |
+| 3D (phase 2+)         | three r186, @react-three/fiber 9, @react-three/drei 10, @react-three/postprocessing 3 (bundles N8AO) |
+| Interaction (phase 8) | Pure state machines and physics in `src/lib/behaviour` and `src/lib/live`; no animation library      |
+| Debug                 | leva (dev only, never in production bundles)                                                         |
+| Tests                 | Vitest 5 for pure logic, Playwright for captures (uses installed Chrome)                             |
+| Assets (phase 3+)     | gltf-transform, KTX-Software 4.4+, sharp, headless Blender (CPU)                                     |
+| Tooling               | pnpm 12 via corepack, ESLint 9 flat config, Prettier 3                                               |
+| Hosting               | Vercel; the models ship from `public/` on Vercel's CDN                                               |
 
 Version constraints that matter:
 
@@ -49,7 +49,6 @@ Version constraints that matter:
 | ------------------------------------------------- | -------------------------------------------------------------------- |
 | Initial JS (excluding the lazily loaded 3D chunk) | ≤ 150 kB gzip                                                        |
 | Deferred 3D JS (the stage chunk)                  | ≤ 420 kB gzip                                                        |
-| Cinematic JS (the lazy scroll engine chunk)       | ≤ 70 kB gzip                                                         |
 | LCP (4G, mid-range phone)                         | < 2.0 s                                                              |
 | CLS                                               | 0                                                                    |
 | TBT (throttled phone, `pnpm perf:budget`)         | page < 200 ms until the 3D chunk is requested; 3D boot ≤ 2 s (D-094) |
@@ -65,10 +64,10 @@ Full bible, canonical names and name candidates: `.claude/skills/kelor-mascot/SK
 
 - Chibi bipedal dinosaur: big head (~40 % of height), rounded body, short legs, small arms, expressive tail with 4 bones.
 - Purple is the accent (tokens `mascot-700/500/300` + `mascot-glow`) over the logo's monochrome base. **UI stays monochrome**; purple is for the mascot, glows and the CTA.
-- Brand DNA: hexagonal dorsal plates that can light up, a rounded dinosaur egg as his origin, and the hexagonal KELOR mark in the finale.
+- Brand DNA: hexagonal dorsal plates that can light up, and a rounded dinosaur egg as his origin.
 - Big eyes as separate geometry (spheres with pupils and eyelids) plus fixed highlights. The eyes follow the cursor.
 - Expressions via a UV-offset texture atlas (neutral, happy, surprised, roar). No morph targets.
-- A T-rex jaw: one `jaw` bone opens the mouth on sharp teeth and tusks; he bites the viewer in the gulp.
+- A T-rex jaw: one `jaw` bone opens the mouth on blade teeth in gums; four tusks show over the lips even with the mouth shut; he bites the screen when pestered.
 - No hair, thin spikes or separate fingers: closed, rounded shapes only.
 - Must be clearly original. Never resemble well-known purple dinosaurs or dragons.
 
@@ -78,7 +77,7 @@ Full bible, canonical names and name candidates: `.claude/skills/kelor-mascot/SK
 
 - Units metres, +Y up, +Z forward, origin at the feet, height 1.2 m.
 - 29 bones with exact names (`root`, `hips`, `spine_01`… `tail_04`, `eye_L`, `eyelid_R`, `jaw`…). Eye, eyelid and jaw bones are procedural: clips must not key them.
-- Meshes: `body`, `face`, `eyes`, `eyelids`, `eye_highlights`, `plates`, `teeth`, `mouth` (8 draw calls, 7 materials). The egg is procedural and never ships in the GLB.
+- Meshes: `body`, `face`, `eyes`, `eyelids`, `eye_highlights`, `plates`, `teeth`, `tusks`, `mouth` (9 draw calls, 7 materials). The egg is procedural and never ships in the GLB.
 - Clips: `idle`, `hatch`, `look_around`, `roar`, `jump`, `wave`, at 30 fps, no root motion.
 - Gaze: eyes fast (±35°/±25°), neck + head slow (±40°/±25°), frame-rate independent damping, applied after the mixer as a layer on top of the clip.
 - Quality tiers `high` / `medium` / `low`, picked at boot and adjusted with drei's `PerformanceMonitor` along a ladder that lowers the pixel ratio before the tier.
@@ -87,16 +86,16 @@ Full bible, canonical names and name candidates: `.claude/skills/kelor-mascot/SK
 
 ```
 src/app                 routes, layout, global CSS tokens
-src/components/sections page sections (scroll acts)
-src/components/cinematic lazy scroll engine (GSAP, Lenis) and its mount
+src/components/sections page sections (the live screen, notices)
+src/components/three/live the live pose driver and the screen-space overlays
 src/components/three    R3F scene, mascot, egg, effects (client only)
 src/components/ui       monochrome UI primitives
-src/lib                 pure logic (character contract, copy, math, behaviour, cinematic timeline, sound); unit tested
+src/lib                 pure logic (character contract, copy, math, behaviour, carry physics, the bite, sound); unit tested
 scripts/assets          GLB validation and asset processing (Node)
 scripts/blender         headless Blender pipeline (Python, phase 3)
 scripts/review          capture and review tooling
 assets/concept          concept art chosen by the owner (input to phase 3)
-docs/                   scroll script, decisions log
+docs/                   interaction script, decisions log, QA matrix
 assets/source           image-to-3D sources: kelo-raw.glb is the real one, standin-raw.glb exercises the pipeline
 assets/model            fit.json: how the pipeline turns a source into the contract model
 assets/review           committed review renders and pipeline logs
@@ -115,20 +114,22 @@ public/basis            three's Basis transcoder for KTX2, served locally (kept 
 
 ## Behaviour and director (phase 5)
 
-- Pure logic lives in `src/lib/behaviour`: gaze angles and soft limits, the blink scheduler, the tail spring and the director state machine (`egg → hatch → tracking → scroll`; in `scroll` the script imposes gaze and expression). All of it is unit tested and reads its numbers from `character.json` (`gaze`, `life`, `accessibility.reducedMotion`).
-- `MascotRig` layers the behaviour: `update()` resets the layered bones to their bind pose and runs the mixer, then `behave()` multiplies gaze, blink and tail offsets on top. Never set layered bones anywhere else.
+- Pure logic lives in `src/lib/behaviour`: gaze angles and soft limits, the blink scheduler, the tail spring and the director state machine (`egg → hatch → tracking ⇄ acting`; while an interaction leads it may impose gaze and expression). All of it is unit tested and reads its numbers from `character.json` (`gaze`, `life`, `accessibility.reducedMotion`).
+- `MascotRig` layers the behaviour: `update()` resets the layered bones to their bind pose and runs the mixer, then `behave()` multiplies the carried pose, gaze, blink, tail and jaw offsets on top. Never set layered bones anywhere else.
 - `BehaviourController` runs the director each frame and turns attention into a world target; `useBehaviourInput` feeds it from window events. It outlives model swaps.
 - Mark any element with `data-gaze-target` to draw Kelo's look on hover and keyboard focus.
 - `StageMount` also exposes `data-attention` and `data-clip` for tests; `?debug` has a gaze switch, a blink button and an attention readout.
 
-## Scroll cinematic (phase 6)
+## Live screen (phase 8)
 
-- `docs/scroll-script.md` is the source of the sequence; `src/lib/cinematic/acts.ts` holds it as keyed channels per variant (desktop, mobile, reduced) and `timeline.ts` samples them purely. Change the script first, then the data; the continuity test rejects any transition faster than about 4% of the page.
-- The engine (`src/components/cinematic/engine.ts`: GSAP ScrollTrigger and SplitText, Lenis on fine pointers) is a lazy chunk that `CinematicMount` imports once the stage draws and the browser is idle. It adds `html.cinematic`, which gives the scroll track its height, and writes one smoothed progress value to `src/lib/cinematic/progress.ts`.
-- In the scene, `CinematicDriver` (priority -2) samples the timeline into the shared `cinematic` object every frame; the camera, mascot, lights, effects, particles and the finale's mark read it. `OverlayDriver` writes the screen-space layers (letterbox, iris, fade, words) as CSS variables on `#cinematic-ui`, plus `data-act` and `data-scale` for tests. Nothing re-renders React per frame.
-- Effects follow the tier strictly: depth of field on high only (a subclass skips its passes outside the close-ups), MSAA 4x on high and FXAA on medium, no ambient occlusion on medium. Measure with `?tier=low|medium|high`, which pins the tier on local and preview builds.
-- Sound is synthesised (`src/lib/sound/synth.ts`) and off by default; the switch creates the AudioContext on its first press and only then loads the synthesiser.
-- `tests/e2e/cinematic.spec.ts` plays every act on every profile against the script's checkpoints and captures them to `scripts/review/out`.
+- `docs/interaction-script.md` is the source of the behaviour; change it first, then `character.json` `interaction` (taps, reactions, carry, fall, hop) or the bite's keys in `src/lib/live/bite.ts`.
+- Pure logic: `src/lib/behaviour/interaction.ts` (the tap streak, reactions, the bite on the sixth tap, drag versus tap, desktop gating), `carry.ts` (fixed 240 Hz physics: the spring and pendulum while held, the fall, bounces, landing squash, hops), `src/lib/live` (the rest pose and the bite).
+- `LiveDriver` (priority -2) fills the shared `live` object every frame: the rest pose, or the bite's keys and cues. The camera, mascot, lights, effects, particles and backdrop read it. `OverlayDriver` writes the screen-space layers (letterbox, iris, words, hint, Kelo's place for the keyboard button) as CSS variables on `#live-ui`, plus data attributes for tests (`data-kelo`, `data-reaction`, `data-kelo-x/y`, `data-scale`, `data-biting`). Nothing re-renders React per frame.
+- `BehaviourController` reads presses on the window (`useBehaviourInput`): a tap, a pick-up past 6 px on desktop, or a click on the stage that makes him hop; the Kelo button gives the keyboard Enter or Space and the arrows. It steps the physics and hands `Mascot` his root pose: a pivot at the grab point (swing, lean), the squash, then the hatch and bite scale.
+- `StageMount` sets `html.live` while the stage draws; without it the page is a short document. Phones keep the lite model.
+- Sounds go through `src/lib/sound/bus.ts`; the synthesiser loads on the sound switch's first press.
+- Effects follow the tier: MSAA 4x on high, FXAA on medium, no ambient occlusion on medium, no depth of field. Measure with `?tier=low|medium|high`.
+- `tests/e2e/interaction.spec.ts` plays taps, the bite, carrying and hops on every profile and captures each stage to `scripts/review/out`.
 
 ## Progressive loading (phase 4)
 
@@ -155,7 +156,7 @@ public/basis            three's Basis transcoder for KTX2, served locally (kept 
 - `src/lib/security/csp.ts` builds the Content Security Policy that `next.config.ts` sends in production builds; see its comment before adding any source.
 - `next.config.ts` hashes the models and the Basis transcoder (`src/lib/assets`): models load as `?v=<hash>`, the transcoder from `/basis/<hash>/`, both cached `immutable`. Run Next from the repo root: the config imports `./src/...`, which Next resolves from the working directory.
 - The studio is `Backdrop.tsx` (a screen-space halo), `Floor.tsx`, `studioEnvironment.ts` (reflection panels baked into a cube map) and `Particles.tsx` (a few motes by tier).
-- `?qa` (local and preview builds) opens a panel that plays the cinematic, measures frames per checkpoint and copies a report; the owner runs it on real devices. `docs/qa.md` is the release-gate matrix.
+- `?qa` (local and preview builds) opens a panel that plays the live moments (idle, carrying, the bite; taps on touch screens), measures frames through each and copies a report; the owner runs it on real devices. `docs/qa.md` is the release-gate matrix.
 
 ## Commands
 
@@ -166,7 +167,7 @@ corepack pnpm validate:model   # validate GLBs in public/models against characte
 corepack pnpm build:model      # full model pipeline (CI; needs Blender)
 corepack pnpm build:placeholder # placeholder GLBs into build/placeholder (--public to overwrite the model)
 corepack pnpm size             # bundle report and JS budgets (after build)
-corepack pnpm e2e              # Playwright: hero, cinematic checkpoints, loading, resilience, CSP, accessibility, captures (after build)
+corepack pnpm e2e              # Playwright: hero, interaction, loading, resilience, CSP, accessibility, captures (after build)
 corepack pnpm perf             # load and frame-rate probe: owner's laptop and a throttled phone (after build)
 corepack pnpm perf:budget      # the TBT budgets on the throttled phone: page and 3D boot (after build)
 ```

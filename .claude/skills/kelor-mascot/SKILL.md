@@ -9,7 +9,7 @@ The machine-readable contract is `character.json` at the repo root. This skill e
 
 ## Identity
 
-An adorable, chibi, bipedal dinosaur hatched from a real dinosaur egg. Curious, warm, a little clumsy; it notices you (the eyes follow the cursor) and reacts with small, readable gestures, and it has a T-rex bite. It is the living version of the KELOR logo: the logo's isometric hexagon becomes its dorsal plates and, in the finale, the mark that frames it.
+An adorable, chibi, bipedal dinosaur hatched from a real dinosaur egg. Curious, warm, a little clumsy; it notices you (the eyes follow the cursor) and reacts with small, readable gestures, and it has a T-rex bite. It is the living version of the KELOR logo: the logo's isometric hexagon becomes its dorsal plates. Poke it too often and it bites.
 
 ## Silhouette and proportions
 
@@ -29,7 +29,7 @@ The silhouette must read at 64 px: big head, round body, tail. If it does not re
 
 - Closed, rounded, soft forms only. Minimum bevel on every edge.
 - **No** hair, fur, feathers, thin spikes, horns, wings, claws, separate fingers or toes.
-- **No** morph targets. The mouth is a T-rex jaw on one `jaw` bone: shut at rest behind a smiling lip line, it opens on a row of sharp teeth with two tusks for the roar and the bite. Teeth never show at rest.
+- **No** morph targets. The mouth is a T-rex jaw on one `jaw` bone: shut at rest behind a smiling lip line, with four tusks showing over the lips (two long upper fangs over the lower lip, two short lower tusks over the upper lip); it opens on rows of blade teeth set in gums for the reactions and the bite.
 - The dorsal plates and the teeth are the only sharp elements; the plates are hexagons with rounded corners.
 
 ## Colour
@@ -53,7 +53,7 @@ Purple is the accent over the monochrome logo base. Tokens (mirrored in `src/app
 
 - **Hexagonal dorsal plates** along spine and tail, 5 to 7 plates decreasing in size. They glow (`plates` material, emissive `mascot-glow`), driven by a runtime uniform: breathing pulse at idle, full glow on roar and CTA hover.
 - **Dinosaur egg** as its origin: a rounded ovoid (0.7 m tall, 0.27 m radius) whose shader draws a cream shell with plates, tubercles and speckles, and glowing cracks along which it opens into a cap and two halves. It is procedural in code (0 KB of assets) and never ships in the GLB.
-- The **KELOR mark** closes the story: its two halves lock together behind him in the finale.
+- The **KELOR mark** is the studio's, in the corner of the page: the hexagon lives on in his plates.
 
 ## Eyes
 
@@ -74,14 +74,14 @@ A 2x2 atlas (`face_atlas`) on the `face` shell carries the lip line and the blus
 | `surprised` | [0, 1]          | jaw open 12°, light blush                         |
 | `roar`      | [1, 1]          | jaw open 30° on the teeth and tusks, light blush  |
 
-The scroll script can open the jaw to its full 38°, and a bite snaps it shut and holds it for 0.35 s.
+The bite opens the jaw to its full 38° and snaps it shut, holding it for 0.35 s; the grumpier reactions open it 14° and 24° (character.json `interaction`).
 
 ## Canonical names
 
 Use these names exactly, in Blender, in the GLB and in code.
 
 - **Bones (29)**: `root`, `hips`, `spine_01`, `spine_02`, `chest`, `neck_01`, `neck_02`, `head`, `jaw`, `eye_L`, `eye_R`, `eyelid_L`, `eyelid_R`, `tail_01`…`tail_04`, `thigh_L/R`, `shin_L/R`, `foot_L/R`, `upperarm_L/R`, `forearm_L/R`, `hand_L/R`. Left is +X; the character faces +Z.
-- **Meshes (8)**: `body`, `face`, `eyes`, `eyelids`, `eye_highlights`, `plates`, `teeth`, `mouth`.
+- **Meshes (9)**: `body`, `face`, `eyes`, `eyelids`, `eye_highlights`, `plates`, `teeth`, `tusks`, `mouth`. The tusks share the `teeth` material and always show; the teeth and the mouth hide while the jaw is shut.
 - **Materials (7)**: `body`, `face`, `eyes`, `highlight`, `plates`, `teeth`, `mouth`.
 - **Textures (5)**: `body_basecolor`, `body_orm` (AO baked in R), `body_normal` (full tier only), `face_atlas`, `eyes_basecolor`.
 - **Clips (6)**: `idle`, `hatch`, `look_around`, `roar`, `jump`, `wave`. 30 fps, no root motion.
@@ -92,10 +92,10 @@ Use these names exactly, in Blender, in the GLB and in code.
 |                       | lite             | full             |
 | --------------------- | ---------------- | ---------------- |
 | File size             | ≤ 250 kB         | ≤ 1500 kB        |
-| Triangles             | ≤ 8 000          | ≤ 24 000         |
+| Triangles             | ≤ 11 000         | ≤ 32 000         |
 | Bones                 | ≤ 32             | ≤ 32             |
 | Influences per vertex | ≤ 4              | ≤ 4              |
-| Draw calls            | ≤ 8              | ≤ 8              |
+| Draw calls            | ≤ 9              | ≤ 9              |
 | Materials             | ≤ 7              | ≤ 7              |
 | Textures              | ≤ 4, max 1024 px | ≤ 5, max 2048 px |
 | Morph targets         | 0                | 0                |
@@ -111,18 +111,19 @@ corepack pnpm validate:model --file path/to/model.glb --tier full
 
 The real Kelo comes from the owner's image-to-3D source through `corepack pnpm build:model` (see `scripts/blender/README.md`): normalise, fit the 29-bone rig to measured landmarks, retopologise with Quadriflow, bake base colour, AO and normals, bind with automatic weights capped per role, then add the procedural eyes, lids, catchlights, plates, face shell and jaw (the lip cut, jaw weights, teeth, tusks and mouth cavity) with the same code as the phase 2 placeholder. Tune it through `assets/model/fit.json`, never by hand-editing GLBs. The review renders in `assets/review/phase-3` are the acceptance evidence. The placeholder generator stays as a fallback (`build:placeholder --public`). On stage the body stands in a 22 degree three-quarter turn and the gaze layer turns the head back to the viewer.
 
-## Runtime behaviour (phases 5 and 6)
+## Runtime behaviour (phases 5 and 8)
 
 - **Gaze** is a layer applied after `AnimationMixer.update`, added on top of the clip pose, never replacing it. Eyes are fast (λ 14, ±35° yaw, ±25° pitch). Neck and head share the slow rotation (λ 5, ±40° yaw, ±25° pitch; shares 0.2 / 0.2 / 0.6). Damping is frame-rate independent: `x += (target - x) * (1 - exp(-λ·dt))`. Looking at the camera aims at a point at least 3 m away (times his scale) on the same line, so the eyes stay parallel instead of crossing in the close-ups.
-- **Life**: breathing (`idle`), tail inertia, random blinks every 2 to 6 s, return to camera after 4 s without a pointer, look at the CTA on hover, hop (`jump`) on click. On touch devices it follows the finger and runs `look_around` when idle.
-- **Director**: state machine `egg → hatch → tracking → scroll pose`, blending clip weights. Implemented in phase 5 (`src/lib/behaviour/director.ts`). In phase 6 the scroll state takes gaze and expression from the scroll script (`docs/scroll-script.md`): the roar face and an opening jaw as he swallows the screen, a bite on the viewer at 0.175, happy afterwards, a blink as he comes back out, the wave in the finale. The hop plays only when a click or tap lands on Kelo, and `data-gaze-target` elements draw his look on hover and keyboard focus.
-- **Reduced motion**: no camera orbit, no particles or grain, the hatch is a cut, gaze is calmer (λ × 0.5). Content never depends on the animation.
+- **Life**: breathing (`idle`), tail inertia, random blinks every 2 to 6 s, return to camera after 4 s without a pointer, look at the CTA on hover. On touch devices it follows the finger and runs `look_around` when idle.
+- **Director**: state machine `egg → hatch → tracking ⇄ acting` (`src/lib/behaviour/director.ts`); while an interaction leads it may impose his look and face. `data-gaze-target` elements draw his look on hover and keyboard focus.
+- **Interactions** (docs/interaction-script.md): taps build a streak of escalating reactions (giggle, hop, stare, grumpy, grumpier) and the sixth on desktop is the full-screen bite; on desktop he can be picked up and carried (his legs dangle and kick, his arms rise, his body swings like a pendulum), dropped and tossed, and he lands with a squash; a click on the floor or the arrow keys make him hop.
+- **Reduced motion**: no particles, grain or shake, the hatch is a cut, gaze is calmer (λ × 0.5), the bite is a jaw snap in place. Content never depends on the animation.
 
 ## Originality guardrails
 
 There are famous purple dinosaurs and dragons. The mascot must never be mistaken for one. Avoid:
 
-- A green or yellow belly, a toothy grin at rest, spots, a rounded "T. rex costume" posture with tiny head (children's TV purple dinosaur).
+- A green or yellow belly, a wide toothy grin (at rest only his four tusks show, never a row of teeth), spots, a rounded "T. rex costume" posture with tiny head (children's TV purple dinosaur).
 - Wings, horns, a pointed snout or a flame-tipped tail (video-game purple dragon).
 - Saddles, shells, collars, big noses or a long neck (other famous cartoon dinosaurs).
 

@@ -1,8 +1,8 @@
 # KELOR Interactive: 3D mascot site
 
-Promotional website for KELOR Interactive, starring a purple chibi dinosaur mascot that follows the cursor inside a cinematic, scroll-driven 3D experience.
+Promotional website for KELOR Interactive, starring Kelo, a purple chibi dinosaur mascot who hatches from his egg and lives on one screen: he follows the cursor with his eyes, reacts to taps, can be carried around on desktop, and bites the screen when pestered.
 
-**Status:** phase 2. A 3D hero with a studio stage, a procedural hexagonal egg that hatches while the model loads, and a placeholder mascot that already follows the final character contract. The real model arrives in phase 3.
+**Status:** phase 8, the live Kelo. The launch (domain, indexing, analytics, monitoring, runbook and handover) is phase 9. `CLAUDE.md` describes the architecture, `docs/interaction-script.md` the behaviour, `docs/decisions.md` every decision and `docs/qa.md` the release gate.
 
 ## Requirements
 
@@ -68,7 +68,6 @@ Each failed rule prints the measured value, the budget and a hint on how to fix 
 ## Debug panel
 
 Append `?debug` to any local or preview URL to open a leva panel (lights, bloom, grain, plate glow, quality tier, expressions, every clip) and an FPS meter. It never loads on the production deployment, and visitors never download it.
-
 
 ## Docs
 
