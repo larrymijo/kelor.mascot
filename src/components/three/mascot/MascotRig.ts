@@ -95,6 +95,9 @@ function findMaterial(root: Object3D, name: string) {
   return found
 }
 
+/** Meshes that only exist inside the open mouth. */
+const MOUTH_PARTS = new Set(['teeth', 'mouth'])
+
 // Scratch objects shared by every rig: behave() runs one rig at a time.
 const _target = new Vector3()
 const _from = new Vector3()
@@ -181,10 +184,10 @@ export class MascotRig {
     this.tailBones = found(life.tail.bones)
     this.hips = this.bones.get('hips')
     this.jaw = JAW_BONE ? this.bones.get(JAW_BONE) : undefined
+    // The inner teeth and the cavity hide in the closed mouth; the tusks, which
+    // share the teeth's material, stay out on the lips.
     this.scene.traverse((object) => {
-      const material = (object as Mesh).material as Material | undefined
-      if (material && !Array.isArray(material) && ['teeth', 'mouth'].includes(material.name))
-        this.mouthParts.push(object)
+      if ((object as Mesh).isMesh && MOUTH_PARTS.has(object.name)) this.mouthParts.push(object)
     })
     if (this.head) {
       // At bind the scene root is the model's origin: place the mouth, then keep

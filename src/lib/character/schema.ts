@@ -204,7 +204,13 @@ export const characterSchema = z
       ...docShape,
       mascot: z.record(z.string(), hexColor),
       eyes: z.strictObject({ sclera: hexColor, iris: hexColor, highlight: hexColor }),
-      mouth: z.strictObject({ teeth: hexColor, inside: hexColor, tongue: hexColor }),
+      mouth: z.strictObject({
+        teeth: hexColor,
+        tusk: hexColor,
+        gums: hexColor,
+        inside: hexColor,
+        tongue: hexColor,
+      }),
       brandMono: z.record(z.string(), hexColor),
     }),
 

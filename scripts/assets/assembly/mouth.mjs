@@ -1,8 +1,9 @@
 /**
  * The T-rex jaw of the contract (character.json jaw), built procedurally
  * around any head: the lip line on the snout, the cut that lets the lips
- * part, the skin weights of the jaw, the mouth cavity with its tongue, and
- * the teeth. Shared by the real model and the placeholder.
+ * part, the skin weights of the jaw, the mouth cavity with its tongue and
+ * gums, the blade teeth and the tusks that show outside the closed mouth.
+ * Shared by the real model and the placeholder.
  *
  * `mouth` (from fit.json) holds the lip line's height `y`, its `halfWidth`
  * to the corners and its `smile` (how much the corners rise), the `hinge`
@@ -237,27 +238,104 @@ export function weightJaw(geometry, lip, mouth, jawJoint) {
   weights.needsUpdate = true
 }
 
-/** Skin every vertex by its x (skinAt gives [joints, weights]) and give it one colour. */
-function paint(geometry, skinAt, rgb) {
+/** Linear RGB, mixed. */
+const mix = (a, b, t) => [0, 1, 2].map((k) => a[k] + (b[k] - a[k]) * t)
+
+/**
+ * Skin every vertex by its x (skinAt gives [joints, weights]) and colour it:
+ * one linear RGB for all, or colourAt(i) per vertex.
+ */
+function paint(geometry, skinAt, colour) {
   const count = geometry.attributes.position.count
   const pos = geometry.attributes.position
   const skinIndex = new Uint16Array(count * 4)
   const skinWeight = new Float32Array(count * 4)
+  const colours = new Float32Array(count * 3)
   for (let i = 0; i < count; i++) {
     const [j, w] = skinAt(pos.getX(i))
     skinIndex.set(j, i * 4)
     skinWeight.set(w, i * 4)
+    colours.set(typeof colour === 'function' ? colour(i) : colour, i * 3)
   }
   geometry.setAttribute('skinIndex', new THREE.BufferAttribute(skinIndex, 4))
   geometry.setAttribute('skinWeight', new THREE.BufferAttribute(skinWeight, 4))
-  geometry.setAttribute(
-    'color',
-    new THREE.BufferAttribute(
-      new Float32Array(count * 3).map((_, k) => rgb[k % 3]),
-      3,
-    ),
-  )
+  geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3))
   return geometry
+}
+
+/**
+ * A tube swept along `path`, its radius radiusAt(s) with s from 0 at the start
+ * to 1 at the end, and an elliptical section: `first` sets the direction of
+ * the section's first axis at the start, `squash` scales the second. Frames
+ * are parallel-transported, so the section never twists. Where the radius
+ * reaches zero the tube closes in a point, so tips come out sharp.
+ * @returns {{ geometry: THREE.BufferGeometry, along: number[] }} with s per vertex
+ */
+function sweep(path, radiusAt, radial, first, squash = 1) {
+  const n = path.length
+  const tangent = (i) =>
+    path[Math.min(n - 1, i + 1)]
+      .clone()
+      .sub(path[Math.max(0, i - 1)])
+      .normalize()
+  let t = tangent(0)
+  const axis = first.clone().addScaledVector(t, -first.dot(t)).normalize()
+  const positions = []
+  const uvs = []
+  const along = []
+  const rings = []
+  for (let i = 0; i < n; i++) {
+    const next = tangent(i)
+    const turn = new THREE.Vector3().crossVectors(t, next)
+    const angle = Math.asin(Math.min(1, turn.length()))
+    if (angle > 1e-7) axis.applyAxisAngle(turn.normalize(), angle)
+    t = next
+    const second = new THREE.Vector3().crossVectors(t, axis).normalize()
+    const s = i / (n - 1)
+    const r = radiusAt(s)
+    const ring = []
+    if (r <= 1e-6) {
+      ring.push(positions.length / 3)
+      positions.push(...path[i].toArray())
+      uvs.push(0.5, s)
+      along.push(s)
+    } else {
+      for (let k = 0; k < radial; k++) {
+        const a = (k / radial) * Math.PI * 2
+        const p = path[i]
+          .clone()
+          .addScaledVector(axis, Math.cos(a) * r)
+          .addScaledVector(second, Math.sin(a) * r * squash)
+        ring.push(positions.length / 3)
+        positions.push(p.x, p.y, p.z)
+        uvs.push(k / radial, s)
+        along.push(s)
+      }
+    }
+    rings.push(ring)
+  }
+  const index = []
+  for (let i = 0; i + 1 < n; i++) {
+    const a = rings[i]
+    const b = rings[i + 1]
+    if (a.length > 1 && b.length > 1) {
+      for (let k = 0; k < radial; k++) {
+        const k1 = (k + 1) % radial
+        index.push(a[k], a[k1], b[k], b[k], a[k1], b[k1])
+      }
+    } else if (a.length > 1) {
+      for (let k = 0; k < radial; k++) index.push(a[k], a[(k + 1) % radial], b[0])
+    } else if (b.length > 1) {
+      for (let k = 0; k < radial; k++) index.push(a[0], b[k], b[(k + 1) % radial])
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  // Unused by the untextured mouth materials; there so the parts merge with the cavity.
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+  geometry.setIndex(index)
+  geometry.computeVertexNormals()
+  return { geometry, along }
 }
 
 /**
@@ -307,64 +385,156 @@ export function mouthCavity(line, mouth, skin, colours, detail = 1) {
 }
 
 /**
- * One tooth: a cone from its base at `at`, pointing along `direction`,
- * slightly curved backwards like a T-rex's recurved teeth.
+ * One blade tooth, like a T-rex's: wide along the jaw and thin in and out
+ * (`thickness`), tapering to a sharp tip that curves back into the mouth.
+ * Ivory at the gum, white at the tip.
  */
-function tooth(at, direction, length, radius, detail) {
-  const cone = new THREE.ConeGeometry(radius, length, Math.max(5, Math.round(7 * detail)), 2)
-  // Cone tip on +Y: move the base to the origin and remember each ring's height.
-  cone.translate(0, length / 2, 0)
-  const p = cone.attributes.position
-  const heights = Array.from({ length: p.count }, (_, i) => p.getY(i) / length)
-  const q = new THREE.Quaternion().setFromUnitVectors(
-    new THREE.Vector3(0, 1, 0),
-    direction.clone().normalize(),
+function bladeTooth(at, axis, spec, length, shades, detail) {
+  const steps = Math.max(4, Math.round(7 * detail))
+  const back = new THREE.Vector3(0, 0, -1)
+  const path = Array.from({ length: steps + 1 }, (_, i) => {
+    const h = i / steps
+    return at
+      .clone()
+      .addScaledVector(axis, h * length)
+      .addScaledVector(back, 0.2 * length * h * h)
+  })
+  const { geometry, along } = sweep(
+    path,
+    (h) => spec.radius * (1 - h) ** 0.85,
+    Math.max(5, Math.round(10 * detail)),
+    new THREE.Vector3(1, 0, 0),
+    spec.thickness,
   )
-  cone.applyQuaternion(q)
-  // Bend towards the back of the mouth (world -Z), more towards the tip.
-  heights.forEach((h, i) => p.setZ(i, p.getZ(i) - 0.18 * length * h * h))
-  cone.computeVertexNormals()
-  cone.translate(at.x, at.y, at.z)
-  return cone
+  const colourAt = (i) => mix(shades.root, shades.tip, along[i] ** 1.4)
+  return { geometry, colourAt }
 }
 
 /**
- * The teeth: sharp rows along the lip line just inside the lips, raked back
- * so that they hide inside the closed mouth, and a pair of long tusks near
- * the front. The upper teeth move with the upper lip, the lower teeth with
- * the lower lip and the jaw.
+ * The inner teeth: rows of blade teeth along the lip line just inside the
+ * lips, set in the gums and raked back so they hide in the closed mouth,
+ * bigger at the front. The upper row moves with the upper lip, the lower
+ * with the jaw. `colours` holds the teeth and tusk colours, linear RGB.
  */
-export function teeth(line, mouth, skin, colour, detail = 1) {
+export function teeth(line, mouth, skin, colours, detail = 1) {
   const t = mouth.teeth
-  const pieces = []
+  const shades = {
+    root: mix(colours.teeth, colours.tusk, 0.7),
+    tip: mix(colours.teeth, [1, 1, 1], 0.5),
+  }
   const rake = (deg, down) => {
     const r = THREE.MathUtils.degToRad(deg)
     return new THREE.Vector3(0, down ? -Math.cos(r) : Math.cos(r), -Math.sin(r))
   }
-  const place = (x, upper, { length, radius, insetM, rakeDeg }) => {
+  const pieces = []
+  const place = (x, upper, length) => {
     const lip = lipAt(line, x)
     const base = lip.point
       .clone()
-      .addScaledVector(lip.normal, -insetM)
+      .addScaledVector(lip.normal, -t.row.insetM)
       .add(new THREE.Vector3(0, upper ? t.rootM : -t.rootM, 0))
-    return paint(
-      tooth(base, rake(rakeDeg, upper), length, radius, detail),
-      upper ? skin.upper : skin.lower,
-      colour,
-    )
+    const tooth = bladeTooth(base, rake(t.row.rakeDeg, upper), t.row, length, shades, detail)
+    pieces.push(paint(tooth.geometry, upper ? skin.upper : skin.lower, tooth.colourAt))
   }
   for (const side of [-1, 1]) {
     for (let k = 0; k < t.upperPerSide; k++) {
       const u = (k + 0.5) / t.upperPerSide
-      const x = side * mouth.halfWidth * (0.06 + 0.66 * u)
-      pieces.push(place(x, true, { ...t.row, length: t.row.length * (1.1 - 0.5 * u) }))
+      place(side * mouth.halfWidth * (0.05 + 0.7 * u), true, t.row.length * (1.15 - 0.55 * u))
     }
     for (let k = 0; k < t.lowerPerSide; k++) {
       const u = (k + 1) / (t.lowerPerSide + 0.5)
-      const x = side * mouth.halfWidth * (0.06 + 0.66 * u)
-      pieces.push(place(x, false, { ...t.row, length: t.row.length * (0.95 - 0.45 * u) }))
+      place(side * mouth.halfWidth * (0.05 + 0.7 * u), false, t.row.length * (1 - 0.5 * u))
     }
-    pieces.push(place(side * mouth.halfWidth * t.tusk.at, true, t.tusk))
   }
   return pieces
+}
+
+/**
+ * The tusks' centre lines, cast on the intact snout before the lips are cut.
+ * The upper pair hangs from the upper lip down over the closed lower lip and
+ * chin; the lower pair rises from the lower lip over the upper lip. Each is
+ * half sunk into its own lip at the root, then rides just off the skin and
+ * curls away from it towards the tip, so the tusks show with the mouth shut
+ * and hang free when it opens.
+ */
+export function tuskPaths(cast, mouth, detail = 1) {
+  const t = mouth.teeth.tusks
+  const samples = Math.max(10, Math.round(22 * detail))
+  const paths = []
+  for (const side of [-1, 1]) {
+    for (const upper of [true, false]) {
+      const spec = upper ? t.upper : t.lower
+      const x0 = side * mouth.halfWidth * spec.at
+      const direction = upper ? -1 : 1
+      const points = []
+      let last = null
+      for (let i = 0; i <= samples; i++) {
+        const s = i / samples
+        const x = x0 * (1 + 0.14 * s)
+        const y = lipYAt(x0, mouth) + direction * (spec.length * s - spec.radius * 0.5)
+        const hit = cast([x, y, 5], [0, 0, -1]) ?? last
+        if (!hit) throw new Error(`No skin under the tusk at x ${x.toFixed(3)}`)
+        last = hit
+        const r = spec.radius * (1 - s) ** 0.7
+        const lift = spec.clearanceM + r * smooth(0, 0.3, s) + spec.curl * spec.length * s * s
+        points.push(hit.point.clone().addScaledVector(hit.normal, lift))
+      }
+      paths.push({ upper, x: x0, points, spec })
+    }
+  }
+  return paths
+}
+
+/**
+ * The tusks along their paths: round, tapering to a sharp point, with growth
+ * rings over their first two thirds; ivory at the root, white at the tip, the
+ * grooves a shade darker. Upper tusks follow the upper lip, lower ones the jaw.
+ */
+export function tusks(paths, mouth, skin, colours, detail = 1) {
+  const rings = mouth.teeth.tusks.rings
+  const fade = (s) => 1 - smooth(0.5, 0.75, s)
+  const ridge = (s) => Math.max(0, Math.cos(Math.PI * 2 * rings * s)) ** 2 * fade(s)
+  const white = mix(colours.teeth, [1, 1, 1], 0.55)
+  return paths.map(({ upper, points, spec }) => {
+    const { geometry, along } = sweep(
+      points,
+      (s) => spec.radius * (1 - s) ** 0.7 * (1 + 0.07 * ridge(s)),
+      Math.max(9, Math.round(18 * detail)),
+      new THREE.Vector3(1, 0, 0),
+    )
+    const colourAt = (i) => {
+      const s = along[i]
+      const base = mix(colours.tusk, white, smooth(0.15, 1, s))
+      return mix(base, colours.tusk, 0.35 * (1 - ridge(s)) * fade(s))
+    }
+    return paint(geometry, upper ? skin.upper : skin.lower, colourAt)
+  })
+}
+
+/**
+ * The gums the teeth grow from: a soft ridge along each lip, just inside it,
+ * tapering towards the corners. They belong to the mouth, hidden when it is shut.
+ */
+export function gums(line, mouth, skin, colour, detail = 1) {
+  const g = mouth.teeth.gums
+  const steps = Math.max(14, Math.round(36 * detail))
+  const reach = 0.8 * mouth.halfWidth
+  return [true, false].map((upper) => {
+    const path = Array.from({ length: steps + 1 }, (_, i) => {
+      const x = -reach + (2 * reach * i) / steps
+      const lip = lipAt(line, x)
+      return lip.point
+        .clone()
+        .addScaledVector(lip.normal, -g.insetM)
+        .add(new THREE.Vector3(0, upper ? mouth.teeth.rootM : -mouth.teeth.rootM, 0))
+    })
+    const { geometry } = sweep(
+      path,
+      (s) => g.radiusM * (0.3 + 0.7 * Math.sin(Math.PI * s) ** 0.5),
+      Math.max(6, Math.round(9 * detail)),
+      new THREE.Vector3(0, 1, 0),
+      g.depth,
+    )
+    return paint(geometry, upper ? skin.upper : skin.lower, colour)
+  })
 }

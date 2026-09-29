@@ -29,11 +29,14 @@ import {
 } from './assembly/skinning.mjs'
 import {
   cutLips,
+  gums,
   lipLine,
   lipSkin,
   mouthCavity,
   surfaceCaster,
   teeth,
+  tuskPaths,
+  tusks,
   weightJaw,
 } from './assembly/mouth.mjs'
 import { eyesBaseColor, faceAtlas } from './assembly/textures.mjs'
@@ -443,7 +446,10 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
 
   // The jaw: cast the lip line on the intact snout, then cut the lips open
   // and hand the lower lip and chin to the jaw bone.
-  const lips = lipLine(surfaceCaster(geometry), mouth)
+  // The tusks ride on the closed lips, so their paths are cast before the cut too.
+  const snout = surfaceCaster(geometry)
+  const lips = lipLine(snout, mouth)
+  const tuskLines = tuskPaths(snout, mouth, settings.detail)
   const { seam } = cutLips(geometry, mouth)
   weightJaw(geometry, new Set(seam.map((pair) => pair.below)), mouth, jointOf('jaw'))
   const mouthSkin = lipSkin(geometry, seam)
@@ -476,10 +482,16 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
     inside: toLinear(contract.colors.mouth.inside),
     tongue: toLinear(contract.colors.mouth.tongue),
   }
-  const teethMesh = merge(
-    teeth(lips, mouth, mouthSkin, toLinear(contract.colors.mouth.teeth), detail),
-  )
-  const mouthMesh = merge(mouthCavity(lips, mouth, mouthSkin, mouthColours, detail))
+  const toothColours = {
+    teeth: toLinear(contract.colors.mouth.teeth),
+    tusk: toLinear(contract.colors.mouth.tusk),
+  }
+  const teethMesh = merge(teeth(lips, mouth, mouthSkin, toothColours, detail))
+  const tuskMesh = merge(tusks(tuskLines, mouth, mouthSkin, toothColours, detail))
+  const mouthMesh = merge([
+    ...mouthCavity(lips, mouth, mouthSkin, mouthColours, detail),
+    ...gums(lips, mouth, mouthSkin, toLinear(contract.colors.mouth.gums), detail),
+  ])
 
   const { colors } = contract
   const layout = {
@@ -505,6 +517,7 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
   addSkinnedMesh(ctx, 'eye_highlights', catchlights, materials.highlight)
   addSkinnedMesh(ctx, 'plates', plates, materials.plates)
   addSkinnedMesh(ctx, 'teeth', teethMesh, materials.teeth)
+  addSkinnedMesh(ctx, 'tusks', tuskMesh, materials.teeth)
   addSkinnedMesh(ctx, 'mouth', mouthMesh, materials.mouth)
   addContractClips(ctx, PLACEHOLDER_CLIPS)
 

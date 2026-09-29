@@ -11,6 +11,15 @@ const tiers = <T extends z.ZodType>(value: T) => z.strictObject({ full: value, l
 const boneName = z.string().regex(/^[a-z]+(?:_(?:\d{2}|[LR]))?$/)
 const vec3 = z.tuple([z.number(), z.number(), z.number()])
 
+/** One tusk pair: where along the half width, its size, its gap to the skin and its curl. */
+const tuskSchema = z.strictObject({
+  at: z.number().min(0).max(1),
+  length: z.number().positive().max(0.12),
+  radius: z.number().positive().max(0.03),
+  clearanceM: z.number().min(0).max(0.02),
+  curl: z.number().min(0).max(1),
+})
+
 export const fitSchema = z
   .strictObject({
     ...docShape,
@@ -80,15 +89,19 @@ export const fitSchema = z
         row: z.strictObject({
           length: z.number().positive().max(0.08),
           radius: z.number().positive().max(0.03),
+          thickness: z.number().positive().max(1),
           insetM: z.number().min(0).max(0.03),
           rakeDeg: z.number().min(0).max(80),
         }),
-        tusk: z.strictObject({
-          at: z.number().min(0).max(1),
-          length: z.number().positive().max(0.1),
-          radius: z.number().positive().max(0.03),
+        tusks: z.strictObject({
+          upper: tuskSchema,
+          lower: tuskSchema,
+          rings: z.number().int().min(0).max(12),
+        }),
+        gums: z.strictObject({
+          radiusM: z.number().positive().max(0.03),
+          depth: z.number().positive().max(3),
           insetM: z.number().min(0).max(0.03),
-          rakeDeg: z.number().min(0).max(80),
         }),
       }),
     }),

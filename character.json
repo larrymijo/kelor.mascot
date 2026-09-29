@@ -35,10 +35,10 @@
     "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. File sizes are compressed (Meshopt geometry; WebP on lite, KTX2 on full). Lite keeps its phase 4 budget; full returned to 1500 kB in phase 6 for a 2048 px base colour and a 1024 px normal map, since it streams in after first paint. Draw calls = mesh primitives rendered once (shadow passes excluded).",
     "full": {
       "maxFileKB": 1500,
-      "maxTriangles": 24000,
+      "maxTriangles": 32000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
-      "maxDrawCalls": 8,
+      "maxDrawCalls": 9,
       "maxMaterials": 7,
       "maxTextures": 5,
       "maxTextureSize": 2048,
@@ -47,10 +47,10 @@
     },
     "lite": {
       "maxFileKB": 250,
-      "maxTriangles": 8000,
+      "maxTriangles": 11000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
-      "maxDrawCalls": 8,
+      "maxDrawCalls": 9,
       "maxMaterials": 7,
       "maxTextures": 4,
       "maxTextureSize": 1024,
@@ -107,7 +107,7 @@
   },
 
   "meshes": {
-    "_doc": "Required mesh names (glTF mesh or node name). All are skinned to the single armature. Both eyes share one mesh, each eye weighted 100 % to its eye bone; same for the eyelids. The teeth and the mouth each add one: 8 draw calls.",
+    "_doc": "Required mesh names (glTF mesh or node name). All are skinned to the single armature. Both eyes share one mesh, each eye weighted 100 % to its eye bone; same for the eyelids. The teeth, the tusks and the mouth each add one: 9 draw calls.",
     "required": [
       {
         "name": "body",
@@ -142,7 +142,12 @@
       {
         "name": "teeth",
         "material": "teeth",
-        "_doc": "T-rex style sharp teeth and tusks just inside the lips: the upper row weighted to head, the lower to jaw. Hidden while the mouth is closed."
+        "_doc": "T-rex style blade teeth in the gums just inside the lips: the upper row weighted like the upper lip, the lower like the jaw. Hidden while the mouth is closed."
+      },
+      {
+        "name": "tusks",
+        "material": "teeth",
+        "_doc": "Two upper tusks hanging over the lower lip and two lower tusks rising over the upper lip, with growth rings, ivory to white. Always shown: they are what the closed mouth shows of the jaw."
       },
       {
         "name": "mouth",
@@ -272,7 +277,13 @@
       "glow": "#D9C7FF"
     },
     "eyes": { "sclera": "#F7F7F7", "iris": "#151515", "highlight": "#FFFFFF" },
-    "mouth": { "teeth": "#F4EEE2", "inside": "#2A0E33", "tongue": "#D9709F" },
+    "mouth": {
+      "teeth": "#F4EEE2",
+      "tusk": "#E4D5B8",
+      "gums": "#A2477E",
+      "inside": "#2A0E33",
+      "tongue": "#D9709F"
+    },
     "brandMono": {
       "ink900": "#151515",
       "ink500": "#545454",

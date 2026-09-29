@@ -23,7 +23,16 @@ import {
   writeGlb,
 } from './assembly/document.mjs'
 import { eyeball, eyelid, highlights, plate, projectFaceUvs } from './assembly/features.mjs'
-import { lipLine, mouthCavity, rigidSkin, surfaceCaster, teeth } from './assembly/mouth.mjs'
+import {
+  gums,
+  lipLine,
+  mouthCavity,
+  rigidSkin,
+  surfaceCaster,
+  teeth,
+  tuskPaths,
+  tusks,
+} from './assembly/mouth.mjs'
 import { boneSegments, merge, skinByDistance, skinRigid } from './assembly/skinning.mjs'
 import { eyesBaseColor, faceAtlas } from './assembly/textures.mjs'
 import { compressModel } from './model/compress.mjs'
@@ -102,22 +111,32 @@ export async function buildPlaceholder({ contract, tier }) {
       .map((g) => skinRigid(g, jointOf('head'))),
   )
   const plates = merge(PLATES.map((p) => skinRigid(plate(p), jointOf(p.bone))))
-  const lips = lipLine(surfaceCaster(body), PLACEHOLDER_MOUTH)
+  const snout = surfaceCaster(body)
+  const lips = lipLine(snout, PLACEHOLDER_MOUTH)
   // Not cut open: the mouth parts follow the head and jaw bones rigidly.
   const joints = rigidSkin(jointOf('head'), jointOf('jaw'))
   const { mouth: mouthColours } = contract.colors
-  const teethMesh = merge(
-    teeth(lips, PLACEHOLDER_MOUTH, joints, toLinear(mouthColours.teeth), detail),
+  const toothColours = { teeth: toLinear(mouthColours.teeth), tusk: toLinear(mouthColours.tusk) }
+  const teethMesh = merge(teeth(lips, PLACEHOLDER_MOUTH, joints, toothColours, detail))
+  const tuskMesh = merge(
+    tusks(
+      tuskPaths(snout, PLACEHOLDER_MOUTH, detail),
+      PLACEHOLDER_MOUTH,
+      joints,
+      toothColours,
+      detail,
+    ),
   )
-  const mouthMesh = merge(
-    mouthCavity(
+  const mouthMesh = merge([
+    ...mouthCavity(
       lips,
       PLACEHOLDER_MOUTH,
       joints,
       { inside: toLinear(mouthColours.inside), tongue: toLinear(mouthColours.tongue) },
       detail,
     ),
-  )
+    ...gums(lips, PLACEHOLDER_MOUTH, joints, toLinear(mouthColours.gums), detail),
+  ])
 
   // Materials, meshes and clips -------------------------------------------------
   const { colors } = contract
@@ -144,6 +163,7 @@ export async function buildPlaceholder({ contract, tier }) {
   addSkinnedMesh(ctx, 'eye_highlights', catchlights, materials.highlight)
   addSkinnedMesh(ctx, 'plates', plates, materials.plates)
   addSkinnedMesh(ctx, 'teeth', teethMesh, materials.teeth)
+  addSkinnedMesh(ctx, 'tusks', tuskMesh, materials.teeth)
   addSkinnedMesh(ctx, 'mouth', mouthMesh, materials.mouth)
   addContractClips(ctx, PLACEHOLDER_CLIPS)
 
