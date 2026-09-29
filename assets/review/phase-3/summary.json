@@ -84,14 +84,14 @@
         "full": {
           "triangles": 16190,
           "textureSize": 1024,
-          "seconds": 19.3,
+          "seconds": 19.5,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 4600,
           "textureSize": 512,
-          "seconds": 6.8,
+          "seconds": 6.9,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
