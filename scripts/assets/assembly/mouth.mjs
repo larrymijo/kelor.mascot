@@ -354,10 +354,11 @@ export function mouthCavity(line, mouth, skin, colours, detail = 1) {
   const radii = new THREE.Vector3(mouth.halfWidth * 0.86, mouth.cavityHeightM, depth)
   const halves = []
   for (const upper of [true, false]) {
+    // Fine enough for the bite, which brings the camera right up to the teeth.
     const sphere = new THREE.SphereGeometry(
       1,
-      Math.max(16, Math.round(22 * detail)),
-      Math.max(6, Math.round(10 * detail)),
+      Math.max(16, Math.round(32 * detail)),
+      Math.max(6, Math.round(14 * detail)),
       0,
       Math.PI * 2,
       upper ? 0 : Math.PI / 2,
@@ -375,8 +376,8 @@ export function mouthCavity(line, mouth, skin, colours, detail = 1) {
   }
   const tongue = new THREE.SphereGeometry(
     1,
-    Math.max(12, Math.round(18 * detail)),
-    Math.max(6, Math.round(9 * detail)),
+    Math.max(12, Math.round(30 * detail)),
+    Math.max(6, Math.round(16 * detail)),
   )
   // The tongue lies behind the lower gums and teeth, never out past the lips.
   const gums = mouth.teeth.gums
