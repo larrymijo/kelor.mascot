@@ -84,14 +84,14 @@
         "full": {
           "triangles": 33688,
           "textureSize": 1024,
-          "seconds": 62.4,
+          "seconds": 61.1,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 4762,
           "textureSize": 512,
-          "seconds": 7,
+          "seconds": 6.9,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -164,8 +164,8 @@
     "compress": {
       "full": {
         "beforeKB": 9226,
-        "afterKB": 3682,
-        "savedPercent": 31,
+        "afterKB": 3559,
+        "savedPercent": 32,
         "textures": [
           {
             "name": "body_orm",
@@ -183,7 +183,7 @@
             "name": "body_normal",
             "encode": "uastc",
             "beforeKB": 6426,
-            "afterKB": 2704
+            "afterKB": 2581
           },
           {
             "name": "face_atlas",
@@ -212,7 +212,7 @@
           {
             "id": "file.size",
             "status": "fail",
-            "message": "3682 kB (budget 3500 kB)",
+            "message": "3559 kB (budget 3500 kB)",
             "hint": "Compress with gltf-transform (Meshopt geometry, KTX2 textures) or lower texture sizes."
           }
         ]
