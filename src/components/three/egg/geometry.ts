@@ -146,7 +146,8 @@ function turn(egg: EggSpec, scale: number, split: boolean) {
         const cz = (positions[a * 3 + 2]! + positions[c * 3 + 2]!) / 2
         piece = pieceAt(cx, cy, cz, egg.heightM)
       }
-      indices[piece].push(a, d, b, b, d, c)
+      // Counter-clockwise seen from outside: the shell's outer side is its front face.
+      indices[piece].push(a, b, d, b, c, d)
     }
   }
 
