@@ -52,7 +52,7 @@ Version constraints that matter:
 | LCP (4G, mid-range phone)                         | < 2.0 s                                                              |
 | CLS                                               | 0                                                                    |
 | TBT (throttled phone, `pnpm perf:budget`)         | page < 200 ms until the 3D chunk is requested; 3D boot ≤ 2 s (D-094) |
-| Mascot GLB                                        | lite ≤ 250 kB (Meshopt + WebP), full ≤ 1500 kB (Meshopt + KTX2)      |
+| Mascot GLB                                        | lite ≤ 250 kB (Meshopt + WebP), full ≤ 3600 kB (Meshopt + KTX2)      |
 | Frame rate                                        | 60 fps on Intel integrated GPU at quality `medium`                   |
 | Lighthouse accessibility                          | ≥ 95                                                                 |
 
@@ -127,8 +127,8 @@ public/basis            three's Basis transcoder for KTX2, served locally (kept 
 - `LiveDriver` (priority -2) fills the shared `live` object every frame: the rest pose, or the bite's keys and cues. The camera, mascot, lights, effects, particles and backdrop read it. `OverlayDriver` writes the screen-space layers (letterbox, iris, words, hint, Kelo's place for the keyboard button) as CSS variables on `#live-ui`, plus data attributes for tests (`data-kelo`, `data-reaction`, `data-kelo-x/y`, `data-scale`, `data-biting`). Nothing re-renders React per frame.
 - `BehaviourController` reads presses on the window (`useBehaviourInput`): a tap, a pick-up past 6 px on desktop, or a click on the stage that makes him hop; the Kelo button gives the keyboard Enter or Space and the arrows. It steps the physics and hands `Mascot` his root pose: a pivot at the grab point (swing, lean), the squash, then the hatch and bite scale.
 - `StageMount` sets `html.live` while the stage draws, which shows the stage's extras (overlays, hint, sound switch, Kelo button). The words have their fixed places from the first paint, so nothing shifts (CLS 0); without live mode the page is the words alone. Phones keep the lite model.
-- Sounds go through `src/lib/sound/bus.ts`; the synthesiser loads on the sound switch's first press.
-- Effects follow the tier: MSAA 4x on high, FXAA on medium, no ambient occlusion on medium, no depth of field. Measure with `?tier=low|medium|high`.
+- Sounds go through `src/lib/sound/bus.ts`. `src/lib/sound/control.ts` holds the state: `auto` (every visit starts silent except for the bite), `on` and `off` from the switch. The audio engine is created inside a press: the switch's, or on desktop the press on Kelo that bites (earlier presses only preload its code).
+- Effects follow the tier: MSAA 4x on high, FXAA on medium, no ambient occlusion on medium, no depth of field; desktops get 2048 px shadows on medium too. The skin's soft-skin shading patches three's physical lighting chunk (`finish.ts`; a test watches the line it replaces). Measure with `?tier=low|medium|high`.
 - `tests/e2e/interaction.spec.ts` plays taps, the bite, carrying and hops on every profile and captures each stage to `scripts/review/out`.
 
 ## Progressive loading (phase 4)

@@ -32,10 +32,10 @@
   },
 
   "budgets": {
-    "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. File sizes are compressed (Meshopt geometry; WebP on lite, KTX2 on full). Lite keeps its phase 4 budget; full returned to 1500 kB in phase 6 for a 2048 px base colour and a 1024 px normal map, since it streams in after first paint. Draw calls = mesh primitives rendered once (shadow passes excluded).",
+    "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. File sizes are compressed (Meshopt geometry; WebP on lite, KTX2 on full). Lite keeps its phase 4 budget; full returned to 1500 kB in phase 6 for a 2048 px base colour and a 1024 px normal map, since it streams in after first paint; since phones keep lite, full is the desktop model, and the phase 8 polish raised it to 3600 kB and 60000 triangles for twice the density and a 2048 px normal map carrying the scales. Draw calls = mesh primitives rendered once (shadow passes excluded).",
     "full": {
-      "maxFileKB": 1500,
-      "maxTriangles": 32000,
+      "maxFileKB": 3600,
+      "maxTriangles": 60000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
       "maxDrawCalls": 9,
@@ -179,7 +179,7 @@
     "items": [
       { "name": "body_basecolor", "colorSpace": "srgb", "size": { "full": 2048, "lite": 1024 } },
       { "name": "body_orm", "colorSpace": "linear", "size": { "full": 1024, "lite": 512 } },
-      { "name": "body_normal", "colorSpace": "linear", "size": { "full": 1024, "lite": null } },
+      { "name": "body_normal", "colorSpace": "linear", "size": { "full": 2048, "lite": null } },
       { "name": "face_atlas", "colorSpace": "srgb", "size": { "full": 1024, "lite": 1024 } },
       { "name": "eyes_basecolor", "colorSpace": "srgb", "size": { "full": 512, "lite": 256 } }
     ]
@@ -324,7 +324,7 @@
         "jawDeg": 8,
         "durationS": 0.9,
         "wiggleDeg": 7,
-        "sound": "boop"
+        "sound": "giggle"
       },
       {
         "name": "hop",
@@ -333,7 +333,7 @@
         "jawDeg": 0,
         "durationS": 1.1,
         "wiggleDeg": 0,
-        "sound": "boop"
+        "sound": "boing"
       },
       {
         "name": "stare",
@@ -342,7 +342,7 @@
         "jawDeg": 0,
         "durationS": 1.3,
         "wiggleDeg": 0,
-        "sound": null
+        "sound": "hm"
       },
       {
         "name": "grumpy",
@@ -360,7 +360,7 @@
         "jawDeg": 24,
         "durationS": 1.4,
         "wiggleDeg": 4,
-        "sound": "growl"
+        "sound": "roar"
       }
     ],
     "desktop": {
@@ -368,7 +368,7 @@
       "minWidthPx": 768
     },
     "carry": {
-      "_doc": "Being held: the grab point follows the pointer on a critically damped spring (followHz); the body hangs from it like a pendulum (lengthM, dampingRatio), swinging with the hand's sideways acceleration up to maxSwingDeg and leaning with its vertical speed up to maxLeanDeg. Legs dangle and kick, arms rise, and the body stretches along fast motion.",
+      "_doc": "Being held: the grab point follows the pointer on a critically damped spring (followHz); the body hangs from it like a pendulum (lengthM, dampingRatio), swinging with the hand's sideways acceleration up to maxSwingDeg and leaning with its vertical speed up to maxLeanDeg. Legs dangle and kick, arms rise by armRaiseDeg and flap by armFlapRatio of it on top (at most 50° in all: the rig has no collarbones, and the model build checks the side of the body stays still at that raise), and the body stretches along fast motion.",
       "followHz": 5,
       "lengthM": 0.55,
       "dampingRatio": 0.22,
@@ -376,7 +376,8 @@
       "maxLeanDeg": 14,
       "legDangleDeg": 26,
       "legKickDeg": 16,
-      "armRaiseDeg": 60,
+      "armRaiseDeg": 40,
+      "armFlapRatio": 0.25,
       "stretch": 0.07,
       "blendS": 0.2
     },

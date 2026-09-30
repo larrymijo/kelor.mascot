@@ -60,7 +60,8 @@ Purple is the accent over the monochrome logo base. Tokens (mirrored in `src/app
 - Separate geometry: two spheres in one `eyes` mesh, each weighted 100 % to `eye_L` / `eye_R`. Iris and pupil are in the `eyes_basecolor` texture.
 - Upper eyelids in one `eyelids` mesh, weighted to `eyelid_L` / `eyelid_R`, rotating closed by `gaze.blink.closedAngleDeg`.
 - Catchlights in `eye_highlights`: unlit discs weighted to `head`, so they stay fixed while the eyes rotate. They sit on the iris of an eye looking at the viewer (the main one upper left, 14 mm, a small one lower right), clear of the open lid; on the white sclera a catchlight is invisible. At runtime they skip tone mapping so they stay pure white.
-- On medium and high tiers the eyes get a glassy clearcoat cornea and the skin a soft clearcoat and sheen, the vinyl-toy finish; low keeps the GLB's plain materials.
+- On medium and high tiers the eyes get a glassy clearcoat cornea and the skin a soft clearcoat and sheen, the vinyl-toy finish, with soft-skin shading (light wraps a little past the terminator with a violet tint) and its colour lifted a touch towards the concept's purple; low keeps the GLB's plain materials.
+- The skin carries the concept's scales on the full (desktop) model: domed scales about 12 mm wide parted by narrow grooves, finer (8 mm) on the snout, hands and feet, and rows of wide plates on the belly, baked into the normal and ORM maps by the Blender step (`fit.json` `scales`). Lite (phones) stays smooth.
 - Eye, eyelid and jaw bones are **procedural**. Animation clips must never key them; the validator fails the GLB if they do.
 
 ## Expressions
@@ -91,8 +92,8 @@ Use these names exactly, in Blender, in the GLB and in code.
 
 |                       | lite             | full             |
 | --------------------- | ---------------- | ---------------- |
-| File size             | ≤ 250 kB         | ≤ 1500 kB        |
-| Triangles             | ≤ 11 000         | ≤ 32 000         |
+| File size             | ≤ 250 kB         | ≤ 3600 kB        |
+| Triangles             | ≤ 11 000         | ≤ 60 000         |
 | Bones                 | ≤ 32             | ≤ 32             |
 | Influences per vertex | ≤ 4              | ≤ 4              |
 | Draw calls            | ≤ 9              | ≤ 9              |
@@ -109,7 +110,7 @@ corepack pnpm validate:model --file path/to/model.glb --tier full
 
 ## Model pipeline (phase 3)
 
-The real Kelo comes from the owner's image-to-3D source through `corepack pnpm build:model` (see `scripts/blender/README.md`): normalise, fit the 29-bone rig to measured landmarks, retopologise with Quadriflow, bake base colour, AO and normals, bind with automatic weights capped per role, then add the procedural eyes, lids, catchlights, plates, face shell and jaw (the lip cut, jaw weights, teeth, tusks and mouth cavity) with the same code as the phase 2 placeholder. Tune it through `assets/model/fit.json`, never by hand-editing GLBs. The review renders in `assets/review/phase-3` are the acceptance evidence. The placeholder generator stays as a fallback (`build:placeholder --public`). On stage the body stands in a 22 degree three-quarter turn and the gaze layer turns the head back to the viewer.
+The real Kelo comes from the owner's image-to-3D source through `corepack pnpm build:model` (see `scripts/blender/README.md`): normalise, fit the 29-bone rig to measured landmarks, polish the scan's lumps out of a voxel volume, retopologise it with Quadriflow, bake base colour, AO and normals (with the scales on full), bind with automatic weights capped per role and keep each arm's weight off the belly (the build fails if raising the arms moves the side of the body more than 1 cm), then add the procedural eyes, lids, catchlights, plates, face shell and jaw (the lip cut, jaw weights, teeth, tusks and mouth cavity) with the same code as the phase 2 placeholder. Tune it through `assets/model/fit.json`, never by hand-editing GLBs. The review renders in `assets/review/phase-3` are the acceptance evidence. The placeholder generator stays as a fallback (`build:placeholder --public`). On stage the body stands in a 22 degree three-quarter turn and the gaze layer turns the head back to the viewer.
 
 ## Runtime behaviour (phases 5 and 8)
 

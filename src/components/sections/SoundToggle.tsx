@@ -1,28 +1,27 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { copy } from '@/lib/copy'
-import type { Synth } from '@/lib/sound/synth'
+import { onSoundMode, setSoundMode, soundMode, wakeAudio } from '@/lib/sound/control'
 
 /**
- * The sound switch, off by default, in the corner opposite the studio mark.
- * Nothing sound-related exists before the first press: that click creates
- * the AudioContext (Safari only starts one inside a gesture) and downloads
- * the synthesiser, a chunk of its own. Later presses fade it in and out.
+ * The sound switch, in the corner opposite the studio mark. It shows off
+ * until pressed: the page starts silent, except for the bite
+ * (src/lib/sound/control.ts). Pressing it turns everything on, creating the
+ * audio engine inside the click if a press on Kelo has not yet; pressing it
+ * again turns everything off, the bite too.
  */
 export function SoundToggle() {
-  const [on, setOn] = useState(false)
-  const synth = useRef<Promise<Synth> | null>(null)
+  const mode = useSyncExternalStore(onSoundMode, soundMode, () => 'auto' as const)
+  const on = mode === 'on'
 
   const toggle = () => {
-    const next = !on
-    setOn(next)
-    if (!synth.current) {
-      const context = new AudioContext()
-      void context.resume()
-      synth.current = import('@/lib/sound/synth').then((m) => m.createSynth(context))
+    if (on) {
+      setSoundMode('off')
+      return
     }
-    void synth.current.then((s) => s.setEnabled(next))
+    setSoundMode('on')
+    wakeAudio()
   }
 
   return (
@@ -30,6 +29,7 @@ export function SoundToggle() {
       type="button"
       aria-label={copy.sound.label}
       aria-pressed={on}
+      data-sound={mode}
       onClick={toggle}
       className="live-control forced-plate top-4 right-4 z-30 min-h-11 min-w-11 items-center justify-center rounded-md text-ink-300 transition-colors duration-200 ease-out-quart hover:text-ink-50 aria-pressed:text-ink-50 sm:top-6 sm:right-6"
     >

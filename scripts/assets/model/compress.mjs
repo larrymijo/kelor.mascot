@@ -33,20 +33,29 @@ export async function compressionIO() {
  * blocks would smear, so they take UASTC, and both are linear data rather than
  * colour. Mipmaps go in the file because a compressed texture cannot build
  * them at runtime.
- * @type {Record<string, { encode: 'basis-lz' | 'uastc', srgb: boolean }>}
+ *
+ * The 2048 px normal map carries the scales: detail everywhere, which RDO
+ * squeezes hardest with a higher lambda and a bigger dictionary (the atlas
+ * keeps the default, its flat areas already compress well).
+ * @type {Record<string, { encode: 'basis-lz' | 'uastc', srgb: boolean, rdoLambda?: number, rdoDictionary?: number }>}
  */
 const KTX_PROFILES = {
   body_basecolor: { encode: 'basis-lz', srgb: true },
   eyes_basecolor: { encode: 'basis-lz', srgb: true },
   body_orm: { encode: 'basis-lz', srgb: false },
-  body_normal: { encode: 'uastc', srgb: false },
+  body_normal: { encode: 'uastc', srgb: false, rdoLambda: 12, rdoDictionary: 32768 },
   face_atlas: { encode: 'uastc', srgb: true },
 }
 
 const EXTENSION_OF = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }
 
-/** Argument list for one texture, in KTX-Software 4.4.2 spelling (later releases rename the UASTC codec). */
-export function ktxArgs({ encode, srgb }, input, output) {
+/**
+ * Argument list for one texture, in KTX-Software 4.4.2 spelling (later releases rename the UASTC codec).
+ * @param {{ encode: string, srgb: boolean, rdoLambda?: number, rdoDictionary?: number }} profile
+ * @param {string} input
+ * @param {string} output
+ */
+export function ktxArgs({ encode, srgb, rdoLambda = 4, rdoDictionary }, input, output) {
   const args = ['create', '--format', srgb ? 'R8G8B8A8_SRGB' : 'R8G8B8A8_UNORM']
   if (!srgb) args.push('--assign-tf', 'linear')
   args.push('--generate-mipmap')
@@ -55,7 +64,9 @@ export function ktxArgs({ encode, srgb }, input, output) {
     // plain UASTC normal map grow from 263 to 914 kB); -m keeps it deterministic
     // so rebuilding the same model does not churn the committed file.
     args.push('--encode', 'uastc', '--uastc-quality', '2')
-    args.push('--uastc-rdo', '--uastc-rdo-l', '4', '--uastc-rdo-m', '--zstd', '18')
+    args.push('--uastc-rdo', '--uastc-rdo-l', String(rdoLambda), '--uastc-rdo-m')
+    if (rdoDictionary) args.push('--uastc-rdo-d', String(rdoDictionary))
+    args.push('--zstd', '18')
   } else {
     args.push('--encode', 'basis-lz', '--clevel', '4', '--qlevel', '200')
   }

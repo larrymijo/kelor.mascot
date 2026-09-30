@@ -4,8 +4,10 @@
  * The stage's shared state, filled once per frame before anything else in
  * the scene (docs/interaction-script.md). At rest it is the hero shot; while
  * the bite plays it runs the bite's keys over time and fires its cues: the
- * snap (the mascot shuts the jaw when `snaps` changes) and the sounds. Runs
- * at a negative useFrame priority, which keeps R3F's own rendering on.
+ * snap (the mascot shuts the jaw when `snaps` changes) and the sounds,
+ * bracketed by biteStart and biteEnd so they are heard before the sound is
+ * turned on (src/lib/sound/control.ts). Runs at a negative useFrame
+ * priority, which keeps R3F's own rendering on.
  */
 import { useFrame } from '@react-three/fiber'
 import { Vector3 } from 'three'
@@ -42,6 +44,7 @@ export function startBite() {
   if (live.bite.playing) return false
   live.bite.playing = true
   live.bite.t = 0
+  playSound('biteStart')
   return true
 }
 
@@ -62,7 +65,7 @@ export function LiveDriver() {
     for (const cue of crossedBiteCues(from, bite.t)) {
       if (cue.kind === 'snap') {
         live.snaps += 1
-        playSound('gulp')
+        playSound('chomp')
       } else {
         playSound(cue.sound)
       }
@@ -71,6 +74,7 @@ export function LiveDriver() {
     if (bite.t >= BITE.durationS) {
       bite.playing = false
       restSample(sample)
+      playSound('biteEnd')
     }
   }, LIVE_PRIORITY)
   return null

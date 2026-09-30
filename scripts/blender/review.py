@@ -179,6 +179,14 @@ def main():
     aim(camera, face_target, distance * 0.42, 0, 4)
     render(scene, os.path.join(out, "face-closeup.png"))
 
+    # The skin up close, sharper: the scales on the chin, chest, arm and belly.
+    chest = armature.matrix_world @ armature.data.bones["chest"].head_local
+    size = scene.render.resolution_x
+    scene.render.resolution_x = scene.render.resolution_y = 1024
+    aim(camera, chest + Vector((0, 0, 0.02)), distance * 0.36, 25, 6)
+    render(scene, os.path.join(out, "skin-closeup.png"))
+    scene.render.resolution_x = scene.render.resolution_y = size
+
     # The jaw open as far as the roar opens it. A turn about +X opens it in
     # glTF and in Blender alike (the Y-up to Z-up conversion turns about X).
     jaw_bone = next((b for b in armature.data.bones if b.name == "jaw"), None)
@@ -199,6 +207,32 @@ def main():
         for part in mouth_parts:
             part.hide_render = True
         bpy.context.view_layer.update()
+
+    # Carried: both arms as high as carrying him raises them (the raise and
+    # its flap), to check that the side of the body stays put. A turn about
+    # glTF +Z (Blender -Y, towards the viewer) raises the left arm.
+    carry = contract["interaction"]["carry"]
+    raise_deg = carry["armRaiseDeg"] * (1 + carry["armFlapRatio"])
+    forward = armature.matrix_world.to_quaternion().inverted() @ Vector((0, -1, 0))
+    raised = []
+    for side, sign in (("L", 1), ("R", -1)):
+        name = f"upperarm_{side}"
+        if name not in armature.pose.bones:
+            continue
+        rest = armature.data.bones[name].matrix_local.to_quaternion()
+        pose_bone = armature.pose.bones[name]
+        pose_bone.rotation_mode = "QUATERNION"
+        pose_bone.rotation_quaternion = (
+            rest.inverted() @ Quaternion(forward, math.radians(sign * raise_deg)) @ rest
+        )
+        raised.append(pose_bone)
+    bpy.context.view_layer.update()
+    for name, azimuth, elevation in (("front", 0, 6), ("three-quarter", 35, 10)):
+        aim(camera, target, distance, azimuth, elevation)
+        render(scene, os.path.join(out, f"carried-{name}.png"))
+    for pose_bone in raised:
+        pose_bone.rotation_quaternion = (1, 0, 0, 0)
+    bpy.context.view_layer.update()
 
     # Topology: an emissive wireframe copy over the body.
     wire = body.copy()

@@ -82,16 +82,16 @@
       "blender": "5.2.2 LTS",
       "tiers": {
         "full": {
-          "triangles": 16190,
+          "triangles": 33688,
           "textureSize": 1024,
-          "seconds": 13.8,
+          "seconds": 53.1,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
-          "triangles": 4600,
+          "triangles": 4762,
           "textureSize": 512,
-          "seconds": 4.8,
+          "seconds": 6.2,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -99,65 +99,91 @@
     },
     "assemble": {
       "full": {
-        "repairedVertices": 788,
-        "clampedWeights": 6503,
+        "repairedVertices": 1479,
+        "clampedWeights": 13258,
+        "arms": {
+          "L": {
+            "armpitY": 0.4504,
+            "wallX": 0.1984,
+            "repaired": 0
+          },
+          "R": {
+            "armpitY": 0.4554,
+            "wallX": 0.196,
+            "repaired": 0
+          }
+        },
+        "bodyMoveM": 0,
         "eyes": {
           "L": [
             0.105,
             0.93,
-            0.18585515746651537
+            0.18508078024524
           ],
           "R": [
             -0.105,
             0.93,
-            0.18587377952524153
+            0.1850796362630306
           ]
         },
         "mouthY": 0.801,
-        "kB": 2217
+        "kB": 9226
       },
       "lite": {
-        "repairedVertices": 233,
-        "clampedWeights": 2089,
+        "repairedVertices": 280,
+        "clampedWeights": 2204,
+        "arms": {
+          "L": {
+            "armpitY": 0.4454,
+            "wallX": 0.2001,
+            "repaired": 0
+          },
+          "R": {
+            "armpitY": 0.4404,
+            "wallX": 0.2032,
+            "repaired": 0
+          }
+        },
+        "bodyMoveM": 0,
         "eyes": {
           "L": [
             0.105,
             0.93,
-            0.18760010345031908
+            0.1858123609549568
           ],
           "R": [
             -0.105,
             0.93,
-            0.18806659278690574
+            0.18617334000738672
           ]
         },
         "mouthY": 0.801,
-        "kB": 583
+        "kB": 584
       }
     },
     "compress": {
       "full": {
-        "beforeKB": 2217,
-        "afterKB": 1334,
-        "savedPercent": 44,
+        "beforeKB": 9226,
+        "afterKB": 3559,
+        "savedPercent": 32,
         "textures": [
           {
             "name": "body_orm",
             "encode": "basis-lz",
-            "beforeKB": 222,
-            "afterKB": 140
+            "beforeKB": 309,
+            "afterKB": 201
           },
           {
             "name": "body_basecolor",
             "encode": "basis-lz",
-            "beforeKB": 366,
-            "afterKB": 345
+            "beforeKB": 355,
+            "afterKB": 305
           },
           {
             "name": "body_normal",
             "encode": "uastc",
-            "beforeKB": 256,
-            "afterKB": 528
+            "beforeKB": 6426,
+            "afterKB": 2581
           },
           {
             "name": "face_atlas",
@@ -174,8 +200,8 @@
         ]
       },
       "lite": {
-        "beforeKB": 583,
-        "afterKB": 221,
+        "beforeKB": 584,
+        "afterKB": 222,
         "savedPercent": 62
       }
     },

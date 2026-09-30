@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { character } from '@/lib/character'
-import { createStreak, isDesktop, isDrag, registerTap, type TapOutcome } from './interaction'
+import {
+  createStreak,
+  isDesktop,
+  isDrag,
+  nextTapBites,
+  registerTap,
+  type TapOutcome,
+} from './interaction'
 
 const settings = character.interaction
 const desktop = { desktop: true, reducedMotion: false }
@@ -28,6 +35,22 @@ describe('interaction', () => {
   it('starts over when the taps are further apart than the streak window', () => {
     const outcomes = tapSeries([0, 1, 1 + settings.taps.streakS + 0.1])
     expect(names(outcomes)).toEqual(['giggle', 'hop', 'giggle'])
+  })
+
+  it('knows which press will bite, so only that one wakes the audio engine', () => {
+    const streak = createStreak()
+    const bites: boolean[] = []
+    for (const t of [0, 0.5, 1, 1.5, 2, 2.5]) {
+      bites.push(nextTapBites(streak, t, desktop, settings))
+      registerTap(streak, t, desktop, settings)
+    }
+    expect(bites).toEqual([false, false, false, false, false, true])
+    // The streak has started over, it has run out, or the screen never bites.
+    expect(nextTapBites(streak, 3, desktop, settings)).toBe(false)
+    for (const t of [3, 3.5, 4, 4.5, 5]) registerTap(streak, t, desktop, settings)
+    expect(nextTapBites(streak, 5 + settings.taps.streakS + 0.1, desktop, settings)).toBe(false)
+    expect(nextTapBites(streak, 5.4, touch, settings)).toBe(false)
+    expect(nextTapBites(streak, 5.4, { desktop: true, reducedMotion: true }, settings)).toBe(true)
   })
 
   it('never bites on touch screens: the last reaction repeats', () => {

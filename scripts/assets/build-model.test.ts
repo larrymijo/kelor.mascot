@@ -1,10 +1,17 @@
 import { Document, NodeIO } from '@gltf-transform/core'
-import { BufferAttribute } from 'three'
+import { BufferAttribute, CapsuleGeometry, Quaternion, SphereGeometry, Vector3 } from 'three'
 import { beforeAll, describe, expect, it } from 'vitest'
 import contract from '../../character.json'
 import fit from '../../assets/model/fit.json'
 import { boneSegments, merge, skinByDistance } from './assembly/skinning.mjs'
-import { buildModel, cleanWeights, readBody, smoothWeights } from './build-model.mjs'
+import {
+  bodyMoveUnderArms,
+  buildModel,
+  cleanWeights,
+  readBody,
+  separateArms,
+  smoothWeights,
+} from './build-model.mjs'
 import { parseGlb } from './glb.mjs'
 import { measureLandmarks } from './model/landmarks.mjs'
 import { bodyParts } from './placeholder/shapes.mjs'
@@ -235,5 +242,105 @@ describe('smoothWeights', () => {
     }
     // The border is no longer a single switch between neighbours.
     expect(blended).toBeGreaterThan(20)
+  })
+})
+
+describe('separateArms', () => {
+  /** A slim torso and, beside it, a left arm hanging along the contract's arm bones. */
+  function torsoAndArm() {
+    const leak = jointOf('upperarm_L')
+    const spine = jointOf('spine_02')
+    const torso = new SphereGeometry(1, 32, 20)
+    torso.scale(0.11, 0.2, 0.14).translate(0, 0.42, 0)
+    const count = torso.attributes.position.count
+    const joints = new Uint16Array(count * 4)
+    const weights = new Float32Array(count * 4)
+    for (let i = 0; i < count; i++) {
+      // What the smoothing leaves: half the side of the body handed to the arm.
+      const side = torso.attributes.position.getX(i) > 0.02
+      joints.set([spine, side ? leak : 0, 0, 0], i * 4)
+      weights.set(side ? [0.5, 0.5, 0, 0] : [1, 0, 0, 0], i * 4)
+    }
+    torso.setAttribute('skinIndex', new BufferAttribute(joints, 4))
+    torso.setAttribute('skinWeight', new BufferAttribute(weights, 4))
+
+    const shoulder = new Vector3(...bones.find((b) => b.name === 'upperarm_L')!.restHead)
+    const end = boneSegments(bones).get('hand_L')![1]
+    const along = end.clone().sub(shoulder)
+    const arm = new CapsuleGeometry(0.035, along.length(), 6, 16)
+    arm
+      .applyQuaternion(
+        new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), along.clone().normalize()),
+      )
+      .translate(...shoulder.clone().add(end).multiplyScalar(0.5).toArray())
+    const armCount = arm.attributes.position.count
+    const forearm = jointOf('forearm_L')
+    arm.setAttribute(
+      'skinIndex',
+      new BufferAttribute(
+        Uint16Array.from({ length: armCount * 4 }, (_, i) => (i % 4 ? 0 : forearm)),
+        4,
+      ),
+    )
+    arm.setAttribute(
+      'skinWeight',
+      new BufferAttribute(
+        Float32Array.from({ length: armCount * 4 }, (_, i) => (i % 4 ? 0 : 1)),
+        4,
+      ),
+    )
+    return merge([torso, arm])
+  }
+
+  it('hands the side of the body back to the spine and keeps the arm on the arm', () => {
+    const geometry = torsoAndArm()
+    const { falloffM } = fit.rig.armSeparation
+    const splits = separateArms(
+      geometry,
+      bones,
+      jointOf,
+      fit.rig.armSeparation,
+      fit.rig.armpitMarginM,
+    )
+    const split = splits.L!
+    expect(split).not.toBeNull()
+    expect(splits.R).toBeNull()
+
+    const arms = new Set(['upperarm_L', 'forearm_L', 'hand_L'].map(jointOf))
+    const pos = geometry.attributes.position
+    const joints = geometry.attributes.skinIndex.array
+    const weights = geometry.attributes.skinWeight.array
+    let body = 0
+    let arm = 0
+    for (let i = 0; i < pos.count; i++) {
+      if (pos.getY(i) >= split.armpitY - falloffM) continue
+      let share = 0
+      let total = 0
+      for (let k = 0; k < 4; k++) {
+        total += weights[i * 4 + k]!
+        if (arms.has(joints[i * 4 + k]!)) share += weights[i * 4 + k]!
+      }
+      expect(total).toBeCloseTo(1, 5)
+      if (split.arm[i]) {
+        expect(share).toBeCloseTo(1, 5)
+        arm += 1
+      } else {
+        expect(share).toBe(0)
+        body += 1
+      }
+    }
+    expect(body).toBeGreaterThan(100)
+    expect(arm).toBeGreaterThan(20)
+
+    const { armRaiseDeg, armFlapRatio } = contract.interaction.carry
+    const moved = bodyMoveUnderArms(
+      geometry,
+      bones,
+      jointOf,
+      splits,
+      armRaiseDeg * (1 + armFlapRatio),
+      falloffM,
+    )
+    expect(moved).toBe(0)
   })
 })

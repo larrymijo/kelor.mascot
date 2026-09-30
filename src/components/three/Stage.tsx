@@ -125,6 +125,8 @@ export default function Stage({
     if (forced) useScene.getState().lockTier()
     return detected
   })
+  // Desktops (no coarse pointer) get the detailed full model, and sharper shadows to match.
+  const [desktop] = useState(() => !window.matchMedia('(pointer: coarse)').matches)
   const [inView, setInView] = useState(true)
   const [pageVisible, setPageVisible] = useState(true)
   const tier = useScene((s) => s.tier)
@@ -197,7 +199,10 @@ export default function Stage({
         <Backdrop />
         <LiveDriver />
         <CameraRig />
-        <StudioLights shadows={boot.shadows} shadowMapSize={bootTier === 'high' ? 2048 : 1024} />
+        <StudioLights
+          shadows={boot.shadows}
+          shadowMapSize={bootTier === 'high' || (desktop && bootTier === 'medium') ? 2048 : 1024}
+        />
         <Floor shadows={boot.shadows} />
         {children}
         <Effects tier={tier} />

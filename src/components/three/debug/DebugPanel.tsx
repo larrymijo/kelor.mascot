@@ -46,6 +46,8 @@ export default function DebugPanel() {
     plateGlow: range('plateGlow', 0, 5),
     skinCoat: range('skinCoat', 0, 1),
     skinSheen: range('skinSheen', 0, 1),
+    skinWrap: range('skinWrap', 0, 1),
+    skinSaturation: range('skinSaturation', 0.5, 1.6),
     ...Object.fromEntries(
       character.clips.required.map((clip) => [
         `play ${clip.name}`,

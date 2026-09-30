@@ -143,7 +143,15 @@ async function main(argv) {
           textures: {
             baseColor: image('basecolor'),
             orm: image('orm'),
-            normal: existsSync(join(folder, `normal.${ext}`)) ? image('normal') : undefined,
+            // The normal map comes as PNG: JPEG noise would cost the KTX2 encoder dearly.
+            normal: existsSync(join(folder, 'normal.png'))
+              ? {
+                  data: new Uint8Array(readFileSync(join(folder, 'normal.png'))),
+                  mimeType: 'image/png',
+                }
+              : existsSync(join(folder, `normal.${ext}`))
+                ? image('normal')
+                : undefined,
           },
         })
         writeFileSync(join(ROOT, contract.files[tier]), bytes)

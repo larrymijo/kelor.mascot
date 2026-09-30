@@ -1,8 +1,14 @@
 """Headless Blender step: normalised source -> per-tier bodies.
 
-For each tier it retopologises the source into quads, unwraps UVs, bakes
-the base colour (from the source), ambient occlusion and, on full, a normal
-map (from a clean voxel volume), builds the contract armature from
+It turns the source into one clean voxel volume and polishes the scan's
+lumps out of it (Taubin smoothing, which keeps the volume). For each tier it
+retopologises that volume into quads, unwraps UVs, bakes the base colour
+(from the source) and ambient occlusion. On full it also bakes the skin's
+detail: the polished forms, and crisp scales on top of them like the
+concept's (fit.json scales), a 3D cell pattern in object space so there are
+no seams, finer on the face, hands and feet, with wide plates on the belly
+(found from the baked colours). The grooves between scales darken the
+occlusion and roughen the ORM map. Then it builds the contract armature from
 build/model/rig.json and binds the body with automatic weights.
 
 Outputs, per tier, in <out>/<tier>/: body.glb (skinned mesh, no materials),
@@ -123,16 +129,18 @@ def voxel_remesh(obj, voxel_size):
     apply_modifier(obj, remesh)
 
 
-def build_volume(source, voxel_size):
-    """One closed, symmetric surface: voxel remesh, mirror +X onto -X, weld the seam.
+def build_volume(source, voxel_size, polish_settings, landmarks):
+    """One closed, symmetric, polished surface: voxel remesh, polish, mirror +X
+    onto -X, weld the seam. Polishing before the mirror keeps the symmetry exact.
 
     Returns the volume and whether it is exactly symmetric (Quadriflow's symmetry
     mode needs that). If the seam still leaves non-manifold edges, a second voxel
-    pass closes them at the cost of exact symmetry.
+    pass closes them at the cost of exact symmetry, and is polished again.
     """
     volume = duplicate(source, "volume")
     volume.data.materials.clear()
     voxel_remesh(volume, voxel_size)
+    polish(volume, polish_settings, landmarks)
     mirror = volume.modifiers.new("symmetry", "MIRROR")
     mirror.use_axis = (True, False, False)
     mirror.use_bisect_axis = (True, False, False)
@@ -146,6 +154,7 @@ def build_volume(source, voxel_size):
     if not symmetric:
         log(f"mirror seam left {broken} non-manifold edges; re-voxelising")
         voxel_remesh(volume, voxel_size)
+        polish(volume, polish_settings, landmarks)
         clean(volume, voxel_size * 0.25)
         broken = non_manifold_edges(volume)
     log(f"volume: {len(volume.data.polygons)} faces at {voxel_size} m voxels, "
@@ -155,20 +164,72 @@ def build_volume(source, voxel_size):
     return volume, symmetric
 
 
+def polish(obj, settings, landmarks):
+    """Taubin smoothing: a shrinking pass then an inflating one, repeated.
+
+    Bumps a few voxels wide (the scan's lumps) fade while the forms and the
+    volume stay, unlike plain smoothing, which melts the whole body a little
+    on every pass. It spares the feet and hands (settings keep), whose toes
+    and claws are small forms of their own. Symmetric on a symmetric mesh.
+    """
+    iterations = settings["iterations"]
+    if iterations <= 0:
+        return
+    mesh = obj.data
+    count = len(mesh.vertices)
+    buffer = np.empty(count * 3, dtype=np.float32)
+    mesh.vertices.foreach_get("co", buffer)
+    co = buffer.reshape(-1, 3).astype(np.float64)
+    edges = np.empty(len(mesh.edges) * 2, dtype=np.int32)
+    mesh.edges.foreach_get("vertices", edges)
+    a, b = edges.astype(np.int64).reshape(-1, 2).T
+    degree = np.maximum(np.bincount(np.concatenate([a, b]), minlength=count), 1)[:, None]
+    keep = settings["keep"]
+    blend = keep["blendM"]
+    strength = smoothstep(keep["feetM"], keep["feetM"] + blend, co[:, 2])
+    for side in (1, -1):
+        hx, hy, hz = landmarks["hand"]
+        hand = np.array(gltf_to_blender((side * abs(hx), hy, hz)))
+        near = np.linalg.norm(co - hand, axis=1)
+        strength *= smoothstep(keep["handM"], keep["handM"] + blend, near)
+    strength = strength[:, None]
+
+    def step(factor):
+        total = np.empty_like(co)
+        for k in range(3):
+            total[:, k] = np.bincount(a, weights=co[b, k], minlength=count) + np.bincount(
+                b, weights=co[a, k], minlength=count
+            )
+        return co + strength * factor * (total / degree - co)
+
+    before = co.copy()
+    for _ in range(iterations):
+        co = step(settings["lambda"])
+        co = step(settings["mu"])
+    mesh.vertices.foreach_set("co", co.astype(np.float32).ravel())
+    mesh.update()
+    moved = np.linalg.norm(co - before, axis=1)
+    log(f"polished {count} vertices over {iterations} passes: "
+        f"mean {moved.mean() * 1000:.2f} mm, max {moved.max() * 1000:.2f} mm")
+
+
 def retopologise(volume, symmetric, quads, smooth_iterations, name):
     low = duplicate(volume, name)
     result = set()
     for use_symmetry in ([True, False] if symmetric else [False]):
         activate(low)
-        result = bpy.ops.object.quadriflow_remesh(
-            mode="FACES",
-            target_faces=quads,
-            use_mesh_symmetry=use_symmetry,
-            use_preserve_sharp=False,
-            use_preserve_boundary=False,
-            smooth_normals=False,
-            seed=0,
-        )
+        try:
+            result = bpy.ops.object.quadriflow_remesh(
+                mode="FACES",
+                target_faces=quads,
+                use_mesh_symmetry=use_symmetry,
+                use_preserve_sharp=False,
+                use_preserve_boundary=False,
+                smooth_normals=False,
+                seed=0,
+            )
+        except RuntimeError as error:
+            result = {str(error).strip()}
         if "FINISHED" in result:
             break
         log(f"Quadriflow {name} with symmetry={use_symmetry} returned {result}")
@@ -244,6 +305,249 @@ def bake(kind, low, image, high=None, samples=4, fit=None):
     log(f"baked {kind} {image.size[0]}px on {low.name} in {time.time() - started:.1f}s")
 
 
+def bake_material(kind, low, material, image):
+    """Bake the low mesh through its own material (no selected-to-active):
+    NORMAL keeps the material's normal and bump nodes, EMIT its emission."""
+    scene = bpy.context.scene
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = 4
+    scene.cycles.use_denoising = False
+    tree = material.node_tree
+    target = tree.nodes.new("ShaderNodeTexImage")
+    target.image = image
+    tree.nodes.active = target
+    low.data.materials.clear()
+    low.data.materials.append(material)
+    only_render(low)
+    activate(low)
+    kwargs = {"type": kind, "margin": 8, "use_selected_to_active": False}
+    if kind == "NORMAL":
+        kwargs["normal_space"] = "TANGENT"
+    started = time.time()
+    bpy.ops.object.bake(**kwargs)
+    tree.nodes.remove(target)
+    log(f"baked {kind} {image.size[0]}px through {material.name} in {time.time() - started:.1f}s")
+
+
+def smoothstep(edge0, edge1, x):
+    t = np.clip((x - edge0) / (edge1 - edge0), 0.0, 1.0)
+    return t * t * (3 - 2 * t)
+
+
+def segment_distances(points, a, b):
+    ab = b - a
+    t = np.clip(((points - a) @ ab) / max(float(ab @ ab), 1e-12), 0.0, 1.0)
+    return np.linalg.norm(points - (a + t[:, None] * ab), axis=1)
+
+
+def paint_scale_sizes(low, rig, scales):
+    """How big the scales are at each vertex, as the "scale_size" attribute:
+    fine within limbReachM of the forearms, hands, shins and feet and within
+    faceReachM of the snout tip, coarse elsewhere, blended over blendM."""
+    mesh = low.data
+    co = np.empty(len(mesh.vertices) * 3, dtype=np.float32)
+    mesh.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3).astype(np.float64)
+    fine = np.zeros(len(co))
+    reach, blend = scales["limbReachM"], scales["blendM"]
+    for bone in rig["bones"]:
+        if bone["role"] not in ("arm", "leg") or bone["name"].startswith("thigh"):
+            continue
+        head = np.array(gltf_to_blender(bone["restHead"]))
+        tail = np.array(gltf_to_blender(bone["tail"]))
+        near = 1 - smoothstep(reach, reach + blend, segment_distances(co, head, tail))
+        fine = np.maximum(fine, near)
+    snout = np.array(gltf_to_blender(rig["landmarks"]["snoutTip"]))
+    face = scales["faceReachM"]
+    near = 1 - smoothstep(face, face + blend, np.linalg.norm(co - snout, axis=1))
+    fine = np.maximum(fine, near)
+    size = scales["coarseM"] + (scales["fineM"] - scales["coarseM"]) * fine
+    attribute = mesh.attributes.new("scale_size", "FLOAT", "POINT")
+    attribute.data.foreach_set("value", size.astype(np.float32))
+    log(f"scale sizes: {np.mean(fine > 0.5) * 100:.0f}% of the skin fine")
+
+
+def read_pixels(image):
+    width, height = image.size
+    pixels = np.empty(width * height * 4, dtype=np.float32)
+    image.pixels.foreach_get(pixels)
+    return pixels.reshape(height, width, 4)
+
+
+def belly_tone(base, spread):
+    """Where the belly's lighter tone is, 0 to 1, read from the baked base
+    colour: Otsu's threshold between the body's and the belly's tones,
+    softened over spread and blurred a little so the plates fade in."""
+    pixels = read_pixels(base)
+    height, width = pixels.shape[:2]
+    tone = 0.2126 * pixels[..., 0] + 0.7152 * pixels[..., 1] + 0.0722 * pixels[..., 2]
+    baked = tone[tone > 0.02]
+    counts, edges = np.histogram(baked, bins=128, range=(0.0, 1.0))
+    centres = (edges[:-1] + edges[1:]) / 2
+    weight = np.cumsum(counts)
+    mean = np.cumsum(counts * centres)
+    total, total_mean = weight[-1], mean[-1]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        between = (total_mean * weight - mean * total) ** 2 / (weight * (total - weight))
+    threshold = float(centres[np.nanargmax(between[:-1])])
+    mask = smoothstep(threshold - spread, threshold + spread, tone)
+    for _ in range(2):
+        padded = np.pad(mask, 1, mode="edge")
+        mask = sum(padded[dy : dy + height, dx : dx + width] for dy in range(3) for dx in range(3)) / 9
+    log(f"belly: tone threshold {threshold:.3f}, {np.mean(mask[tone > 0.02] > 0.5) * 100:.0f}% of the map")
+    return mask, tone > 0.02
+
+
+def mask_image(mask, name):
+    height, width = mask.shape
+    image = new_image(name, width, non_color=True)
+    out = np.ones((height, width, 4), dtype=np.float32)
+    out[..., 0] = out[..., 1] = out[..., 2] = mask
+    image.pixels.foreach_set(out.ravel())
+    image.update()
+    return image
+
+
+def flatten_colours(base, belly, baked, strength):
+    """The source's colours carry shading baked in by the image-to-3D service:
+    blotches on the cheeks and shoulders. Pull the body towards its median
+    purple and the belly towards its median lavender by strength, keeping the
+    edge between them (the belly mask) and a share of the detail."""
+    pixels = read_pixels(base)
+    body_tone = np.median(pixels[baked & (belly < 0.1)][:, :3], axis=0)
+    belly_tone_ = np.median(pixels[baked & (belly > 0.9)][:, :3], axis=0)
+    target = body_tone * (1 - belly[..., None]) + belly_tone_ * belly[..., None]
+    pixels[..., :3] = np.where(
+        baked[..., None], pixels[..., :3] * (1 - strength) + target * strength, pixels[..., :3]
+    )
+    base.pixels.foreach_set(pixels.ravel())
+    base.update()
+    log(f"flattened colours by {strength}: body {np.round(body_tone, 3)}, belly {np.round(belly_tone_, 3)}")
+
+
+def scale_material(forms, belly, landmarks, scales):
+    """The skin's detail, as a material on the low mesh: the polished forms
+    (a tangent normal map) with the scales bumped on top. Its surface is the
+    normal to bake; `emission` switches it to the scales' height instead."""
+    material = bpy.data.materials.new("scales")
+    material.use_nodes = True
+    tree = material.node_tree
+    nodes, links = tree.nodes, tree.links
+    nodes.clear()
+
+    def feed(socket, value):
+        if isinstance(value, bpy.types.NodeSocket):
+            links.new(value, socket)
+        else:
+            socket.default_value = value
+
+    def op(operation, a, b=None):
+        node = nodes.new("ShaderNodeMath")
+        node.operation = operation
+        feed(node.inputs[0], a)
+        if b is not None:
+            feed(node.inputs[1], b)
+        return node.outputs[0]
+
+    def ramp(value, low, high):
+        """0 below low, 1 above high, smoothstep between."""
+        node = nodes.new("ShaderNodeMapRange")
+        node.interpolation_type = "SMOOTHSTEP"
+        feed(node.inputs["Value"], value)
+        node.inputs["From Min"].default_value = low
+        node.inputs["From Max"].default_value = high
+        return node.outputs["Result"]
+
+    coords = nodes.new("ShaderNodeTexCoord").outputs["Object"]
+    size = nodes.new("ShaderNodeAttribute")
+    size.attribute_name = "scale_size"
+    density = op("DIVIDE", 1.0, size.outputs["Fac"])
+
+    # Scales: domed cells, parted by narrow grooves.
+    distances = {}
+    for feature in ("F1", "DISTANCE_TO_EDGE"):
+        cells = nodes.new("ShaderNodeTexVoronoi")
+        cells.voronoi_dimensions = "3D"
+        cells.feature = feature
+        links.new(coords, cells.inputs["Vector"])
+        links.new(density, cells.inputs["Scale"])
+        cells.inputs["Randomness"].default_value = scales["randomness"]
+        if "Detail" in cells.inputs:
+            cells.inputs["Detail"].default_value = 0.0
+        distances[feature] = cells.outputs["Distance"]
+    walls = ramp(distances["DISTANCE_TO_EDGE"], 0.0, scales["grooveWidth"])
+    dome = op("SUBTRACT", 1.0, op("MULTIPLY", distances["F1"], scales["dome"]))
+    skin = op("MULTIPLY", walls, dome)
+
+    # Belly plates: rows of wide plates, laid over the front like bricks.
+    plates_spec = scales["belly"]
+    xyz = nodes.new("ShaderNodeSeparateXYZ")
+    links.new(coords, xyz.inputs[0])
+    # Rows curve up towards the sides with the round belly, and wobble a little.
+    wobble = nodes.new("ShaderNodeTexNoise")
+    links.new(coords, wobble.inputs["Vector"])
+    wobble.inputs["Scale"].default_value = plates_spec["warpScale"]
+    shift = op("MULTIPLY", op("SUBTRACT", wobble.outputs["Fac"], 0.5), plates_spec["warpM"])
+    across = op("ADD", xyz.outputs["X"], shift)
+    curve = op("MULTIPLY", op("MULTIPLY", xyz.outputs["X"], xyz.outputs["X"]), plates_spec["curve"])
+    rows = op("ADD", op("ADD", xyz.outputs["Z"], curve), shift)
+    front = nodes.new("ShaderNodeCombineXYZ")
+    links.new(across, front.inputs["X"])
+    links.new(rows, front.inputs["Y"])
+    brick = nodes.new("ShaderNodeTexBrick")
+    brick.offset = 0.5
+    brick.offset_frequency = 2
+    links.new(front.outputs[0], brick.inputs["Vector"])
+    brick.inputs["Scale"].default_value = 1.0
+    brick.inputs["Mortar Size"].default_value = plates_spec["grooveM"]
+    brick.inputs["Mortar Smooth"].default_value = 0.8
+    brick.inputs["Brick Width"].default_value = plates_spec["widthM"]
+    brick.inputs["Row Height"].default_value = plates_spec["rowM"]
+    # Deep grooves between the rows, each row gently domed; the joints
+    # between plates in a row are shallower (jointDepth), as on a crocodile.
+    along = op("FRACT", op("DIVIDE", rows, plates_spec["rowM"]))
+    to_edge = op("MINIMUM", along, op("SUBTRACT", 1.0, along))
+    row = ramp(to_edge, 0.0, plates_spec["grooveM"] / plates_spec["rowM"])
+    domed = op("ADD", 0.7, op("MULTIPLY", op("SINE", op("MULTIPLY", along, math.pi)), 0.3))
+    joints = op("MULTIPLY", brick.outputs["Fac"], plates_spec["jointDepth"])
+    plates = op("MAXIMUM", op("SUBTRACT", op("MULTIPLY", row, domed), joints), 0.0)
+
+    # Where the belly is: its tone, between the legs and the neck, near the middle.
+    tone = nodes.new("ShaderNodeTexImage")
+    tone.image = belly
+    fade = plates_spec["fadeM"]
+    up = xyz.outputs["Z"]
+    within = op("MULTIPLY", tone.outputs["Color"], ramp(up, landmarks["crotchY"], landmarks["crotchY"] + fade))
+    within = op("MULTIPLY", within, op("SUBTRACT", 1.0, ramp(up, landmarks["neckY"] - fade, landmarks["neckY"])))
+    side = op("ABSOLUTE", xyz.outputs["X"])
+    half = plates_spec["halfWidthM"]
+    within = op("MULTIPLY", within, op("SUBTRACT", 1.0, ramp(side, half - fade, half)))
+    height = op("ADD", skin, op("MULTIPLY", within, op("SUBTRACT", plates, skin)))
+
+    forms_node = nodes.new("ShaderNodeTexImage")
+    forms_node.image = forms
+    normal_map = nodes.new("ShaderNodeNormalMap")
+    normal_map.space = "TANGENT"
+    links.new(forms_node.outputs["Color"], normal_map.inputs["Color"])
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = scales["strength"]
+    bump.inputs["Distance"].default_value = scales["depthM"]
+    links.new(height, bump.inputs["Height"])
+    links.new(normal_map.outputs["Normal"], bump.inputs["Normal"])
+    surface = nodes.new("ShaderNodeBsdfPrincipled")
+    links.new(bump.outputs["Normal"], surface.inputs["Normal"])
+    glow = nodes.new("ShaderNodeEmission")
+    links.new(height, glow.inputs["Color"])
+    output = nodes.new("ShaderNodeOutputMaterial")
+    links.new(surface.outputs[0], output.inputs["Surface"])
+
+    def emission(on):
+        links.new((glow if on else surface).outputs[0], output.inputs["Surface"])
+
+    return material, emission
+
+
 def map_format(fit, tier):
     """Container for this tier's baked maps: WebP ships as is, JPEG is the
     input the KTX2 conversion reads later."""
@@ -259,13 +563,21 @@ def save_image(image, path, file_format, quality=90):
         image.save()
 
 
-def compose_orm(ao, size, roughness):
+def compose_orm(ao, size, roughness, height=None, cavity=None):
+    """R: occlusion, G: roughness. With the scales' height, the grooves
+    between them get darker (cavity ao) and rougher (cavity roughness)."""
     pixels = np.empty(size * size * 4, dtype=np.float32)
     ao.pixels.foreach_get(pixels)
     out = np.zeros_like(pixels)
     out[0::4] = pixels[0::4]
     out[1::4] = roughness
     out[3::4] = 1.0
+    if height is not None:
+        heights = np.empty(size * size * 4, dtype=np.float32)
+        height.pixels.foreach_get(heights)
+        groove = 1 - smoothstep(0.0, 0.5, heights[0::4])
+        out[0::4] *= 1 - cavity["ao"] * groove
+        out[1::4] = np.clip(roughness + cavity["roughness"] * groove, 0.0, 1.0)
     orm = new_image("orm", size, non_color=True)
     orm.pixels.foreach_set(out)
     orm.update()
@@ -342,7 +654,9 @@ def main():
     deform_names = [b["name"] for b in rig["bones"] if b["deform"]]
 
     source = import_source(os.path.join(out, "normalized.glb"))
-    volume, symmetric = build_volume(source, fit["retopo"]["voxelSizeM"])
+    volume, symmetric = build_volume(
+        source, fit["retopo"]["voxelSizeM"], fit["retopo"]["polish"], rig["landmarks"]
+    )
     report = {"blender": bpy.app.version_string, "tiers": {}}
 
     for tier in ("full", "lite"):
@@ -364,17 +678,32 @@ def main():
 
         base = new_image(f"basecolor_{tier}", fit["bake"]["baseColorSize"][tier], non_color=False)
         bake("DIFFUSE", low, base, high=source, samples=4, fit=fit)
+        belly, baked = belly_tone(base, fit["scales"]["belly"]["toneSpread"])
+        flatten_colours(base, belly, baked, fit["bake"]["flatten"])
         save_image(base, os.path.join(folder, f"basecolor.{ext}"), fmt, fit["bake"]["jpegQuality"])
 
         ao = new_image(f"ao_{tier}", size, non_color=True)
         bake("AO", low, ao, samples=fit["bake"]["samples"])
-        orm = compose_orm(ao, size, fit["bake"]["roughness"])
-        save_image(orm, os.path.join(folder, f"orm.{ext}"), fmt, 92)
+        height = None
 
         if tier == "full":
-            normal = new_image(f"normal_{tier}", fit["bake"]["normalSize"], non_color=True)
-            bake("NORMAL", low, normal, high=volume, samples=4, fit=fit)
-            save_image(normal, os.path.join(folder, f"normal.{ext}"), fmt, 95)
+            # The polished forms, then the scales bumped on top of them.
+            normal_size = fit["bake"]["normalSize"]
+            forms = new_image(f"forms_{tier}", normal_size, non_color=True)
+            bake("NORMAL", low, forms, high=volume, samples=4, fit=fit)
+            scales = fit["scales"]
+            paint_scale_sizes(low, rig, scales)
+            material, emission = scale_material(forms, mask_image(belly, "belly"), rig["landmarks"], scales)
+            normal = new_image(f"normal_{tier}", normal_size, non_color=True)
+            bake_material("NORMAL", low, material, normal)
+            # Lossless: JPEG noise in a normal map costs the KTX2 encoder dearly.
+            save_image(normal, os.path.join(folder, "normal.png"), "PNG")
+            height = new_image(f"height_{tier}", size, non_color=True)
+            emission(True)
+            bake_material("EMIT", low, material, height)
+
+        orm = compose_orm(ao, size, fit["bake"]["roughness"], height, fit.get("scales", {}).get("cavity"))
+        save_image(orm, os.path.join(folder, f"orm.{ext}"), fmt, 92)
 
         armature = build_armature(rig)
         weights = bind(low, armature, deform_names)
