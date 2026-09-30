@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { hatch } from './helpers'
 
 /**
  * The release gate's accessibility checks that the other specs do not cover:
@@ -8,13 +9,12 @@ import { expect, test, type Page } from '@playwright/test'
  * one profile runs them.
  */
 
-const stage = (page: Page) => page.locator('[data-scene-state]')
 const heading = (page: Page) => page.getByRole('heading', { level: 1, name: 'Conoce a Kelo' })
-const contact = (page: Page) => page.getByRole('link', { name: 'Escríbenos' })
+const contact = (page: Page) => page.getByRole('link', { name: 'Hablemos' })
 
 /** The stage is drawing, he has hatched, and the words have faded in around him. */
 async function liveReady(page: Page) {
-  await expect(stage(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 40_000 })
+  await hatch(page, 40_000)
   await expect(page.locator('html.live')).toHaveCount(1)
   await page.waitForTimeout(1_000)
 }
@@ -46,15 +46,23 @@ test.describe('accessibility', () => {
         - link "KELOR Interactive":
           - img "KELOR Interactive"
         - button "Sonido"
+        - link "Hablemos"
         - button "Tocar a Kelo"
         - paragraph: /Intro o Espacio/
         - region "Conoce a Kelo":
           - heading "Conoce a Kelo" [level=1]
           - paragraph: la mascota de KELOR Interactive
+        - group "Controles de Kelo":
+          - button "Saludar"
+          - button "Saltar"
+          - button "Rugir"
+          - button "Mirar"
+          - button "Morder"
+          - button /^Luz/
+          - button "Giro 360°"
+          - button "Rayos X"
+          - button "Centrar"
         - region "¿Quieres una web a medida?":
-          - paragraph:
-            - text: ¿Quieres una web a medida?
-            - link "Escríbenos"
           - paragraph: /© \\d{4} KELOR Interactive/
     `)
   })

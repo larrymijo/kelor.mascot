@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { hatch } from './helpers'
 
 /**
  * What a flaky network or a busy phone does to the page: failed downloads,
@@ -16,7 +17,7 @@ async function expectReadable(page: Page) {
   await expect(page.locator('html.live')).toHaveCount(0)
   await expect(brandMark(page)).toHaveClass(/opacity-100/)
   await expect(page.getByRole('heading', { level: 1, name: 'Conoce a Kelo' })).toBeAttached()
-  const link = page.getByRole('link', { name: 'Escríbenos' })
+  const link = page.getByRole('link', { name: 'Hablemos' })
   await link.scrollIntoViewIfNeeded()
   await expect(link).toBeVisible()
 }
@@ -50,7 +51,7 @@ test.describe('resilience', () => {
     test.skip(testInfo.project.name !== 'desktop', 'One profile is enough')
     await page.route('**/models/mascot.full.glb*', (route) => route.abort())
     await page.goto('/?tier=medium')
-    await expect(stage(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
+    await hatch(page, 30_000)
     await page.waitForTimeout(5_000)
     await expect(stage(page)).toHaveAttribute('data-scene-state', 'ready')
     await expect(stage(page)).toHaveAttribute('data-model', 'lite')
@@ -62,7 +63,7 @@ test.describe('resilience', () => {
     const errors: string[] = []
     page.on('pageerror', (error) => errors.push(error.message))
     await page.goto('/')
-    await expect(stage(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
+    await hatch(page, 30_000)
     await expect(brandMark(page)).toHaveClass(/opacity-0/)
 
     // The extension is only reachable while the context is alive: keep it.

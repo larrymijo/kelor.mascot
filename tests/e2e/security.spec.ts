@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { hatch } from './helpers'
 
 /**
  * The Content Security Policy (src/lib/security/csp.ts) holds for the whole
@@ -25,7 +26,7 @@ test.describe('security headers', () => {
     expect(policy).toContain("frame-ancestors 'none'")
 
     const stage = page.locator('[data-scene-state]')
-    await expect(stage).toHaveAttribute('data-scene-state', 'ready', { timeout: 40_000 })
+    await hatch(page, 40_000)
     await expect(stage).toHaveAttribute('data-model', 'full', { timeout: 40_000 })
     await expect(page.locator('html.live')).toHaveCount(1)
     await page.getByRole('button', { name: 'Sonido' }).click()

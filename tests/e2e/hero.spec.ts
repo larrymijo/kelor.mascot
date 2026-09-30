@@ -1,6 +1,7 @@
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test'
+import { hatch } from './helpers'
 
-const CTA = /Escríbenos/
+const CTA = /Hablemos/
 const scene = (page: Page) => page.locator('[data-scene-state]')
 
 /** Console errors, ignoring GPU driver shader-compiler chatter. */
@@ -28,12 +29,12 @@ test.describe('3D hero', () => {
     await expect(cta).toBeVisible()
     expect((await cta.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
 
-    await expect(scene(page)).toHaveAttribute('data-scene-state', /egg|hatching|ready/, {
+    await expect(scene(page)).toHaveAttribute('data-scene-state', /waiting|egg|hatching|ready/, {
       timeout: 30_000,
     })
     await page.screenshot({ path: `scripts/review/out/hero-egg-${testInfo.project.name}.png` })
 
-    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
+    await hatch(page, 30_000)
     await page.waitForTimeout(2_800) // let the hatch clip settle into idle
     await page.screenshot({ path: `scripts/review/out/hero-ready-${testInfo.project.name}.png` })
 
@@ -44,19 +45,27 @@ test.describe('3D hero', () => {
     expect(errors).toEqual([])
   })
 
-  test('keyboard users reach the brand mark, the sound switch, Kelo and the contact link, with a visible focus ring', async ({
+  test('keyboard users reach the brand mark, the sound switch and the contact link, drop the egg and land on Kelo, with a visible focus ring', async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name === 'mobile', 'No hardware keyboard on the phone profile')
+    test.setTimeout(90_000)
     await page.goto('/')
-    // The sound switch and the Kelo button exist only in live mode, once the stage draws.
-    await expect(page.locator('html.live')).toHaveCount(1, { timeout: 40_000 })
+    // The sound switch and the drop button exist only in live mode, once the stage draws.
+    await expect(page.locator('html.waiting')).toHaveCount(1, { timeout: 40_000 })
     const focused = page.locator(':focus')
-    for (const name of [/KELOR Interactive/, /Sonido/, /Tocar a Kelo/, CTA]) {
+    const ringed = async () =>
+      expect(await focused.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe('none')
+    for (const name of [/KELOR Interactive/, /Sonido/, CTA, /Soltar el huevo/]) {
       await page.keyboard.press('Tab')
       await expect(focused).toHaveAccessibleName(name)
-      expect(await focused.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe('none')
+      await ringed()
     }
+    // Enter drops the egg in the middle; once he hatches, the focus is on him.
+    await page.keyboard.press('Enter')
+    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 40_000 })
+    await expect(focused).toHaveAccessibleName(/Tocar a Kelo/)
+    await ringed()
   })
 
   test('cuts straight to the mascot with reduced motion', async ({ page }) => {
@@ -75,7 +84,7 @@ test.describe('3D hero', () => {
       })
     })
     await page.goto('/')
-    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
+    await hatch(page, 30_000)
     expect(seen.has('hatching')).toBe(false)
     const animation = await page
       .getByTestId('logo-glow')
@@ -90,14 +99,14 @@ test.describe('preview debug panel', () => {
     const errors = collectErrors(page)
 
     await page.goto('/')
-    await expect(scene(page)).toHaveAttribute('data-scene-state', /egg|hatching|ready/, {
+    await expect(scene(page)).toHaveAttribute('data-scene-state', /waiting|egg|hatching|ready/, {
       timeout: 30_000,
     })
     await expect(page.getByText('KELOR debug')).toHaveCount(0)
 
     await page.goto('/?debug')
     await expect(page.getByText('KELOR debug')).toBeVisible({ timeout: 30_000 })
-    await expect(scene(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
+    await hatch(page, 30_000)
     await page.getByRole('button', { name: 'play roar' }).click()
     await page.waitForTimeout(800)
     await page.screenshot({ path: 'scripts/review/out/debug-roar-desktop.png' })
