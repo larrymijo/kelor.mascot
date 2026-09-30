@@ -5,7 +5,7 @@ import { copy } from '@/lib/copy'
 import { onSoundMode, setSoundMode, soundMode, wakeAudio } from '@/lib/sound/control'
 
 /**
- * The sound switch, in the corner opposite the studio mark. It shows off
+ * The sound switch, in the top bar opposite the studio mark. It shows off
  * until pressed: the page starts silent, except for the bite
  * (src/lib/sound/control.ts). Pressing it turns everything on, creating the
  * audio engine inside the click if a press on Kelo has not yet; pressing it
@@ -31,7 +31,7 @@ export function SoundToggle() {
       aria-pressed={on}
       data-sound={mode}
       onClick={toggle}
-      className="live-control forced-plate top-4 right-4 z-30 min-h-11 min-w-11 items-center justify-center rounded-md text-ink-300 transition-colors duration-200 ease-out-quart hover:text-ink-50 aria-pressed:text-ink-50 sm:top-6 sm:right-6"
+      className="live-control forced-plate min-h-11 min-w-11 items-center justify-center rounded-md text-ink-300 transition-colors duration-200 ease-out-quart hover:text-ink-50 aria-pressed:text-ink-50"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" />

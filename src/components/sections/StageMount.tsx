@@ -27,7 +27,7 @@ type SceneState = 'loading' | BootPhase | 'unavailable'
 const BRAND_MARK = logoMarkDataUri()
 
 /** While the stage draws, the page is in live mode (html.live, src/app/globals.css). */
-const DRAWING = new Set<SceneState>(['egg', 'hatching', 'ready'])
+const DRAWING = new Set<SceneState>(['waiting', 'egg', 'hatching', 'ready'])
 
 /** How long a lost GPU context may take to come back before the scene gives up. */
 const CONTEXT_GRACE_MS = 5_000
@@ -50,14 +50,25 @@ export function StageMount() {
   const [clip, setClip] = useState<string | null>(null)
 
   // Live mode while the stage draws; a failed stage leaves the plain document.
+  // Until the egg is dropped, html.waiting shows the prompt to drop it; html.hatched, the dock.
   useEffect(() => {
-    document.documentElement.classList.toggle('live', DRAWING.has(state))
+    const root = document.documentElement
+    root.classList.toggle('live', DRAWING.has(state))
+    root.classList.toggle('waiting', state === 'waiting')
+    root.classList.toggle('hatched', state === 'ready')
   }, [state])
-  useEffect(() => () => document.documentElement.classList.remove('live'), [])
+  useEffect(
+    () => () => {
+      document.documentElement.classList.remove('live')
+      document.documentElement.classList.remove('waiting')
+      document.documentElement.classList.remove('hatched')
+    },
+    [],
+  )
 
   const onFirstFrame = useCallback(() => {
     setShown(true)
-    setState((current) => (current === 'loading' ? 'egg' : current))
+    setState((current) => (current === 'loading' ? 'waiting' : current))
   }, [])
   const onPhaseChange = useCallback((phase: BootPhase) => setState(phase), [])
   // No WebGL, a chunk or model that failed to load, or a lost context that

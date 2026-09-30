@@ -1,13 +1,14 @@
 /**
  * Site copy (Spanish). Kept in one place so a future translation or copy
  * review touches a single file. The page is deliberately almost wordless:
- * the mascot carries it (docs/scroll-script.md).
+ * a dark stage where the visitor drops an egg and Kelo hatches
+ * (docs/interaction-script.md).
  */
 export const copy = {
   meta: {
     title: 'KELOR Interactive · Conoce a Kelo',
     description:
-      'Conoce a Kelo, la mascota 3D de KELOR Interactive, estudio de desarrollo web en Ecuador.',
+      'Kelo, la mascota 3D de KELOR Interactive: suelta el huevo y míralo nacer, vivo en tu navegador. Así construimos webs interactivas a medida en Ecuador.',
   },
   brand: 'KELOR Interactive',
   /** The studio's site; switch to the final domain once it exists. */
@@ -15,11 +16,17 @@ export const copy = {
   hero: {
     /** Accessible description of the 3D scene. */
     sceneLabel:
-      'Escena 3D: de un huevo de dinosaurio nace Kelo, un pequeño dinosaurio morado que te sigue con la mirada. Puedes tocarlo y, con el ratón, arrastrarlo; si lo molestas mucho, muerde.',
+      'Escena 3D interactiva sobre un fondo oscuro: sueltas un huevo de dinosaurio y de él nace Kelo, un pequeño dinosaurio morado que te sigue con la mirada. Puedes tocarlo; con el ratón también puedes arrastrarlo, girar la cámara y darle órdenes con los controles.',
+  },
+  /** The first thing on the stage: drop the egg. */
+  drop: {
+    label: 'Soltar el huevo',
+    pointer: 'Haz clic para soltar el huevo',
+    touch: 'Toca para soltar el huevo',
   },
   /** What you can do with Kelo, shown until you first touch him. */
   hint: {
-    pointer: 'Tócalo o arrástralo',
+    pointer: 'Arrastra · Gira · Acerca',
     touch: 'Tócalo',
   },
   /** The keyboard's way to him: a button over him. */
@@ -31,11 +38,33 @@ export const copy = {
     title: 'Conoce a Kelo',
     line: 'la mascota de KELOR Interactive',
   },
+  cta: {
+    nav: 'Hablemos',
+  },
   contact: {
     question: '¿Quieres una web a medida?',
-    link: 'Escríbenos',
     // The studio's contact page; switch to the final domain once it exists.
     href: 'https://kelor-interactive.vercel.app/contacto',
+  },
+  /** The desktop sandbox's dock: icons, named here for tooltips and screen readers. */
+  showcase: {
+    dock: {
+      label: 'Controles de Kelo',
+      actions: { wave: 'Saludar', jump: 'Saltar', roar: 'Rugir', look: 'Mirar', bite: 'Morder' },
+      light: 'Luz',
+      lights: { studio: 'Estudio', sunset: 'Atardecer', neon: 'Neón' },
+      view: { spin: 'Giro 360°', xray: 'Rayos X', reset: 'Centrar' },
+    },
+  },
+  /** The pixel runner, after the ninth tap on a phone. */
+  game: {
+    label: 'Minijuego: Kelo esquiva bichos',
+    title: 'KELO RUN',
+    start: 'Toca para empezar',
+    over: 'Fin del juego',
+    again: 'Toca para jugar otra vez',
+    close: 'Cerrar el minijuego',
+    help: 'Toca la pantalla, o pulsa Espacio, para saltar los bichos.',
   },
   notFound: {
     title: 'Página no encontrada',
