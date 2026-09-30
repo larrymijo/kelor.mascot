@@ -1,4 +1,4 @@
-Kelo model pipeline, 2026-09-30T12:58:55.833Z
+Kelo model pipeline, 2026-09-30T13:08:36.218Z
 
 == 1. normalize
 {"sourceHeight":1.903,"scale":0.6307,"feetCentre":[0.006,0.219],"triangles":145814,"meshes":1}
@@ -10,83 +10,86 @@ Kelo model pipeline, 2026-09-30T12:58:55.833Z
 
 == 3. body
 $ /home/runner/blender/blender -b --factory-startup --python-exit-code 1 -P scripts/blender/body.py -- --root /home/runner/work/kelor.mascot/kelor.mascot --out build/model
-12:58:58 | INFO: Data are loaded, start creating Blender stuff
-12:58:58 | INFO: Blender create Mesh node output_unwrapped
-12:58:59 | INFO: glTF import finished in 0.40s
+13:08:39 | INFO: Data are loaded, start creating Blender stuff
+13:08:39 | INFO: Blender create Mesh node output_unwrapped
+13:08:39 | INFO: glTF import finished in 0.40s
 [body     0.6s] source: 145814 faces, 1 material(s)
-[body     2.1s] polished 98392 vertices over 40 passes: mean 0.50 mm, max 3.02 mm
-[body     2.6s] volume: 97972 faces at 0.006 m voxels, 0 non-manifold edges, symmetric=True
+[body     1.9s] polished 98392 vertices over 40 passes: mean 0.50 mm, max 3.02 mm
+[body     2.4s] volume: 97972 faces at 0.006 m voxels, 0 non-manifold edges, symmetric=True
 Info: QuadriFlow: Remeshing completed
-[body    17.7s] body_full: 19814 faces, 39628 triangles (target 20000 quads)
+[body    17.3s] body_full: 19814 faces, 39628 triangles (target 20000 quads)
 /home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py:263: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
   material.use_nodes = True
 Info: Baking map saved to internal image, save it externally or pack it
-[body    25.6s] baked DIFFUSE 2048px on body_full in 6.4s
+[body    25.1s] baked DIFFUSE 2048px on body_full in 6.4s
+[body    25.2s] belly: tone threshold 0.434, 18% of the map
+[body    25.6s] flattened colours by 0.6: body [0.384 0.29  0.608], belly [0.655 0.518 0.733]
 Info: Baking map saved to internal image, save it externally or pack it
-[body    42.5s] baked AO 2048px on body_full in 16.9s
+[body    42.4s] baked AO 2048px on body_full in 16.7s
 Info: Baking map saved to internal image, save it externally or pack it
-[body    44.4s] baked NORMAL 2048px on body_full in 1.9s
-[body    44.4s] scale sizes: 18% of the skin fine
-[body    44.5s] belly: tone threshold 0.434, 17% of the map
-/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py:397: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+[body    44.3s] baked NORMAL 2048px on body_full in 1.9s
+[body    44.3s] scale sizes: 18% of the skin fine
+/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py:424: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
   material.use_nodes = True
 Info: Baking map saved to internal image, save it externally or pack it
-[body    65.3s] baked NORMAL 2048px through scales in 20.7s
+[body    66.7s] baked NORMAL 2048px through scales in 22.3s
 Info: Baking map saved to internal image, save it externally or pack it
-[body    71.9s] baked EMIT 2048px through scales in 6.5s
+[body    74.0s] baked EMIT 2048px through scales in 7.0s
 Info: 11264 vertex weights limited
-[body    74.0s] weights: 0 unweighted vertices, 0 empty bone groups
+[body    76.0s] weights: 0 unweighted vertices, 0 empty bone groups
 INFO Draco is available, use library at /home/runner/blender/lib/libbf_intern_draco_bridge.so
 INFO MeshOptimizer is available, use library at /home/runner/blender/lib/libbf_intern_meshopt_bridge.so
-13:00:12 | INFO: Starting glTF 2.0 export
-13:00:12 | INFO: Extracting primitive: body
-13:00:12 | INFO: Primitives created: 1
-13:00:12 | INFO: Finished glTF 2.0 export in 0.12535881996154785 s
+13:09:55 | INFO: Starting glTF 2.0 export
+13:09:55 | INFO: Extracting primitive: body
+13:09:55 | INFO: Primitives created: 1
+13:09:55 | INFO: Finished glTF 2.0 export in 0.1251990795135498 s
 
-[body    74.2s] full done in 71.7s
+[body    76.3s] full done in 73.9s
 Info: QuadriFlow: Remeshing completed
-[body    77.8s] body_lite: 1995 faces, 3990 triangles (target 2400 quads)
+[body    79.8s] body_lite: 1995 faces, 3990 triangles (target 2400 quads)
 Info: Baking map saved to internal image, save it externally or pack it
-[body    79.6s] baked DIFFUSE 512px on body_lite in 0.9s
+[body    81.6s] baked DIFFUSE 512px on body_lite in 0.8s
+[body    81.6s] belly: tone threshold 0.434, 17% of the map
+[body    81.7s] flattened colours by 0.6: body [0.384 0.29  0.608], belly [0.655 0.518 0.733]
 Info: Baking map saved to internal image, save it externally or pack it
-[body    81.0s] baked AO 512px on body_lite in 1.4s
+[body    83.0s] baked AO 512px on body_lite in 1.3s
 Info: 1149 vertex weights limited
-[body    81.2s] weights: 0 unweighted vertices, 0 empty bone groups
-13:00:19 | INFO: Starting glTF 2.0 export
-13:00:19 | INFO: Extracting primitive: body.001
-13:00:19 | INFO: Primitives created: 1
-13:00:19 | INFO: Finished glTF 2.0 export in 0.02189326286315918 s
+[body    83.2s] weights: 0 unweighted vertices, 0 empty bone groups
+13:10:02 | INFO: Starting glTF 2.0 export
+13:10:02 | INFO: Extracting primitive: body.001
+13:10:02 | INFO: Primitives created: 1
+13:10:02 | INFO: Finished glTF 2.0 export in 0.021154165267944336 s
 
-[body    81.2s] lite done in 7.0s
-[body    81.2s] body step finished
+[body    83.2s] lite done in 6.9s
+[body    83.2s] body step finished
 Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:34:58)
 
 Blender quit
-== body done in 83.6s
+== body done in 85.7s
 
 == 4. assemble
-full: 5245 kB, 1723 repaired vertices
-lite: 551 kB, 198 repaired vertices
-== assemble done in 1.3s
+full: 9512 kB, 1723 repaired vertices
+lite: 548 kB, 198 repaired vertices
+== assemble done in 1.4s
 
 == 5. compress
-$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_UNORM --assign-tf linear --generate-mipmap --encode basis-lz --clevel 4 --qlevel 200 /tmp/kelo-ktx-v8AcCG/body_orm.jpg /tmp/kelo-ktx-v8AcCG/body_orm.ktx2
-$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_SRGB --generate-mipmap --encode basis-lz --clevel 4 --qlevel 200 /tmp/kelo-ktx-v8AcCG/body_basecolor.jpg /tmp/kelo-ktx-v8AcCG/body_basecolor.ktx2
-$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_UNORM --assign-tf linear --generate-mipmap --encode uastc --uastc-quality 2 --uastc-rdo --uastc-rdo-l 4 --uastc-rdo-m --zstd 18 /tmp/kelo-ktx-v8AcCG/body_normal.jpg /tmp/kelo-ktx-v8AcCG/body_normal.ktx2
-$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_SRGB --generate-mipmap --encode uastc --uastc-quality 2 --uastc-rdo --uastc-rdo-l 4 --uastc-rdo-m --zstd 18 /tmp/kelo-ktx-v8AcCG/face_atlas.png /tmp/kelo-ktx-v8AcCG/face_atlas.ktx2
-$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_SRGB --generate-mipmap --encode basis-lz --clevel 4 --qlevel 200 /tmp/kelo-ktx-v8AcCG/eyes_basecolor.png /tmp/kelo-ktx-v8AcCG/eyes_basecolor.ktx2
-  body_orm: 786 -> 563 kB (basis-lz)
-  body_basecolor: 349 -> 330 kB (basis-lz)
-  body_normal: 1760 -> 2743 kB (uastc)
+$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_UNORM --assign-tf linear --generate-mipmap --encode basis-lz --clevel 4 --qlevel 200 /tmp/kelo-ktx-XWwvSI/body_orm.jpg /tmp/kelo-ktx-XWwvSI/body_orm.ktx2
+$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_SRGB --generate-mipmap --encode basis-lz --clevel 4 --qlevel 200 /tmp/kelo-ktx-XWwvSI/body_basecolor.jpg /tmp/kelo-ktx-XWwvSI/body_basecolor.ktx2
+$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_UNORM --assign-tf linear --generate-mipmap --encode uastc --uastc-quality 2 --uastc-rdo --uastc-rdo-l 8 --uastc-rdo-m --uastc-rdo-d 32768 --zstd 18 /tmp/kelo-ktx-XWwvSI/body_normal.png /tmp/kelo-ktx-XWwvSI/body_normal.ktx2
+$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_SRGB --generate-mipmap --encode uastc --uastc-quality 2 --uastc-rdo --uastc-rdo-l 4 --uastc-rdo-m --zstd 18 /tmp/kelo-ktx-XWwvSI/face_atlas.png /tmp/kelo-ktx-XWwvSI/face_atlas.ktx2
+$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_SRGB --generate-mipmap --encode basis-lz --clevel 4 --qlevel 200 /tmp/kelo-ktx-XWwvSI/eyes_basecolor.png /tmp/kelo-ktx-XWwvSI/eyes_basecolor.ktx2
+  body_orm: 938 -> 589 kB (basis-lz)
+  body_basecolor: 308 -> 263 kB (basis-lz)
+  body_normal: 5916 -> 2476 kB (uastc)
   face_atlas: 41 -> 30 kB (uastc)
   eyes_basecolor: 9 -> 6 kB (basis-lz)
-full: 5245 -> 4148 kB (21% smaller)
-lite: 551 -> 209 kB (62% smaller)
-== compress done in 36.8s
+full: 9512 -> 3840 kB (60% smaller)
+lite: 548 -> 206 kB (62% smaller)
+== compress done in 108.2s
 
 == 6. validate
   PASS full glb.container: glTF 2.0 binary, generator: glTF-Transform v4.5.0
-  FAIL full file.size: 4148 kB (budget 3500 kB)
+  FAIL full file.size: 3840 kB (budget 3500 kB)
   PASS full extensions: used: EXT_meshopt_compression, KHR_materials_unlit, KHR_mesh_quantization, KHR_texture_basisu
   PASS full geometry.triangles: 55166 triangles (budget 60000)
   PASS full geometry.drawCalls: 9 primitives rendered (budget 9)
@@ -107,7 +110,7 @@ lite: 551 -> 209 kB (62% smaller)
   PASS full animations.procedural: no clip keys eye_L, eye_R, eyelid_L, eyelid_R, jaw
   PASS full animations.rootMotion: "root" is never keyed
   PASS lite glb.container: glTF 2.0 binary, generator: glTF-Transform v4.5.0
-  PASS lite file.size: 209 kB (budget 250 kB)
+  PASS lite file.size: 206 kB (budget 250 kB)
   PASS lite extensions: used: EXT_meshopt_compression, EXT_texture_webp, KHR_materials_unlit, KHR_mesh_quantization
   PASS lite extensions.firstPaint: no transcoder needed for the first paint
   PASS lite geometry.triangles: 8770 triangles (budget 11000)

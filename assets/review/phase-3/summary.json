@@ -84,14 +84,14 @@
         "full": {
           "triangles": 39628,
           "textureSize": 2048,
-          "seconds": 71.7,
+          "seconds": 73.9,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 3990,
           "textureSize": 512,
-          "seconds": 7,
+          "seconds": 6.9,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -127,7 +127,7 @@
           ]
         },
         "mouthY": 0.801,
-        "kB": 5245
+        "kB": 9512
       },
       "lite": {
         "repairedVertices": 198,
@@ -158,32 +158,32 @@
           ]
         },
         "mouthY": 0.801,
-        "kB": 551
+        "kB": 548
       }
     },
     "compress": {
       "full": {
-        "beforeKB": 5245,
-        "afterKB": 4148,
-        "savedPercent": 31,
+        "beforeKB": 9512,
+        "afterKB": 3840,
+        "savedPercent": 32,
         "textures": [
           {
             "name": "body_orm",
             "encode": "basis-lz",
-            "beforeKB": 786,
-            "afterKB": 563
+            "beforeKB": 938,
+            "afterKB": 589
           },
           {
             "name": "body_basecolor",
             "encode": "basis-lz",
-            "beforeKB": 349,
-            "afterKB": 330
+            "beforeKB": 308,
+            "afterKB": 263
           },
           {
             "name": "body_normal",
             "encode": "uastc",
-            "beforeKB": 1760,
-            "afterKB": 2743
+            "beforeKB": 5916,
+            "afterKB": 2476
           },
           {
             "name": "face_atlas",
@@ -200,8 +200,8 @@
         ]
       },
       "lite": {
-        "beforeKB": 551,
-        "afterKB": 209,
+        "beforeKB": 548,
+        "afterKB": 206,
         "savedPercent": 62
       }
     },
@@ -212,7 +212,7 @@
           {
             "id": "file.size",
             "status": "fail",
-            "message": "4148 kB (budget 3500 kB)",
+            "message": "3840 kB (budget 3500 kB)",
             "hint": "Compress with gltf-transform (Meshopt geometry, KTX2 textures) or lower texture sizes."
           }
         ]
