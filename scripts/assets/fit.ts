@@ -60,6 +60,11 @@ export const fitSchema = z
         iterations: z.int().min(0).max(20),
         factor: z.number().min(0).max(1),
       }),
+      armSeparation: z.strictObject({
+        stepM: z.number().positive().max(0.05),
+        falloffM: z.number().positive().max(0.1),
+        maxBodyMoveM: z.number().positive().max(0.1),
+      }),
     }),
     eyes: z.strictObject({
       ...docShape,

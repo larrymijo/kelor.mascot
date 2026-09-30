@@ -368,7 +368,7 @@
       "minWidthPx": 768
     },
     "carry": {
-      "_doc": "Being held: the grab point follows the pointer on a critically damped spring (followHz); the body hangs from it like a pendulum (lengthM, dampingRatio), swinging with the hand's sideways acceleration up to maxSwingDeg and leaning with its vertical speed up to maxLeanDeg. Legs dangle and kick, arms rise, and the body stretches along fast motion.",
+      "_doc": "Being held: the grab point follows the pointer on a critically damped spring (followHz); the body hangs from it like a pendulum (lengthM, dampingRatio), swinging with the hand's sideways acceleration up to maxSwingDeg and leaning with its vertical speed up to maxLeanDeg. Legs dangle and kick, arms rise by armRaiseDeg and flap by armFlapRatio of it on top (at most 50° in all: the rig has no collarbones, and the model build checks the side of the body stays still at that raise), and the body stretches along fast motion.",
       "followHz": 5,
       "lengthM": 0.55,
       "dampingRatio": 0.22,
@@ -376,7 +376,8 @@
       "maxLeanDeg": 14,
       "legDangleDeg": 26,
       "legKickDeg": 16,
-      "armRaiseDeg": 60,
+      "armRaiseDeg": 40,
+      "armFlapRatio": 0.25,
       "stretch": 0.07,
       "blendS": 0.2
     },

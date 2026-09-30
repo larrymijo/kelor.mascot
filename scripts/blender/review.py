@@ -200,6 +200,32 @@ def main():
             part.hide_render = True
         bpy.context.view_layer.update()
 
+    # Carried: both arms as high as carrying him raises them (the raise and
+    # its flap), to check that the side of the body stays put. A turn about
+    # glTF +Z (Blender -Y, towards the viewer) raises the left arm.
+    carry = contract["interaction"]["carry"]
+    raise_deg = carry["armRaiseDeg"] * (1 + carry["armFlapRatio"])
+    forward = armature.matrix_world.to_quaternion().inverted() @ Vector((0, -1, 0))
+    raised = []
+    for side, sign in (("L", 1), ("R", -1)):
+        name = f"upperarm_{side}"
+        if name not in armature.pose.bones:
+            continue
+        rest = armature.data.bones[name].matrix_local.to_quaternion()
+        pose_bone = armature.pose.bones[name]
+        pose_bone.rotation_mode = "QUATERNION"
+        pose_bone.rotation_quaternion = (
+            rest.inverted() @ Quaternion(forward, math.radians(sign * raise_deg)) @ rest
+        )
+        raised.append(pose_bone)
+    bpy.context.view_layer.update()
+    for name, azimuth, elevation in (("front", 0, 6), ("three-quarter", 35, 10)):
+        aim(camera, target, distance, azimuth, elevation)
+        render(scene, os.path.join(out, f"carried-{name}.png"))
+    for pose_bone in raised:
+        pose_bone.rotation_quaternion = (1, 0, 0, 0)
+    bpy.context.view_layer.update()
+
     # Topology: an emissive wireframe copy over the body.
     wire = body.copy()
     wire.data = body.data.copy()

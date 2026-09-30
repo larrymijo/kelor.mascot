@@ -176,21 +176,13 @@ export function cleanWeights(geometry, bones, jointOf, limits = {}, armpitMargin
 }
 
 /**
- * Laplacian smoothing of skin weights, so influence fades over several edge
- * rings instead of switching between neighbours (which creases the skin when
- * a limb rotates). Vertices are welded by position first: exporters split
- * them at UV seams, and a seam must not open. Keeps the four strongest
- * influences per vertex, renormalised.
- * @returns {number} how many welded vertices were smoothed
+ * Weld a mesh's vertices by position (exporters split them at UV seams) and
+ * list each welded group's neighbours along the triangles' edges.
+ * @returns {{ groupOf: Int32Array, groups: number, lists: number[][], first: Int32Array }}
  */
-export function smoothWeights(geometry, boneCount, iterations = 3, factor = 0.5) {
-  if (iterations <= 0 || factor <= 0) return 0
+function weld(geometry) {
   const position = geometry.attributes.position
-  const joints = geometry.attributes.skinIndex.array
-  const weights = geometry.attributes.skinWeight.array
   const count = position.count
-
-  // Weld: one group per distinct position.
   const groupOf = new Int32Array(count)
   const keys = new Map()
   for (let i = 0; i < count; i++) {
@@ -205,8 +197,9 @@ export function smoothWeights(geometry, boneCount, iterations = 3, factor = 0.5)
     groupOf[i] = group
   }
   const groups = keys.size
+  const first = new Int32Array(groups).fill(-1)
+  for (let i = 0; i < count; i++) if (first[groupOf[i]] < 0) first[groupOf[i]] = i
 
-  // Neighbours between groups, from the triangles.
   const neighbours = Array.from({ length: groups }, () => new Set())
   const index = geometry.index.array
   for (let t = 0; t < index.length; t += 3) {
@@ -216,6 +209,23 @@ export function smoothWeights(geometry, boneCount, iterations = 3, factor = 0.5)
     neighbours[c].add(a).add(b)
   }
   const lists = neighbours.map((set, g) => [...set].filter((n) => n !== g))
+  return { groupOf, groups, lists, first }
+}
+
+/**
+ * Laplacian smoothing of skin weights, so influence fades over several edge
+ * rings instead of switching between neighbours (which creases the skin when
+ * a limb rotates). Vertices are welded by position first: exporters split
+ * them at UV seams, and a seam must not open. Keeps the four strongest
+ * influences per vertex, renormalised.
+ * @returns {number} how many welded vertices were smoothed
+ */
+export function smoothWeights(geometry, boneCount, iterations = 3, factor = 0.5) {
+  if (iterations <= 0 || factor <= 0) return 0
+  const joints = geometry.attributes.skinIndex.array
+  const weights = geometry.attributes.skinWeight.array
+  const count = geometry.attributes.position.count
+  const { groupOf, groups, lists } = weld(geometry)
 
   // Dense per-bone weights per group (first vertex of each group is representative).
   let dense = new Float32Array(groups * boneCount)
@@ -263,6 +273,196 @@ export function smoothWeights(geometry, boneCount, iterations = 3, factor = 0.5)
   geometry.attributes.skinIndex.needsUpdate = true
   geometry.attributes.skinWeight.needsUpdate = true
   return groups
+}
+
+const ARMS = [
+  { side: 1, suffix: 'L' },
+  { side: -1, suffix: 'R' },
+]
+const ARM_BONES = ['upperarm', 'forearm', 'hand']
+const round = (v) => Math.round(v * 1e4) / 1e4
+const smoothstep = (a, b, x) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * @typedef {{ armpitY: number, wallX: number, arm: Uint8Array, repaired: number }} ArmSplit
+ * wallX is the side of the body under the arm; arm marks, per vertex, the
+ * arm's own skin below the armpit.
+ */
+
+/**
+ * Keep each arm's weights on the arm. The short arms hang close to the
+ * belly, and automatic weights, then the smoothing, hand the side of the
+ * belly to the arm bones: the belly stretches out whenever an arm rises.
+ * Distance cannot tell them apart (the side of the belly is as near the upper
+ * arm as the arm's own underside), but the mesh can: below the armpit the arm
+ * is a tube of its own.
+ *
+ * For each arm this finds the armpit: the highest height below which the skin
+ * reachable from the hand, without climbing above it, never reaches the body's
+ * middle. Below it only that tube keeps arm weight. Above it the side of the
+ * body keeps its line up to the shoulder joint: arm weight fades in over
+ * 2 falloffM outside it, then the line moves in to the shoulder's cut
+ * (armpitMarginM inside the shoulder) over 2 falloffM, so the top of the
+ * shoulder rises with the arm. The two rules blend over falloffM under the
+ * armpit, so it folds softly. The weight taken goes back to the vertex's
+ * other bones, or to the nearest spine bone when it had none.
+ * @param {{ stepM: number, falloffM: number }} settings fit.json rig.armSeparation
+ * @returns {Record<'L' | 'R', ArmSplit | null>} null when an arm never parts from the body
+ */
+export function separateArms(geometry, bones, jointOf, settings, armpitMarginM) {
+  const { stepM, falloffM } = settings
+  const position = geometry.attributes.position
+  const joints = geometry.attributes.skinIndex.array
+  const weights = geometry.attributes.skinWeight.array
+  const count = position.count
+  const { groupOf, groups, lists, first } = weld(geometry)
+  const x = (g) => position.getX(first[g])
+  const y = (g) => position.getY(first[g])
+  const segments = boneSegments(bones)
+  const spine = bones.filter((b) => b.role === 'spine')
+  const p = new THREE.Vector3()
+  /** @type {Record<string, ArmSplit | null>} */
+  const splits = {}
+
+  for (const { side, suffix } of ARMS) {
+    const armJoints = new Set(ARM_BONES.map((b) => jointOf(`${b}_${suffix}`)))
+    const shoulder = bones.find((b) => b.name === `upperarm_${suffix}`).restHead
+    const middle = Math.abs(shoulder[0]) / 2
+    // The tip of the hand: the skin nearest the end of the hand bone.
+    const end = segments.get(`hand_${suffix}`)[1]
+    let tip = 0
+    let nearest = Infinity
+    for (let g = 0; g < groups; g++) {
+      const d = p.fromBufferAttribute(position, first[g]).distanceToSquared(end)
+      if (d < nearest) {
+        nearest = d
+        tip = g
+      }
+    }
+
+    let armpitY = null
+    let tube = null
+    for (let height = shoulder[1]; height > y(tip); height -= stepM) {
+      const reached = new Uint8Array(groups)
+      const stack = [tip]
+      reached[tip] = 1
+      let body = false
+      while (stack.length && !body) {
+        const g = stack.pop()
+        if (side * x(g) < middle) body = true
+        for (const n of lists[g]) {
+          if (reached[n] || y(n) >= height) continue
+          reached[n] = 1
+          stack.push(n)
+        }
+      }
+      if (!body) {
+        armpitY = height
+        tube = reached
+        break
+      }
+    }
+    if (armpitY === null) {
+      splits[suffix] = null
+      continue
+    }
+
+    // The side of the body just below the armpit, where the arm parts from it.
+    const shoulderCut = Math.abs(shoulder[0]) - armpitMarginM
+    let wallX = -Infinity
+    for (let g = 0; g < groups; g++) {
+      const along = side * x(g)
+      if (along <= 0 || tube[g] || y(g) >= armpitY || y(g) < armpitY - 2 * falloffM) continue
+      wallX = Math.max(wallX, along)
+    }
+    if (!Number.isFinite(wallX)) wallX = shoulderCut
+    const top = shoulder[1] + 2 * falloffM
+
+    const mask = new Float32Array(groups)
+    for (let g = 0; g < groups; g++) {
+      const along = side * x(g)
+      if (along <= 0) continue
+      const height = y(g)
+      const rise = Math.min(1, Math.max(0, (height - shoulder[1]) / (top - shoulder[1])))
+      const cut = wallX + (shoulderCut - wallX) * rise
+      const outside = smoothstep(cut, cut + 2 * falloffM, along)
+      const blend = smoothstep(armpitY - falloffM, armpitY, height)
+      mask[g] = tube[g] * (1 - blend) + outside * blend
+    }
+
+    const arm = new Uint8Array(count)
+    let repaired = 0
+    for (let i = 0; i < count; i++) {
+      const g = groupOf[i]
+      arm[i] = tube[g]
+      let taken = false
+      let total = 0
+      for (let k = 0; k < 4; k++) {
+        const w = weights[i * 4 + k]
+        if (w <= 0) continue
+        if (armJoints.has(joints[i * 4 + k]) && mask[g] < 1) {
+          weights[i * 4 + k] = w * mask[g]
+          taken = true
+        }
+        total += weights[i * 4 + k]
+      }
+      if (!taken) continue
+      if (total > 1e-6) {
+        for (let k = 0; k < 4; k++) weights[i * 4 + k] /= total
+        continue
+      }
+      p.fromBufferAttribute(position, i)
+      const [bone] = spine
+        .map((b) => ({ b, d: distanceToSegment(p, ...segments.get(b.name)) }))
+        .sort((a, b) => a.d - b.d)
+      joints.set([jointOf(bone.b.name), 0, 0, 0], i * 4)
+      weights.set([1, 0, 0, 0], i * 4)
+      repaired += 1
+    }
+    splits[suffix] = { armpitY, wallX, arm, repaired }
+  }
+  geometry.attributes.skinWeight.needsUpdate = true
+  geometry.attributes.skinIndex.needsUpdate = true
+  return splits
+}
+
+/**
+ * How far the side of the body moves when each arm rises by angleDeg about its
+ * shoulder (the steepest carried pose): the most any skin below the armpit's
+ * fold that is not the arm's own tube travels. Only the arm chain turns, as one
+ * rigid piece, so a vertex moves by its arm weight times its turned distance.
+ * @returns {number} metres; 0 when no arm parted from the body
+ */
+export function bodyMoveUnderArms(geometry, bones, jointOf, splits, angleDeg, foldM) {
+  const position = geometry.attributes.position
+  const joints = geometry.attributes.skinIndex.array
+  const weights = geometry.attributes.skinWeight.array
+  const p = new THREE.Vector3()
+  const turned = new THREE.Vector3()
+  let most = 0
+  for (const { side, suffix } of ARMS) {
+    const split = splits[suffix]
+    if (!split) continue
+    const armJoints = new Set(ARM_BONES.map((b) => jointOf(`${b}_${suffix}`)))
+    const pivot = new THREE.Vector3(...bones.find((b) => b.name === `upperarm_${suffix}`).restHead)
+    const turn = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 0, 1),
+      side * THREE.MathUtils.degToRad(angleDeg),
+    )
+    for (let i = 0; i < position.count; i++) {
+      p.fromBufferAttribute(position, i)
+      if (side * p.x <= 0 || p.y >= split.armpitY - foldM || split.arm[i]) continue
+      let share = 0
+      for (let k = 0; k < 4; k++) if (armJoints.has(joints[i * 4 + k])) share += weights[i * 4 + k]
+      if (share <= 0) continue
+      turned.copy(p).sub(pivot).applyQuaternion(turn).add(pivot)
+      most = Math.max(most, share * turned.distanceTo(p))
+    }
+  }
+  return most
 }
 
 /** UV of the body vertex nearest to a point: lets lids reuse the local skin colour. */
@@ -443,6 +643,24 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
     fit.rig.weightSmoothing.iterations,
     fit.rig.weightSmoothing.factor,
   )
+  // After the smoothing, which spreads arm weight back onto the belly.
+  const separation = fit.rig.armSeparation
+  const arms = separateArms(geometry, bones, jointOf, separation, fit.rig.armpitMarginM)
+  const { armRaiseDeg, armFlapRatio } = contract.interaction.carry
+  const bodyMoveM = bodyMoveUnderArms(
+    geometry,
+    bones,
+    jointOf,
+    arms,
+    armRaiseDeg * (1 + armFlapRatio),
+    separation.falloffM,
+  )
+  if (bodyMoveM > separation.maxBodyMoveM) {
+    throw new Error(
+      `Raising the arms moves the side of the body ${(bodyMoveM * 100).toFixed(1)} cm ` +
+        `(at most ${separation.maxBodyMoveM * 100} cm)`,
+    )
+  }
 
   // The jaw: cast the lip line on the intact snout, then cut the lips open
   // and hand the lower lip and chin to the jaw bone.
@@ -523,6 +741,22 @@ export async function buildModel({ contract, fit, tier, body, textures, rig }) {
 
   return {
     bytes: await writeGlb(ctx.doc),
-    report: { repairedVertices: weights.repaired, clampedWeights: weights.clamped, eyes, mouthY },
+    report: {
+      repairedVertices: weights.repaired,
+      clampedWeights: weights.clamped,
+      arms: Object.fromEntries(
+        Object.entries(arms).map(([side, split]) => [
+          side,
+          split && {
+            armpitY: round(split.armpitY),
+            wallX: round(split.wallX),
+            repaired: split.repaired,
+          },
+        ]),
+      ),
+      bodyMoveM: round(bodyMoveM),
+      eyes,
+      mouthY,
+    },
   }
 }

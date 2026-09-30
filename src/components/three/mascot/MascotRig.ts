@@ -548,7 +548,7 @@ export class MascotRig {
       this.turn(foot, X_AXIS, 0.6 * dangle)
     })
     this.arms.forEach(({ side, upper, fore }, i) => {
-      const flap = Math.sin(kick * 1.3 + i * Math.PI * 0.5) * 0.35 * raise * stillness
+      const flap = Math.sin(kick * 1.3 + i * Math.PI * 0.5) * CARRY.armFlapRatio * raise * stillness
       this.turn(upper, Z_AXIS, side * (raise + flap))
       this.turn(fore, Z_AXIS, side * 0.3 * raise)
     })

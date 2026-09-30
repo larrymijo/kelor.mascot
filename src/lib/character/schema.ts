@@ -252,7 +252,8 @@ export const characterSchema = z
         maxLeanDeg: degrees(60),
         legDangleDeg: degrees(90),
         legKickDeg: degrees(90),
-        armRaiseDeg: degrees(120),
+        armRaiseDeg: degrees(50),
+        armFlapRatio: z.number().min(0).max(1),
         stretch: z.number().min(0).max(0.5),
         blendS: z.number().positive().max(2),
       }),
@@ -503,6 +504,11 @@ export const characterSchema = z
           `Unknown expression "${reaction.expression}"`,
         )
     })
+    // No collarbones: a raise past 50° stretches the shoulder whatever the weights.
+    const { armRaiseDeg, armFlapRatio } = c.interaction.carry
+    if (armRaiseDeg * (1 + armFlapRatio) > 50) {
+      issue(['interaction', 'carry', 'armFlapRatio'], 'Raise and flap exceed 50° together')
+    }
     if (!clipNames.has(c.accessibility.reducedMotion.idleClip)) {
       issue(['accessibility', 'reducedMotion', 'idleClip'], 'Must name a required clip')
     }
