@@ -82,16 +82,16 @@
       "blender": "5.2.2 LTS",
       "tiers": {
         "full": {
-          "triangles": 39628,
-          "textureSize": 2048,
-          "seconds": 73.9,
+          "triangles": 33688,
+          "textureSize": 1024,
+          "seconds": 62.4,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
-          "triangles": 3990,
+          "triangles": 4762,
           "textureSize": 512,
-          "seconds": 6.9,
+          "seconds": 7,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -99,17 +99,17 @@
     },
     "assemble": {
       "full": {
-        "repairedVertices": 1723,
-        "clampedWeights": 15492,
+        "repairedVertices": 1479,
+        "clampedWeights": 13258,
         "arms": {
           "L": {
-            "armpitY": 0.4554,
-            "wallX": 0.1963,
+            "armpitY": 0.4504,
+            "wallX": 0.1984,
             "repaired": 0
           },
           "R": {
             "armpitY": 0.4554,
-            "wallX": 0.1968,
+            "wallX": 0.196,
             "repaired": 0
           }
         },
@@ -118,29 +118,29 @@
           "L": [
             0.105,
             0.93,
-            0.18567980279549434
+            0.18508078024524
           ],
           "R": [
             -0.105,
             0.93,
-            0.185695686397091
+            0.1850796362630306
           ]
         },
         "mouthY": 0.801,
-        "kB": 9512
+        "kB": 9226
       },
       "lite": {
-        "repairedVertices": 198,
-        "clampedWeights": 1817,
+        "repairedVertices": 280,
+        "clampedWeights": 2204,
         "arms": {
           "L": {
             "armpitY": 0.4454,
-            "wallX": 0.1989,
+            "wallX": 0.2001,
             "repaired": 0
           },
           "R": {
-            "armpitY": 0.4454,
-            "wallX": 0.1948,
+            "armpitY": 0.4404,
+            "wallX": 0.2032,
             "repaired": 0
           }
         },
@@ -149,41 +149,41 @@
           "L": [
             0.105,
             0.93,
-            0.18680471038712454
+            0.1858123609549568
           ],
           "R": [
             -0.105,
             0.93,
-            0.18644109407306952
+            0.18617334000738672
           ]
         },
         "mouthY": 0.801,
-        "kB": 548
+        "kB": 584
       }
     },
     "compress": {
       "full": {
-        "beforeKB": 9512,
-        "afterKB": 3840,
-        "savedPercent": 32,
+        "beforeKB": 9226,
+        "afterKB": 3682,
+        "savedPercent": 31,
         "textures": [
           {
             "name": "body_orm",
             "encode": "basis-lz",
-            "beforeKB": 938,
-            "afterKB": 589
+            "beforeKB": 309,
+            "afterKB": 201
           },
           {
             "name": "body_basecolor",
             "encode": "basis-lz",
-            "beforeKB": 308,
-            "afterKB": 263
+            "beforeKB": 355,
+            "afterKB": 305
           },
           {
             "name": "body_normal",
             "encode": "uastc",
-            "beforeKB": 5916,
-            "afterKB": 2476
+            "beforeKB": 6426,
+            "afterKB": 2704
           },
           {
             "name": "face_atlas",
@@ -200,8 +200,8 @@
         ]
       },
       "lite": {
-        "beforeKB": 548,
-        "afterKB": 206,
+        "beforeKB": 584,
+        "afterKB": 222,
         "savedPercent": 62
       }
     },
@@ -212,7 +212,7 @@
           {
             "id": "file.size",
             "status": "fail",
-            "message": "3840 kB (budget 3500 kB)",
+            "message": "3682 kB (budget 3500 kB)",
             "hint": "Compress with gltf-transform (Meshopt geometry, KTX2 textures) or lower texture sizes."
           }
         ]
