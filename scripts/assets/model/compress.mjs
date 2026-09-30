@@ -49,7 +49,12 @@ const KTX_PROFILES = {
 
 const EXTENSION_OF = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }
 
-/** Argument list for one texture, in KTX-Software 4.4.2 spelling (later releases rename the UASTC codec). */
+/**
+ * Argument list for one texture, in KTX-Software 4.4.2 spelling (later releases rename the UASTC codec).
+ * @param {{ encode: string, srgb: boolean, rdoLambda?: number, rdoDictionary?: number }} profile
+ * @param {string} input
+ * @param {string} output
+ */
 export function ktxArgs({ encode, srgb, rdoLambda = 4, rdoDictionary }, input, output) {
   const args = ['create', '--format', srgb ? 'R8G8B8A8_SRGB' : 'R8G8B8A8_UNORM']
   if (!srgb) args.push('--assign-tf', 'linear')

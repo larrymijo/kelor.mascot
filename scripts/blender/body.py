@@ -129,7 +129,7 @@ def voxel_remesh(obj, voxel_size):
     apply_modifier(obj, remesh)
 
 
-def build_volume(source, voxel_size, polish_settings):
+def build_volume(source, voxel_size, polish_settings, landmarks):
     """One closed, symmetric, polished surface: voxel remesh, polish, mirror +X
     onto -X, weld the seam. Polishing before the mirror keeps the symmetry exact.
 
@@ -140,7 +140,7 @@ def build_volume(source, voxel_size, polish_settings):
     volume = duplicate(source, "volume")
     volume.data.materials.clear()
     voxel_remesh(volume, voxel_size)
-    polish(volume, polish_settings)
+    polish(volume, polish_settings, landmarks)
     mirror = volume.modifiers.new("symmetry", "MIRROR")
     mirror.use_axis = (True, False, False)
     mirror.use_bisect_axis = (True, False, False)
@@ -154,7 +154,7 @@ def build_volume(source, voxel_size, polish_settings):
     if not symmetric:
         log(f"mirror seam left {broken} non-manifold edges; re-voxelising")
         voxel_remesh(volume, voxel_size)
-        polish(volume, polish_settings)
+        polish(volume, polish_settings, landmarks)
         clean(volume, voxel_size * 0.25)
         broken = non_manifold_edges(volume)
     log(f"volume: {len(volume.data.polygons)} faces at {voxel_size} m voxels, "
@@ -164,12 +164,13 @@ def build_volume(source, voxel_size, polish_settings):
     return volume, symmetric
 
 
-def polish(obj, settings):
+def polish(obj, settings, landmarks):
     """Taubin smoothing: a shrinking pass then an inflating one, repeated.
 
     Bumps a few voxels wide (the scan's lumps) fade while the forms and the
     volume stay, unlike plain smoothing, which melts the whole body a little
-    on every pass. Symmetric on a symmetric mesh.
+    on every pass. It spares the feet and hands (settings keep), whose toes
+    and claws are small forms of their own. Symmetric on a symmetric mesh.
     """
     iterations = settings["iterations"]
     if iterations <= 0:
@@ -183,6 +184,15 @@ def polish(obj, settings):
     mesh.edges.foreach_get("vertices", edges)
     a, b = edges.astype(np.int64).reshape(-1, 2).T
     degree = np.maximum(np.bincount(np.concatenate([a, b]), minlength=count), 1)[:, None]
+    keep = settings["keep"]
+    blend = keep["blendM"]
+    strength = smoothstep(keep["feetM"], keep["feetM"] + blend, co[:, 2])
+    for side in (1, -1):
+        hx, hy, hz = landmarks["hand"]
+        hand = np.array(gltf_to_blender((side * abs(hx), hy, hz)))
+        near = np.linalg.norm(co - hand, axis=1)
+        strength *= smoothstep(keep["handM"], keep["handM"] + blend, near)
+    strength = strength[:, None]
 
     def step(factor):
         total = np.empty_like(co)
@@ -190,7 +200,7 @@ def polish(obj, settings):
             total[:, k] = np.bincount(a, weights=co[b, k], minlength=count) + np.bincount(
                 b, weights=co[a, k], minlength=count
             )
-        return co + factor * (total / degree - co)
+        return co + strength * factor * (total / degree - co)
 
     before = co.copy()
     for _ in range(iterations):
@@ -494,7 +504,14 @@ def scale_material(forms, belly, landmarks, scales):
     brick.inputs["Mortar Smooth"].default_value = 0.8
     brick.inputs["Brick Width"].default_value = plates_spec["widthM"]
     brick.inputs["Row Height"].default_value = plates_spec["rowM"]
-    plates = op("SUBTRACT", 1.0, brick.outputs["Fac"])
+    # Deep grooves between the rows, each row gently domed; the joints
+    # between plates in a row are shallower (jointDepth), as on a crocodile.
+    along = op("FRACT", op("DIVIDE", rows, plates_spec["rowM"]))
+    to_edge = op("MINIMUM", along, op("SUBTRACT", 1.0, along))
+    row = ramp(to_edge, 0.0, plates_spec["grooveM"] / plates_spec["rowM"])
+    domed = op("ADD", 0.7, op("MULTIPLY", op("SINE", op("MULTIPLY", along, math.pi)), 0.3))
+    joints = op("MULTIPLY", brick.outputs["Fac"], plates_spec["jointDepth"])
+    plates = op("MAXIMUM", op("SUBTRACT", op("MULTIPLY", row, domed), joints), 0.0)
 
     # Where the belly is: its tone, between the legs and the neck, near the middle.
     tone = nodes.new("ShaderNodeTexImage")
@@ -637,7 +654,9 @@ def main():
     deform_names = [b["name"] for b in rig["bones"] if b["deform"]]
 
     source = import_source(os.path.join(out, "normalized.glb"))
-    volume, symmetric = build_volume(source, fit["retopo"]["voxelSizeM"], fit["retopo"]["polish"])
+    volume, symmetric = build_volume(
+        source, fit["retopo"]["voxelSizeM"], fit["retopo"]["polish"], rig["landmarks"]
+    )
     report = {"blender": bpy.app.version_string, "tiers": {}}
 
     for tier in ("full", "lite"):

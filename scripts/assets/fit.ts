@@ -32,9 +32,14 @@ export const fitSchema = z
       targetQuads: tiers(z.int().min(500).max(30000)),
       smoothIterations: z.int().min(0).max(10),
       polish: z.strictObject({
-        iterations: z.int().min(0).max(100),
+        iterations: z.int().min(0).max(400),
         lambda: z.number().positive().max(1),
         mu: z.number().min(-1).max(0),
+        keep: z.strictObject({
+          feetM: z.number().min(0).max(0.5),
+          handM: z.number().min(0).max(0.3),
+          blendM: z.number().positive().max(0.3),
+        }),
       }),
     }),
     bake: z.strictObject({
@@ -71,6 +76,7 @@ export const fitSchema = z
         curve: z.number().min(0).max(5),
         warpM: z.number().min(0).max(0.02),
         warpScale: z.number().positive().max(200),
+        jointDepth: z.number().min(0).max(1),
       }),
       cavity: z.strictObject({
         ao: z.number().min(0).max(1),

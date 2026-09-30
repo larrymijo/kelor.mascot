@@ -8,7 +8,7 @@
   },
   "symmetrize": true,
   "retopo": {
-    "_doc": "Voxel remesh makes the source one manifold volume; polish then smooths the scan's lumps out of it (Taubin: iterations of a lambda pass and an inflating mu pass, which keeps the volume); Quadriflow then builds quads. Face counts are quads (about twice as many triangles). Full is desktop only (phones keep lite), so it gets twice the density of phase 3 for a smooth outline.",
+    "_doc": "Voxel remesh makes the source one manifold volume; polish then smooths the scan's lumps out of it (Taubin: iterations of a lambda pass and an inflating mu pass, which keeps the volume; keep spares the feet below feetM and within handM of the hands, blending over blendM); Quadriflow then builds quads. Face counts are quads (about twice as many triangles). Full is desktop only (phones keep lite), so it gets twice the density of phase 3 for a smooth outline.",
     "voxelSizeM": 0.006,
     "targetQuads": {
       "full": 20000,
@@ -16,15 +16,20 @@
     },
     "smoothIterations": 2,
     "polish": {
-      "iterations": 40,
+      "iterations": 150,
       "lambda": 0.5,
-      "mu": -0.53
+      "mu": -0.53,
+      "keep": {
+        "feetM": 0.1,
+        "handM": 0.08,
+        "blendM": 0.06
+      }
     }
   },
   "bake": {
-    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. size is the ORM map per tier; baseColorSize and normalSize are separate because definition matters most in the close-ups (phase 6 raised them: the source base colour is 2048 px, and the camera now gets within centimetres of his face). The normal map exists only on full, where 2048 px carries the scales (see scales). flatten pulls the baked colours towards the median body and belly tones, removing the shading the image-to-3D service baked into them.",
+    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. size is the ORM map per tier; baseColorSize and normalSize are separate because definition matters most in the close-ups (phase 6 raised them: the source base colour is 2048 px, and the camera now gets within centimetres of his face). The normal map exists only on full, where 2048 px carries the scales (see scales); the ORM stays at 1024 px, which holds the grooves' shading well enough at a quarter of the bytes. flatten pulls the baked colours towards the median body and belly tones, removing the shading the image-to-3D service baked into them.",
     "size": {
-      "full": 2048,
+      "full": 1024,
       "lite": 512
     },
     "baseColorSize": {
@@ -40,7 +45,7 @@
     "jpegQuality": 88
   },
   "scales": {
-    "_doc": "The full model's skin, like the concept's: domed scales parted by narrow grooves, a 3D cell pattern in object space (no seams), coarseM wide, finer (fineM) within limbReachM of the forearms, hands, shins and feet and within faceReachM of the snout tip, blended over blendM. randomness jitters the cells, grooveWidth and dome shape them (in cell units), and they rise depthM at strength over the polished forms in the normal map. The belly (its lighter tone, found with Otsu's threshold softened over toneSpread, between the legs and the neck and within halfWidthM of the middle, fading over fadeM) gets rows of plates rowM high and widthM wide, laid like bricks, with grooveM joints; the rows curve up towards the sides (curve, per metre) and wobble by warpM over noise of warpScale. cavity darkens the occlusion and raises the roughness in the grooves of the ORM map.",
+    "_doc": "The full model's skin, like the concept's: domed scales parted by narrow grooves, a 3D cell pattern in object space (no seams), coarseM wide, finer (fineM) within limbReachM of the forearms, hands, shins and feet and within faceReachM of the snout tip, blended over blendM. randomness jitters the cells, grooveWidth and dome shape them (in cell units), and they rise depthM at strength over the polished forms in the normal map. The belly (its lighter tone, found with Otsu's threshold softened over toneSpread, between the legs and the neck and within halfWidthM of the middle, fading over fadeM) gets rows of plates rowM high and widthM wide, laid like bricks, with grooveM joints; the rows curve up towards the sides (curve, per metre) and wobble by warpM over noise of warpScale, and the joints within a row are jointDepth as deep as the grooves between rows. cavity darkens the occlusion and raises the roughness in the grooves of the ORM map.",
     "coarseM": 0.012,
     "fineM": 0.008,
     "limbReachM": 0.07,
@@ -60,7 +65,8 @@
       "halfWidthM": 0.2,
       "curve": 0.7,
       "warpM": 0.003,
-      "warpScale": 18
+      "warpScale": 18,
+      "jointDepth": 0.35
     },
     "cavity": {
       "ao": 0.4,
