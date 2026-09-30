@@ -1,8 +1,8 @@
-Kelo model pipeline, 2026-09-30T12:51:55.715Z
+Kelo model pipeline, 2026-09-30T12:58:55.833Z
 
 == 1. normalize
 {"sourceHeight":1.903,"scale":0.6307,"feetCentre":[0.006,0.219],"triangles":145814,"meshes":1}
-== normalize done in 0.1s
+== normalize done in 0.2s
 
 == 2. rig
 {"heightM":1.2,"feetBackZ":-0.1426,"crotchY":0.12,"legX":0.1184,"neckY":0.66,"neckHalfWidth":0.2208,"torsoFrontZ":0.1797,"headCenterY":0.852,"headHalfWidth":0.3203,"snoutTip":[0,0.831,0.406],"mouthY":0.801,"hand":[0.338,0.4032,-0.0335],"tailTip":[0,0.1686,-0.6863],"tailCurve":[[-0.1926,0.3872],[-0.2544,0.2408],[-0.3161,0.1911],[-0.3778,0.161],[-0.4395,0.1415],[-0.5012,0.1305],[-0.5629,0.1397],[-0.6246,0.1525],[-0.6863,0.1628]]}
@@ -10,40 +10,123 @@ Kelo model pipeline, 2026-09-30T12:51:55.715Z
 
 == 3. body
 $ /home/runner/blender/blender -b --factory-startup --python-exit-code 1 -P scripts/blender/body.py -- --root /home/runner/work/kelor.mascot/kelor.mascot --out build/model
-12:51:57 | INFO: Data are loaded, start creating Blender stuff
-12:51:57 | INFO: Blender create Mesh node output_unwrapped
-12:51:58 | INFO: glTF import finished in 0.31s
-[body     0.5s] source: 145814 faces, 1 material(s)
-[body     1.6s] volume: 97946 faces at 0.006 m voxels, 0 non-manifold edges, symmetric=True
-[body     1.7s] polished 97574 vertices over 12 passes: mean 0.39 mm, max 2.66 mm
-wrong init 125041 150930!
-Traceback (most recent call last):
-  File "/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py", line 666, in <module>
-    main()
-    ~~~~^^
-  File "/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py", line 608, in main
-    low, triangles = retopologise(
-                     ~~~~~~~~~~~~^
-        volume,
-        ^^^^^^^
-    ...<3 lines>...
-        f"body_{tier}",
-        ^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py", line 208, in retopologise
-    result = bpy.ops.object.quadriflow_remesh(
-        mode="FACES",
-    ...<5 lines>...
-        seed=0,
-    )
-RuntimeError: Error: QuadriFlow: Remeshing failed
+12:58:58 | INFO: Data are loaded, start creating Blender stuff
+12:58:58 | INFO: Blender create Mesh node output_unwrapped
+12:58:59 | INFO: glTF import finished in 0.40s
+[body     0.6s] source: 145814 faces, 1 material(s)
+[body     2.1s] polished 98392 vertices over 40 passes: mean 0.50 mm, max 3.02 mm
+[body     2.6s] volume: 97972 faces at 0.006 m voxels, 0 non-manifold edges, symmetric=True
+Info: QuadriFlow: Remeshing completed
+[body    17.7s] body_full: 19814 faces, 39628 triangles (target 20000 quads)
+/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py:263: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+Info: Baking map saved to internal image, save it externally or pack it
+[body    25.6s] baked DIFFUSE 2048px on body_full in 6.4s
+Info: Baking map saved to internal image, save it externally or pack it
+[body    42.5s] baked AO 2048px on body_full in 16.9s
+Info: Baking map saved to internal image, save it externally or pack it
+[body    44.4s] baked NORMAL 2048px on body_full in 1.9s
+[body    44.4s] scale sizes: 18% of the skin fine
+[body    44.5s] belly: tone threshold 0.434, 17% of the map
+/home/runner/work/kelor.mascot/kelor.mascot/scripts/blender/body.py:397: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+Info: Baking map saved to internal image, save it externally or pack it
+[body    65.3s] baked NORMAL 2048px through scales in 20.7s
+Info: Baking map saved to internal image, save it externally or pack it
+[body    71.9s] baked EMIT 2048px through scales in 6.5s
+Info: 11264 vertex weights limited
+[body    74.0s] weights: 0 unweighted vertices, 0 empty bone groups
+INFO Draco is available, use library at /home/runner/blender/lib/libbf_intern_draco_bridge.so
+INFO MeshOptimizer is available, use library at /home/runner/blender/lib/libbf_intern_meshopt_bridge.so
+13:00:12 | INFO: Starting glTF 2.0 export
+13:00:12 | INFO: Extracting primitive: body
+13:00:12 | INFO: Primitives created: 1
+13:00:12 | INFO: Finished glTF 2.0 export in 0.12535881996154785 s
 
+[body    74.2s] full done in 71.7s
+Info: QuadriFlow: Remeshing completed
+[body    77.8s] body_lite: 1995 faces, 3990 triangles (target 2400 quads)
+Info: Baking map saved to internal image, save it externally or pack it
+[body    79.6s] baked DIFFUSE 512px on body_lite in 0.9s
+Info: Baking map saved to internal image, save it externally or pack it
+[body    81.0s] baked AO 512px on body_lite in 1.4s
+Info: 1149 vertex weights limited
+[body    81.2s] weights: 0 unweighted vertices, 0 empty bone groups
+13:00:19 | INFO: Starting glTF 2.0 export
+13:00:19 | INFO: Extracting primitive: body.001
+13:00:19 | INFO: Primitives created: 1
+13:00:19 | INFO: Finished glTF 2.0 export in 0.02189326286315918 s
 
-Error: script failed, file: 'scripts/blender/body.py', exiting.
-Error: QuadriFlow: Remeshing failed
+[body    81.2s] lite done in 7.0s
+[body    81.2s] body step finished
 Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:34:58)
 
 Blender quit
+== body done in 83.6s
 
-FAILED: scripts/blender/body.py exited with 1
+== 4. assemble
+full: 5245 kB, 1723 repaired vertices
+lite: 551 kB, 198 repaired vertices
+== assemble done in 1.3s
+
+== 5. compress
+$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_UNORM --assign-tf linear --generate-mipmap --encode basis-lz --clevel 4 --qlevel 200 /tmp/kelo-ktx-v8AcCG/body_orm.jpg /tmp/kelo-ktx-v8AcCG/body_orm.ktx2
+$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_SRGB --generate-mipmap --encode basis-lz --clevel 4 --qlevel 200 /tmp/kelo-ktx-v8AcCG/body_basecolor.jpg /tmp/kelo-ktx-v8AcCG/body_basecolor.ktx2
+$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_UNORM --assign-tf linear --generate-mipmap --encode uastc --uastc-quality 2 --uastc-rdo --uastc-rdo-l 4 --uastc-rdo-m --zstd 18 /tmp/kelo-ktx-v8AcCG/body_normal.jpg /tmp/kelo-ktx-v8AcCG/body_normal.ktx2
+$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_SRGB --generate-mipmap --encode uastc --uastc-quality 2 --uastc-rdo --uastc-rdo-l 4 --uastc-rdo-m --zstd 18 /tmp/kelo-ktx-v8AcCG/face_atlas.png /tmp/kelo-ktx-v8AcCG/face_atlas.ktx2
+$ /home/runner/ktx/bin/ktx create --format R8G8B8A8_SRGB --generate-mipmap --encode basis-lz --clevel 4 --qlevel 200 /tmp/kelo-ktx-v8AcCG/eyes_basecolor.png /tmp/kelo-ktx-v8AcCG/eyes_basecolor.ktx2
+  body_orm: 786 -> 563 kB (basis-lz)
+  body_basecolor: 349 -> 330 kB (basis-lz)
+  body_normal: 1760 -> 2743 kB (uastc)
+  face_atlas: 41 -> 30 kB (uastc)
+  eyes_basecolor: 9 -> 6 kB (basis-lz)
+full: 5245 -> 4148 kB (21% smaller)
+lite: 551 -> 209 kB (62% smaller)
+== compress done in 36.8s
+
+== 6. validate
+  PASS full glb.container: glTF 2.0 binary, generator: glTF-Transform v4.5.0
+  FAIL full file.size: 4148 kB (budget 3500 kB)
+  PASS full extensions: used: EXT_meshopt_compression, KHR_materials_unlit, KHR_mesh_quantization, KHR_texture_basisu
+  PASS full geometry.triangles: 55166 triangles (budget 60000)
+  PASS full geometry.drawCalls: 9 primitives rendered (budget 9)
+  PASS full geometry.morphTargets: 0 morph targets (budget 0)
+  PASS full skin.influences: up to 4 influences per vertex (budget 4)
+  PASS full skeleton.skin: 1 skin(s) sharing one skeleton
+  PASS full skeleton.boneCount: 29 bones (budget 32)
+  PASS full skeleton.names: all 29 bones match
+  PASS full skeleton.hierarchy: parents match the contract
+  PASS full meshes.required: found body, face, eyes, eyelids, eye_highlights, plates, teeth, tusks and 1 more
+  PASS full materials.count: 7 materials (budget 7)
+  PASS full materials.required: found body, face, eyes, highlight, plates, teeth, mouth
+  PASS full textures.count: 5 images (budget 5)
+  PASS full textures.size: body_orm 2048×2048 ktx2, body_basecolor 2048×2048 ktx2, body_normal 2048×2048 ktx2, face_atlas 1024×1024 ktx2, eyes_basecolor 512×512 ktx2
+  PASS full animations.required: found idle, hatch, look_around, roar, jump, wave
+  PASS full animations.duration: every clip within ±0.1 s of its nominal length
+  PASS full animations.total: 18.8 s of animation (budget 30 s)
+  PASS full animations.procedural: no clip keys eye_L, eye_R, eyelid_L, eyelid_R, jaw
+  PASS full animations.rootMotion: "root" is never keyed
+  PASS lite glb.container: glTF 2.0 binary, generator: glTF-Transform v4.5.0
+  PASS lite file.size: 209 kB (budget 250 kB)
+  PASS lite extensions: used: EXT_meshopt_compression, EXT_texture_webp, KHR_materials_unlit, KHR_mesh_quantization
+  PASS lite extensions.firstPaint: no transcoder needed for the first paint
+  PASS lite geometry.triangles: 8770 triangles (budget 11000)
+  PASS lite geometry.drawCalls: 9 primitives rendered (budget 9)
+  PASS lite geometry.morphTargets: 0 morph targets (budget 0)
+  PASS lite skin.influences: up to 4 influences per vertex (budget 4)
+  PASS lite skeleton.skin: 1 skin(s) sharing one skeleton
+  PASS lite skeleton.boneCount: 29 bones (budget 32)
+  PASS lite skeleton.names: all 29 bones match
+  PASS lite skeleton.hierarchy: parents match the contract
+  PASS lite meshes.required: found body, face, eyes, eyelids, eye_highlights, plates, teeth, tusks and 1 more
+  PASS lite materials.count: 7 materials (budget 7)
+  PASS lite materials.required: found body, face, eyes, highlight, plates, teeth, mouth
+  PASS lite textures.count: 4 images (budget 4)
+  PASS lite textures.size: body_orm 512×512 webp, body_basecolor 512×512 webp, face_atlas 512×512 png, eyes_basecolor 128×128 png
+  PASS lite animations.required: found idle, hatch, look_around, roar, jump, wave
+  PASS lite animations.duration: every clip within ±0.1 s of its nominal length
+  PASS lite animations.total: 18.8 s of animation (budget 30 s)
+  PASS lite animations.procedural: no clip keys eye_L, eye_R, eyelid_L, eyelid_R, jaw
+  PASS lite animations.rootMotion: "root" is never keyed
+
+FAILED: The validator rejected the model

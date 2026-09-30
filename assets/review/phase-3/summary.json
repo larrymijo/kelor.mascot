@@ -77,8 +77,152 @@
           ]
         ]
       }
+    },
+    "body": {
+      "blender": "5.2.2 LTS",
+      "tiers": {
+        "full": {
+          "triangles": 39628,
+          "textureSize": 2048,
+          "seconds": 71.7,
+          "unweightedVertices": 0,
+          "emptyGroups": []
+        },
+        "lite": {
+          "triangles": 3990,
+          "textureSize": 512,
+          "seconds": 7,
+          "unweightedVertices": 0,
+          "emptyGroups": []
+        }
+      }
+    },
+    "assemble": {
+      "full": {
+        "repairedVertices": 1723,
+        "clampedWeights": 15492,
+        "arms": {
+          "L": {
+            "armpitY": 0.4554,
+            "wallX": 0.1963,
+            "repaired": 0
+          },
+          "R": {
+            "armpitY": 0.4554,
+            "wallX": 0.1968,
+            "repaired": 0
+          }
+        },
+        "bodyMoveM": 0,
+        "eyes": {
+          "L": [
+            0.105,
+            0.93,
+            0.18567980279549434
+          ],
+          "R": [
+            -0.105,
+            0.93,
+            0.185695686397091
+          ]
+        },
+        "mouthY": 0.801,
+        "kB": 5245
+      },
+      "lite": {
+        "repairedVertices": 198,
+        "clampedWeights": 1817,
+        "arms": {
+          "L": {
+            "armpitY": 0.4454,
+            "wallX": 0.1989,
+            "repaired": 0
+          },
+          "R": {
+            "armpitY": 0.4454,
+            "wallX": 0.1948,
+            "repaired": 0
+          }
+        },
+        "bodyMoveM": 0,
+        "eyes": {
+          "L": [
+            0.105,
+            0.93,
+            0.18680471038712454
+          ],
+          "R": [
+            -0.105,
+            0.93,
+            0.18644109407306952
+          ]
+        },
+        "mouthY": 0.801,
+        "kB": 551
+      }
+    },
+    "compress": {
+      "full": {
+        "beforeKB": 5245,
+        "afterKB": 4148,
+        "savedPercent": 31,
+        "textures": [
+          {
+            "name": "body_orm",
+            "encode": "basis-lz",
+            "beforeKB": 786,
+            "afterKB": 563
+          },
+          {
+            "name": "body_basecolor",
+            "encode": "basis-lz",
+            "beforeKB": 349,
+            "afterKB": 330
+          },
+          {
+            "name": "body_normal",
+            "encode": "uastc",
+            "beforeKB": 1760,
+            "afterKB": 2743
+          },
+          {
+            "name": "face_atlas",
+            "encode": "uastc",
+            "beforeKB": 41,
+            "afterKB": 30
+          },
+          {
+            "name": "eyes_basecolor",
+            "encode": "basis-lz",
+            "beforeKB": 9,
+            "afterKB": 6
+          }
+        ]
+      },
+      "lite": {
+        "beforeKB": 551,
+        "afterKB": 209,
+        "savedPercent": 62
+      }
+    },
+    "validate": {
+      "full": {
+        "ok": false,
+        "notPassing": [
+          {
+            "id": "file.size",
+            "status": "fail",
+            "message": "4148 kB (budget 3500 kB)",
+            "hint": "Compress with gltf-transform (Meshopt geometry, KTX2 textures) or lower texture sizes."
+          }
+        ]
+      },
+      "lite": {
+        "ok": true,
+        "notPassing": []
+      }
     }
   },
   "ok": false,
-  "error": "scripts/blender/body.py exited with 1"
+  "error": "The validator rejected the model"
 }
