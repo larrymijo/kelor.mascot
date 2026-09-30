@@ -16,7 +16,7 @@
     },
     "smoothIterations": 2,
     "polish": {
-      "iterations": 12,
+      "iterations": 40,
       "lambda": 0.5,
       "mu": -0.53
     }

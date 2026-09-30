@@ -129,16 +129,18 @@ def voxel_remesh(obj, voxel_size):
     apply_modifier(obj, remesh)
 
 
-def build_volume(source, voxel_size):
-    """One closed, symmetric surface: voxel remesh, mirror +X onto -X, weld the seam.
+def build_volume(source, voxel_size, polish_settings):
+    """One closed, symmetric, polished surface: voxel remesh, polish, mirror +X
+    onto -X, weld the seam. Polishing before the mirror keeps the symmetry exact.
 
     Returns the volume and whether it is exactly symmetric (Quadriflow's symmetry
     mode needs that). If the seam still leaves non-manifold edges, a second voxel
-    pass closes them at the cost of exact symmetry.
+    pass closes them at the cost of exact symmetry, and is polished again.
     """
     volume = duplicate(source, "volume")
     volume.data.materials.clear()
     voxel_remesh(volume, voxel_size)
+    polish(volume, polish_settings)
     mirror = volume.modifiers.new("symmetry", "MIRROR")
     mirror.use_axis = (True, False, False)
     mirror.use_bisect_axis = (True, False, False)
@@ -152,6 +154,7 @@ def build_volume(source, voxel_size):
     if not symmetric:
         log(f"mirror seam left {broken} non-manifold edges; re-voxelising")
         voxel_remesh(volume, voxel_size)
+        polish(volume, polish_settings)
         clean(volume, voxel_size * 0.25)
         broken = non_manifold_edges(volume)
     log(f"volume: {len(volume.data.polygons)} faces at {voxel_size} m voxels, "
@@ -205,15 +208,18 @@ def retopologise(volume, symmetric, quads, smooth_iterations, name):
     result = set()
     for use_symmetry in ([True, False] if symmetric else [False]):
         activate(low)
-        result = bpy.ops.object.quadriflow_remesh(
-            mode="FACES",
-            target_faces=quads,
-            use_mesh_symmetry=use_symmetry,
-            use_preserve_sharp=False,
-            use_preserve_boundary=False,
-            smooth_normals=False,
-            seed=0,
-        )
+        try:
+            result = bpy.ops.object.quadriflow_remesh(
+                mode="FACES",
+                target_faces=quads,
+                use_mesh_symmetry=use_symmetry,
+                use_preserve_sharp=False,
+                use_preserve_boundary=False,
+                smooth_normals=False,
+                seed=0,
+            )
+        except RuntimeError as error:
+            result = {str(error).strip()}
         if "FINISHED" in result:
             break
         log(f"Quadriflow {name} with symmetry={use_symmetry} returned {result}")
@@ -596,8 +602,7 @@ def main():
     deform_names = [b["name"] for b in rig["bones"] if b["deform"]]
 
     source = import_source(os.path.join(out, "normalized.glb"))
-    volume, symmetric = build_volume(source, fit["retopo"]["voxelSizeM"])
-    polish(volume, fit["retopo"]["polish"])
+    volume, symmetric = build_volume(source, fit["retopo"]["voxelSizeM"], fit["retopo"]["polish"])
     report = {"blender": bpy.app.version_string, "tiers": {}}
 
     for tier in ("full", "lite"):
