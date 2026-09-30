@@ -43,7 +43,7 @@ const KTX_PROFILES = {
   body_basecolor: { encode: 'basis-lz', srgb: true },
   eyes_basecolor: { encode: 'basis-lz', srgb: true },
   body_orm: { encode: 'basis-lz', srgb: false },
-  body_normal: { encode: 'uastc', srgb: false, rdoLambda: 8, rdoDictionary: 32768 },
+  body_normal: { encode: 'uastc', srgb: false, rdoLambda: 12, rdoDictionary: 32768 },
   face_atlas: { encode: 'uastc', srgb: true },
 }
 
