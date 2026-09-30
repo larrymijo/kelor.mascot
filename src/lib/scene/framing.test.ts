@@ -40,6 +40,15 @@ describe('frameSubject', () => {
     expect(portrait.distance).toBeGreaterThan(wide.distance)
   })
 
+  it('centres the subject between a top and a bottom reserve, smaller for the room they take', () => {
+    const withTop = { ...base, topReserve: 0.2 }
+    const { framing, top, bottom } = edges(withTop)
+    expect(top).toBeLessThanOrEqual(1 - 2 * 0.2 + 1e-9)
+    expect(bottom).toBeGreaterThanOrEqual(-1 + 2 * base.bottomReserve - 1e-9)
+    expect((top + bottom) / 2).toBeCloseTo(base.bottomReserve - 0.2, 6)
+    expect(framing.distance).toBeGreaterThan(frameSubject(base).distance)
+  })
+
   it('looks straight at the subject when no text is reserved', () => {
     const framing = frameSubject({ ...base, bottomReserve: 0 })
     expect(framing.targetY).toBeCloseTo(base.subjectCenterY)

@@ -8,7 +8,7 @@
  * only sounds heard before the visitor turns the sound on.
  */
 
-/** A tap's reaction, being carried, tossed and landing, and the hatch: heard once the sound is on. */
+/** A tap's reaction, being carried, tossed and landing, the hatch and the runner: heard once the sound is on. */
 export const LIFE_SOUNDS = [
   'giggle',
   'boing',
@@ -19,6 +19,10 @@ export const LIFE_SOUNDS = [
   'toss',
   'thud',
   'pat',
+  // Kelo Run, the pixel runner.
+  'blip',
+  'coin',
+  'crash',
 ] as const
 
 /** The bite, in order: heard from the start, unless the visitor turned the sound off. */

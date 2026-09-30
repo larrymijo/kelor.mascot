@@ -26,6 +26,17 @@ const lambda = z.number().positive().max(60)
 
 const tierName = z.enum(['full', 'lite'])
 
+/** Something Kelo does when asked: a tap's reaction, or an action from the sandbox's dock. */
+const reactionSchema = z.strictObject({
+  name: snakeName,
+  clip: snakeName.nullable(),
+  expression: snakeName,
+  jawDeg: z.number().min(0).max(60),
+  durationS: z.number().positive().max(5),
+  wiggleDeg: z.number().min(0).max(30),
+  sound: z.enum(['giggle', 'boing', 'hm', 'growl', 'roar']).nullable(),
+})
+
 const budgetSchema = z.strictObject({
   ...docShape,
   maxFileKB: posInt,
@@ -62,7 +73,6 @@ const qualityTierSchema = z.strictObject({
   ao: z.enum(['off', 'half', 'full']),
   bloom: z.boolean(),
   depthOfField: z.boolean(),
-  particles: nonNegInt,
   filmGrain: z.boolean(),
 })
 
@@ -227,21 +237,11 @@ export const characterSchema = z
       taps: z.strictObject({
         streakS: z.number().positive().max(10),
         biteAt: z.int().min(2).max(20),
+        gameAt: z.int().min(2).max(30),
         dragThresholdPx: z.number().positive().max(50),
       }),
-      reactions: z
-        .array(
-          z.strictObject({
-            name: snakeName,
-            clip: snakeName.nullable(),
-            expression: snakeName,
-            jawDeg: z.number().min(0).max(60),
-            durationS: z.number().positive().max(5),
-            wiggleDeg: z.number().min(0).max(30),
-            sound: z.enum(['giggle', 'boing', 'hm', 'growl', 'roar']).nullable(),
-          }),
-        )
-        .min(1),
+      reactions: z.array(reactionSchema).min(1),
+      actions: z.array(reactionSchema).min(1),
       desktop: z.strictObject({ ...docShape, minWidthPx: posInt }),
       carry: z.strictObject({
         ...docShape,
@@ -291,6 +291,14 @@ export const characterSchema = z
         maxAngleDeg: degrees(45),
         frequencyHz: z.number().positive().max(10),
       }),
+      drop: z.strictObject({
+        gravity: z.number().positive().max(50),
+        restitution: z.number().min(0).max(0.9),
+        settleMps: z.number().positive().max(5),
+        squashPerMps: z.number().min(0).max(0.2),
+        maxSquash: z.number().min(0).max(0.4),
+        springHz: z.number().positive().max(20),
+      }),
       minDisplayS: z.number().nonnegative(),
       hatchDurationS: z.number().positive(),
     }),
@@ -316,7 +324,6 @@ export const characterSchema = z
       ...docShape,
       reducedMotion: z.strictObject({
         cameraOrbit: z.boolean(),
-        particles: z.boolean(),
         filmGrain: z.boolean(),
         hatch: z.enum(['cut', 'fade', 'play']),
         gazeLambdaScale: z.number().positive().max(1),
@@ -495,15 +502,20 @@ export const characterSchema = z
         `Clips add up to ${total} s, over budgets.full.maxAnimationSeconds`,
       )
     }
-    c.interaction.reactions.forEach((reaction, i) => {
-      if (reaction.clip && !clipNames.has(reaction.clip))
-        issue(['interaction', 'reactions', i, 'clip'], `Unknown clip "${reaction.clip}"`)
-      if (!(reaction.expression in c.expressions.cells))
-        issue(
-          ['interaction', 'reactions', i, 'expression'],
-          `Unknown expression "${reaction.expression}"`,
-        )
-    })
+    for (const list of ['reactions', 'actions'] as const) {
+      c.interaction[list].forEach((reaction, i) => {
+        if (reaction.clip && !clipNames.has(reaction.clip))
+          issue(['interaction', list, i, 'clip'], `Unknown clip "${reaction.clip}"`)
+        if (!(reaction.expression in c.expressions.cells))
+          issue(
+            ['interaction', list, i, 'expression'],
+            `Unknown expression "${reaction.expression}"`,
+          )
+      })
+    }
+    if (c.interaction.taps.gameAt <= c.interaction.reactions.length) {
+      issue(['interaction', 'taps', 'gameAt'], 'The game must come after every reaction')
+    }
     // No collarbones: a raise past 50° stretches the shoulder whatever the weights.
     const { armRaiseDeg, armFlapRatio } = c.interaction.carry
     if (armRaiseDeg * (1 + armFlapRatio) > 50) {

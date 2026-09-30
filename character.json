@@ -293,16 +293,24 @@
   },
 
   "egg": {
-    "_doc": "Procedural loader (0 KB of assets): a rounded dinosaur egg, fuller at the bottom (taper), with a shell of embossed polygonal plates, tubercles and speckles computed on the GPU. Wobbles while the GLB downloads and hatches when the model is ready and at least minDisplayS has passed, so it never flickers. radiusM is the widest radius.",
+    "_doc": "Procedural egg (0 KB of assets): a rounded dinosaur egg, fuller at the bottom (taper), with a shell of embossed polygonal plates, tubercles and speckles computed on the GPU. The page opens on an empty stage; the visitor drops the egg (docs/interaction-script.md): it falls from above the screen with drop.gravity, lands with a squash and bounces (restitution, settling under settleMps), then wobbles and cracks, and hatches when the model is ready and at least minDisplayS has passed since the drop, so it never flickers. radiusM is the widest radius.",
     "shape": "ovoid",
     "heightM": 0.7,
     "radiusM": 0.27,
     "taper": 0.14,
-    "shellColor": "#E6DED0",
-    "speckleColor": "#7E7468",
+    "shellColor": "#E7D6B8",
+    "speckleColor": "#7C5E45",
     "crackGlow": "glow",
     "wobble": { "maxAngleDeg": 6, "frequencyHz": 1.4 },
-    "minDisplayS": 1.8,
+    "drop": {
+      "gravity": 9.8,
+      "restitution": 0.34,
+      "settleMps": 0.6,
+      "squashPerMps": 0.035,
+      "maxSquash": 0.16,
+      "springHz": 3.4
+    },
+    "minDisplayS": 2.4,
     "hatchDurationS": 1.2
   },
 
@@ -314,8 +322,8 @@
     "biteS": 0.12
   },
   "interaction": {
-    "_doc": "Kelo alive on one screen (phase 8, docs/interaction-script.md). Taps within streakS of each other build a streak; each tap plays the reaction for its place in the streak, and on desktop the tap numbered biteAt makes him bite the screen. Past the last reaction, touch devices repeat it. A press that moves further than dragThresholdPx is a drag (desktop only).",
-    "taps": { "streakS": 2.5, "biteAt": 6, "dragThresholdPx": 6 },
+    "_doc": "Kelo alive on one screen (phases 8 and 9, docs/interaction-script.md). Taps within streakS of each other build a streak; each tap plays the reaction for its place in the streak, and on desktop the tap numbered biteAt makes him bite the screen. Past the last reaction, touch devices repeat it, and their tap numbered gameAt opens the pixel runner. A press that moves further than dragThresholdPx is a drag (desktop only). actions are what the desktop sandbox's dock asks of him, played like reactions.",
+    "taps": { "streakS": 2.5, "biteAt": 6, "gameAt": 9, "dragThresholdPx": 6 },
     "reactions": [
       {
         "name": "giggle",
@@ -361,6 +369,44 @@
         "durationS": 1.4,
         "wiggleDeg": 4,
         "sound": "roar"
+      }
+    ],
+    "actions": [
+      {
+        "name": "wave",
+        "clip": "wave",
+        "expression": "happy",
+        "jawDeg": 6,
+        "durationS": 1.6,
+        "wiggleDeg": 0,
+        "sound": "giggle"
+      },
+      {
+        "name": "jump",
+        "clip": "jump",
+        "expression": "surprised",
+        "jawDeg": 0,
+        "durationS": 1.1,
+        "wiggleDeg": 0,
+        "sound": "boing"
+      },
+      {
+        "name": "roar",
+        "clip": "roar",
+        "expression": "roar",
+        "jawDeg": 30,
+        "durationS": 1.8,
+        "wiggleDeg": 3,
+        "sound": "roar"
+      },
+      {
+        "name": "look",
+        "clip": "look_around",
+        "expression": "neutral",
+        "jawDeg": 0,
+        "durationS": 3,
+        "wiggleDeg": 0,
+        "sound": "hm"
       }
     ],
     "desktop": {
@@ -415,7 +461,6 @@
         "ao": "full",
         "bloom": true,
         "depthOfField": true,
-        "particles": 48,
         "filmGrain": true
       },
       "medium": {
@@ -426,7 +471,6 @@
         "ao": "off",
         "bloom": true,
         "depthOfField": false,
-        "particles": 32,
         "filmGrain": true
       },
       "low": {
@@ -437,7 +481,6 @@
         "ao": "off",
         "bloom": false,
         "depthOfField": false,
-        "particles": 16,
         "filmGrain": false
       }
     },
@@ -449,7 +492,6 @@
     "_doc": "Applied when prefers-reduced-motion: reduce. The scene stays, motion is minimised, and content never depends on the animation.",
     "reducedMotion": {
       "cameraOrbit": false,
-      "particles": false,
       "filmGrain": false,
       "hatch": "cut",
       "gazeLambdaScale": 0.5,
