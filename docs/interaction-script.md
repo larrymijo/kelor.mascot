@@ -89,7 +89,7 @@ Synthesised with Web Audio (`src/lib/sound/synth.ts`), no files, through a limit
 - **on**, after pressing the switch: everything, the bite included, and a low hum whose rumble opens as he grows in the bite.
 - **off**, after pressing it again: nothing, the bite included.
 
-Browsers start audio only inside a press. On desktop every press on Kelo (or on the Kelo button) creates or wakes the AudioContext there, and the first loads the synthesiser, since the sixth in a row bites; between bites the audio thread sleeps. Phones never bite, so taps there create nothing until the switch is pressed.
+Browsers start audio only inside a press. On desktop the press on Kelo (or on the Kelo button) that will bite, the sixth in a row, creates or wakes the AudioContext there (24 kHz); earlier presses only preload the synthesiser's code, and a synthesiser created that late joins the bite already playing. Between bites the audio thread sleeps. Phones never bite, so taps there create nothing until the switch is pressed.
 
 Once on, the scene asks through the bus (`src/lib/sound/bus.ts`) for: the hatch's crack and pop, a voice per tap reaction (giggle, boing, "hm?", growl, roar), a squeak when he is picked up, a whoosh when he is tossed (let go faster than 1.5 m/s), a thud on hard landings and a pat when a hop lands.
 

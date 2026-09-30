@@ -2,7 +2,7 @@
 
 Promotional website for KELOR Interactive, starring Kelo, a purple chibi dinosaur mascot who hatches from his egg and lives on one screen: he follows the cursor with his eyes, reacts to taps, can be carried around on desktop, and bites the screen when pestered.
 
-**Status:** phase 8, the live Kelo. The launch (domain, indexing, analytics, monitoring, runbook and handover) is phase 9. `CLAUDE.md` describes the architecture, `docs/interaction-script.md` the behaviour, `docs/decisions.md` every decision and `docs/qa.md` the release gate.
+**Status:** phase 8, the live Kelo, polished: the arms no longer pull the belly, the bite is heard even before the sound is turned on, and desktops get a finely scaled, polished Kelo. The launch (domain, indexing, analytics, monitoring, runbook and handover) is phase 9. `CLAUDE.md` describes the architecture, `docs/interaction-script.md` the behaviour, `docs/decisions.md` every decision and `docs/qa.md` the release gate.
 
 ## Requirements
 
