@@ -1,6 +1,13 @@
 @import 'tailwindcss';
 
 /*
+  The desktop sandbox layout (src/lib/showcase/layout.ts SANDBOX_QUERY): a wide
+  screen with a fine pointer that hovers. Everything else gets the compact
+  layout: the words above Kelo, the call to action below.
+*/
+@custom-variant sandbox (@media (min-width: 1024px) and (hover: hover) and (pointer: fine));
+
+/*
   Design tokens: the single source of truth for colour, type and motion.
   The greys come from the logo (#151515 background, #545454 dark grey,
   #A6A6A6 light grey). Purple is the mascot accent, mirrored from
@@ -11,6 +18,8 @@
   --color-white: #ffffff;
   --color-black: #000000;
 
+  /* The stage: a near-black, the same behind the canvas and the page. */
+  --color-stage: #0a0a0b;
   --color-ink-950: #0e0e0e;
   --color-ink-900: #151515;
   --color-ink-800: #1b1b1b;
@@ -59,7 +68,7 @@
   }
 
   body {
-    background-color: var(--color-ink-900);
+    background-color: var(--color-stage);
     color: var(--color-ink-100);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -100,8 +109,8 @@
  */
 .live-overlay,
 .live-hint,
-.live-control,
-.live-kelo {
+.live-kelo,
+.live-panel {
   display: none;
 }
 
@@ -134,10 +143,112 @@ html.live .live-hint {
   }
 }
 
-/* The sound switch only means something while Kelo is on stage. */
-html.live .live-control {
+/*
+ * The sound switch only means something while Kelo is on stage. Its place in
+ * the top bar is kept from the first paint (hidden, so it cannot be focused),
+ * so nothing moves when it appears (CLS 0).
+ */
+.live-control {
   display: inline-flex;
-  position: fixed;
+  visibility: hidden;
+}
+
+html.live .live-control {
+  visibility: visible;
+}
+
+/*
+ * The sandbox's dock exists only in live mode on the sandbox layout, once
+ * Kelo has hatched (html.hatched), and fades with the words in the bite.
+ */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  html.live.hatched .live-panel {
+    display: var(--panel-display, block);
+    opacity: var(--text, 1);
+    transition: opacity 600ms var(--ease-out-quart);
+  }
+
+  html.live.hatched .live-panel:focus-within {
+    opacity: 1;
+  }
+}
+
+/*
+ * Frosted glass, lightly: the panels float over the live stage. The blur is
+ * small and the tint dark, so the text keeps its contrast whatever the light.
+ */
+.glass {
+  background-color: color-mix(in oklab, var(--color-ink-950) 68%, transparent);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow:
+    0 24px 60px -24px rgb(0 0 0 / 0.7),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+}
+
+/* The dock's names, shown above its icons on hover and keyboard focus. */
+.tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 0.75rem);
+  left: 50%;
+  translate: -50% 0.25rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.4rem;
+  background-color: var(--color-ink-800);
+  color: var(--color-ink-100);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 200ms var(--ease-out-quart),
+    translate 200ms var(--ease-out-quart);
+}
+
+.tip:hover::after,
+.tip:focus-visible::after {
+  opacity: 1;
+  translate: -50% 0;
+}
+
+/*
+ * The first moment: an empty dark stage and a quiet prompt to drop the egg,
+ * over a thin tick that keeps falling. StageMount adds html.waiting until
+ * the egg is dropped.
+ */
+.drop-prompt {
+  display: none;
+}
+
+html.waiting .drop-prompt {
+  display: flex;
+}
+
+@keyframes drop-tick {
+  0% {
+    transform: translateY(-40%);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(30%);
+    opacity: 0;
+  }
+}
+
+.drop-tick {
+  animation: drop-tick 1.8s var(--ease-out-quart) infinite;
+}
+
+/* On the live stage, drags pick Kelo up or turn the camera: they never select the words. */
+html.live body {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .live-text {
@@ -156,10 +267,10 @@ html.live .live-text:focus-within {
 
 /*
  * The keyboard's way to Kelo: a button over him, from head to feet, that the
- * frame loop keeps in place. Invisible to the pointer (the stage handles it);
- * it only shows its focus ring.
+ * frame loop keeps in place, once he has hatched. Invisible to the pointer
+ * (the stage handles it); it only shows its focus ring.
  */
-html.live .live-kelo {
+html.live.hatched .live-kelo {
   display: block;
   position: fixed;
   left: calc(var(--kelo-x, 50vw) - var(--kelo-w, 0px) / 2);
@@ -177,7 +288,9 @@ html[data-kelo-hover] {
 }
 
 html[data-kelo-held],
-html[data-kelo-held] * {
+html[data-kelo-held] *,
+html[data-stage-orbit],
+html[data-stage-orbit] * {
   cursor: grabbing;
   user-select: none;
 }
@@ -218,5 +331,10 @@ html[data-kelo-held] * {
 
   .forced-plate {
     background-color: Canvas;
+  }
+
+  .glass {
+    background-color: Canvas;
+    border-color: CanvasText;
   }
 }

@@ -2,7 +2,7 @@
 
 # KELOR Interactive: promotional site with a 3D mascot
 
-Promotional website for KELOR Interactive. The star is a 3D mascot, **Kelo**: an adorable chibi bipedal dinosaur, purple, that hatches from its egg and lives on one screen: it follows the cursor with its eyes, reacts to taps, can be carried around on desktop, and bites the screen when pestered. Goals, in order: it must look very 3D, load exceptionally fast, and feel alive.
+Promotional website for KELOR Interactive, a minimal dark showcase for the studio's prospective clients. The star is a 3D mascot, **Kelo**: an adorable chibi bipedal dinosaur, purple, that hatches from the egg the visitor drops and lives on one screen: it follows the cursor with its eyes, reacts to taps, can be carried around, orbited, lit and x-rayed on desktop, bites the screen when pestered, and opens a pixel-art runner on the ninth tap on a phone. Goals, in order: it must look very 3D, load exceptionally fast, and feel alive.
 
 The site copy is **Spanish** (`lang="es"`). Code, file names, commits, PRs and repo docs are **English**.
 
@@ -90,7 +90,8 @@ src/components/sections page sections (the live screen, notices)
 src/components/three/live the live pose driver and the screen-space overlays
 src/components/three    R3F scene, mascot, egg, effects (client only)
 src/components/ui       monochrome UI primitives
-src/lib                 pure logic (character contract, copy, math, behaviour, carry physics, the bite, sound); unit tested
+src/components/game     the pixel runner (phones, loaded when it opens)
+src/lib                 pure logic (character contract, copy, math, behaviour, carry physics, the bite, sound, showcase state, the runner); unit tested
 scripts/assets          GLB validation and asset processing (Node)
 scripts/blender         headless Blender pipeline (Python, phase 3)
 scripts/review          capture and review tooling
@@ -124,12 +125,21 @@ public/basis            three's Basis transcoder for KTX2, served locally (kept 
 
 - `docs/interaction-script.md` is the source of the behaviour; change it first, then `character.json` `interaction` (taps, reactions, carry, fall, hop) or the bite's keys in `src/lib/live/bite.ts`.
 - Pure logic: `src/lib/behaviour/interaction.ts` (the tap streak, reactions, the bite on the sixth tap, drag versus tap, desktop gating), `carry.ts` (fixed 240 Hz physics: the spring and pendulum while held, the fall, bounces, landing squash, hops), `src/lib/live` (the rest pose and the bite).
-- `LiveDriver` (priority -2) fills the shared `live` object every frame: the rest pose, or the bite's keys and cues. The camera, mascot, lights, effects, particles and backdrop read it. `OverlayDriver` writes the screen-space layers (letterbox, iris, words, hint, Kelo's place for the keyboard button) as CSS variables on `#live-ui`, plus data attributes for tests (`data-kelo`, `data-reaction`, `data-kelo-x/y`, `data-scale`, `data-biting`). Nothing re-renders React per frame.
+- `LiveDriver` (priority -2) fills the shared `live` object every frame: the rest pose, or the bite's keys and cues. The camera, mascot, lights, effects and backdrop read it. `OverlayDriver` writes the screen-space layers (letterbox, iris, words, hint, Kelo's place for the keyboard button) as CSS variables on `#live-ui`, plus data attributes for tests (`data-kelo`, `data-reaction`, `data-kelo-x/y`, `data-scale`, `data-biting`). Nothing re-renders React per frame.
 - `BehaviourController` reads presses on the window (`useBehaviourInput`): a tap, a pick-up past 6 px on desktop, or a click on the stage that makes him hop; the Kelo button gives the keyboard Enter or Space and the arrows. It steps the physics and hands `Mascot` his root pose: a pivot at the grab point (swing, lean), the squash, then the hatch and bite scale.
-- `StageMount` sets `html.live` while the stage draws, which shows the stage's extras (overlays, hint, sound switch, Kelo button). The words have their fixed places from the first paint, so nothing shifts (CLS 0); without live mode the page is the words alone. Phones keep the lite model.
+- `StageMount` sets `html.live` while the stage draws, which shows the stage's extras (overlays, hint, sound switch), `html.waiting` until the egg is dropped (the drop prompt) and `html.hatched` once he is ready (the Kelo button, the dock). The words have their fixed places from the first paint, so nothing shifts (CLS 0); without live mode the page is the words alone. Phones keep the lite model.
 - Sounds go through `src/lib/sound/bus.ts`. `src/lib/sound/control.ts` holds the state: `auto` (every visit starts silent except for the bite), `on` and `off` from the switch. The audio engine is created inside a press: the switch's, or on desktop the press on Kelo that bites (earlier presses only preload its code).
 - Effects follow the tier: MSAA 4x on high, FXAA on medium, no ambient occlusion on medium, no depth of field; desktops get 2048 px shadows on medium too. The skin's soft-skin shading patches three's physical lighting chunk (`finish.ts`; a test watches the line it replaces). Measure with `?tier=low|medium|high`.
 - `tests/e2e/interaction.spec.ts` plays taps, the bite, carrying and hops on every profile and captures each stage to `scripts/review/out`.
+
+## Showcase (phase 9)
+
+- The boot runs `waiting → egg → hatching → ready` (`src/lib/scene/boot.ts`): nothing hatches until the visitor drops the egg. `DropPrompt` turns a press on the stage (or on the prompt) into `dropEgg({ clientX, clientY })`, and the button from the keyboard into `dropEgg()` (the middle); `Egg.tsx`, outside the mascot's Suspense boundary, answers it, so the egg falls at once even while the model loads, and `BehaviourController` keeps Kelo at `live.egg.x` until he is ready. `src/lib/showcase/targets.ts` says which presses belong to the stage. `beforeHatch(phase)` covers `waiting` and `egg`. The fall, bounces and squash are pure (`src/lib/scene/drop.ts`, `character.json` `egg.drop`); `Egg.tsx` stays mounted hidden while waiting so its shader compiles early.
+- `src/lib/showcase/state.ts` is the module singleton the page and the 3D chunk share (like the sound bus): the dock's state (lighting, spin, x-ray), its commands (actions, bite, reset view), the drop and the runner request. `ShowcaseDriver` (priority -1) eases the lighting looks and the view into `live.look` and `live.view`.
+- `src/lib/showcase/layout.ts` frames Kelo small (`layoutFraming`) and the bite large (`BITE_FRAMING`); `CameraRig` applies them with a lens shift (`setViewOffset`) and the sandbox's orbit and zoom.
+- The desktop sandbox is the Tailwind variant `sandbox` (`SANDBOX_QUERY`: 1024 px or wider, hover, fine pointer). `ShowcaseDock` is icon-only; each button has an accessible name and a `data-tip` tooltip.
+- Phones: the ninth tap in a row (`interaction.taps.gameAt`) returns `{ kind: 'game' }` and opens `RunnerGame` through `GameMount` (a dynamic import). Its logic and sprites are pure (`src/lib/game`).
+- `tests/e2e/helpers.ts` `hatch()` drops the egg with a bare click event on the drop button, so it leaves focus and the pointer alone; `tests/e2e/showcase.spec.ts` covers the real drop, the dock and the runner.
 
 ## Progressive loading (phase 4)
 
@@ -155,7 +165,7 @@ public/basis            three's Basis transcoder for KTX2, served locally (kept 
 - `src/lib/quality/ladder.ts` builds the quality ladder (tier and pixel-ratio steps); `QualityController` walks it one step at a time.
 - `src/lib/security/csp.ts` builds the Content Security Policy that `next.config.ts` sends in production builds; see its comment before adding any source.
 - `next.config.ts` hashes the models and the Basis transcoder (`src/lib/assets`): models load as `?v=<hash>`, the transcoder from `/basis/<hash>/`, both cached `immutable`. Run Next from the repo root: the config imports `./src/...`, which Next resolves from the working directory.
-- The studio is `Backdrop.tsx` (a screen-space halo), `Floor.tsx`, `studioEnvironment.ts` (reflection panels baked into a cube map) and `Particles.tsx` (a few motes by tier).
+- The studio is `Backdrop.tsx` (a faint screen-space halo on near-black), `Floor.tsx` (the shadow only), `studioEnvironment.ts` (reflection panels baked into a cube map) and `StudioLights.tsx` (key, rim and fill, blended between the lighting looks in `looks.ts`).
 - `?qa` (local and preview builds) opens a panel that plays the live moments (idle, carrying, the bite; taps on touch screens), measures frames through each and copies a report; the owner runs it on real devices. `docs/qa.md` is the release-gate matrix.
 
 ## Commands
@@ -167,7 +177,7 @@ corepack pnpm validate:model   # validate GLBs in public/models against characte
 corepack pnpm build:model      # full model pipeline (CI; needs Blender)
 corepack pnpm build:placeholder # placeholder GLBs into build/placeholder (--public to overwrite the model)
 corepack pnpm size             # bundle report and JS budgets (after build)
-corepack pnpm e2e              # Playwright: hero, interaction, loading, resilience, CSP, accessibility, captures (after build)
+corepack pnpm e2e              # Playwright: hero, interaction, showcase, loading, resilience, CSP, accessibility, captures (after build)
 corepack pnpm perf             # load and frame-rate probe: owner's laptop and a throttled phone (after build)
 corepack pnpm perf:budget      # the TBT budgets on the throttled phone: page and 3D boot (after build)
 ```

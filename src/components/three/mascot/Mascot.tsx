@@ -2,13 +2,14 @@
 
 import { useFrame, useThree } from '@react-three/fiber'
 import { Suspense, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { AnimationClip, Group, Object3D } from 'three'
+import { Color, SkeletonHelper, type AnimationClip, type Group, type Object3D } from 'three'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { character } from '@/lib/character'
 import { degToRad, smoothstep } from '@/lib/math/damp'
-import type { BootPhase } from '@/lib/scene/boot'
+import { beforeHatch, type BootPhase } from '@/lib/scene/boot'
 import { firstPaintUrl, upgradeUrl } from '@/lib/scene/model'
 import { readConnection, shouldUpgrade } from '@/lib/scene/upgrade'
+import { showcase } from '@/lib/showcase/state'
 import { live } from '../live/LiveDriver'
 import { loadKtx2Module, useKtx2Extension, useModel, warmUp } from '../loaders'
 import { useScene } from '../store'
@@ -20,6 +21,11 @@ const easeOutBack = (t: number) => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2
 const H = character.meta.heightM
 /** Carried, he turns most of the way to face the viewer from his three-quarter pose. */
 const CARRIED_FACING = 0.7
+/** The x-ray's skeleton: bright violet joints fading to the glow colour along each bone. */
+const BONE_COLORS = [
+  new Color(character.colors.mascot['300']),
+  new Color(character.colors.mascot.glow),
+]
 
 type LoadedModel = { scene: Object3D; animations: AnimationClip[] }
 
@@ -93,6 +99,8 @@ export function Mascot() {
   const lastExpression = useRef<string | null>(null)
   const lastSnaps = useRef(live.snaps)
   const time = useRef(0)
+  /** The x-ray's skeleton, in the scene while the x-ray is on. */
+  const skeleton = useRef<SkeletonHelper | null>(null)
   // Outlives rig swaps: the director, blink rhythm and gaze target carry on.
   const [behaviour] = useState(() => new BehaviourController())
   useBehaviourInput(behaviour)
@@ -115,6 +123,16 @@ export function Mascot() {
       rig.dispose()
     }
   }, [rig, full, gl, camera, scene])
+
+  // A new rig needs its own skeleton; none survives the mascot.
+  useEffect(
+    () => () => {
+      skeleton.current?.removeFromParent()
+      skeleton.current?.dispose()
+      skeleton.current = null
+    },
+    [rig],
+  )
 
   useEffect(() => () => useScene.getState().setModelReady(false), [])
 
@@ -168,11 +186,13 @@ export function Mascot() {
       const squash = body.squash.angle
       const wide = 1 / Math.sqrt(squash)
       shape.current.scale.set(wide, squash, wide)
-      const hatch = scene.boot.phase === 'egg' ? 0 : scene.boot.hatchProgress
-      root.current.visible = scene.boot.phase !== 'egg'
+      const hatch = beforeHatch(scene.boot.phase) ? 0 : scene.boot.hatchProgress
+      root.current.visible = !beforeHatch(scene.boot.phase)
       const reveal = scene.reducedMotion ? 1 : easeOutBack(smoothstep(0, 0.6, hatch))
       root.current.scale.setScalar((0.55 + 0.45 * reveal) * sample.scale)
-      root.current.rotation.y = degToRad(sample.bodyYawDeg) * (1 - CARRIED_FACING * frame.carried)
+      // His three-quarter turn (the bite turns him to you), less while carried, plus the turntable.
+      root.current.rotation.y =
+        degToRad(sample.bodyYawDeg) * (1 - CARRIED_FACING * frame.carried) + live.view.spin
       rig.mouthWorld(live.mouth)
       // Where he is, for the overlays, the keyboard button and the tests.
       const size = H * sample.scale * squash
@@ -184,6 +204,24 @@ export function Mascot() {
     if (scene.clipRequest && scene.clipRequest.id !== lastRequest.current) {
       lastRequest.current = scene.clipRequest.id
       rig.play(scene.clipRequest.name)
+    }
+
+    // The sandbox's x-ray: a wireframe body with the skeleton drawn over it.
+    const xray = showcase().xray
+    rig.setXray(xray)
+    if (xray && !skeleton.current) {
+      const helper = new SkeletonHelper(rig.scene)
+      helper.setColors(BONE_COLORS[0]!, BONE_COLORS[1]!)
+      const material = helper.material as { depthTest: boolean; toneMapped: boolean }
+      material.depthTest = false
+      material.toneMapped = false
+      helper.renderOrder = 10
+      state.scene.add(helper)
+      skeleton.current = helper
+    } else if (!xray && skeleton.current) {
+      skeleton.current.removeFromParent()
+      skeleton.current.dispose()
+      skeleton.current = null
     }
 
     rig.setExpression(scene.expression)

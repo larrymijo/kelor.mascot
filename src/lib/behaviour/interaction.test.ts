@@ -53,6 +53,16 @@ describe('interaction', () => {
     expect(nextTapBites(streak, 5.4, { desktop: true, reducedMotion: true }, settings)).toBe(true)
   })
 
+  it('opens the pixel runner on the ninth tap on touch screens, then starts over', () => {
+    const times = Array.from({ length: 10 }, (_, i) => i * 0.4)
+    const outcomes = tapSeries(times, touch)
+    expect(outcomes[settings.taps.gameAt - 1]).toMatchObject({ kind: 'game' })
+    expect(outcomes.filter((o) => o.kind === 'game')).toHaveLength(1)
+    expect(outcomes.at(-1)).toMatchObject({ kind: 'react', level: 1 })
+    // Desktop bites long before, and never opens the game.
+    expect(tapSeries(times).some((o) => o.kind === 'game')).toBe(false)
+  })
+
   it('never bites on touch screens: the last reaction repeats', () => {
     const outcomes = tapSeries([0, 0.4, 0.8, 1.2, 1.6, 2, 2.4, 2.8], touch)
     expect(outcomes.every((o) => o.kind === 'react')).toBe(true)

@@ -7,13 +7,15 @@
  *   its place in it: a giggle, a hop, a stare, then grumpier and grumpier.
  * - On desktop the tap numbered biteAt makes him bite the screen, and the
  *   streak starts over. With reduced motion he snaps his jaw in place
- *   instead. Touch screens keep repeating the last reaction.
+ *   instead. Touch screens keep repeating the last reaction, and their tap
+ *   numbered gameAt opens the pixel runner (the streak starts over).
  * - On desktop a press that moves past the threshold picks him up.
  */
 import type { Character } from '@/lib/character'
 
 export type InteractionSettings = Character['interaction']
 export type Reaction = InteractionSettings['reactions'][number]
+export type Action = InteractionSettings['actions'][number]
 
 export interface Capabilities {
   /** A fine pointer that can hover, on a wide screen: dragging and the bite. */
@@ -27,6 +29,8 @@ export type TapOutcome =
   | { kind: 'bite' }
   /** The bite in place, for reduced motion: a jaw snap and the roar face. */
   | { kind: 'snap'; reaction: Reaction }
+  /** Touch screens: the grumpiest reaction, and the pixel runner opens. */
+  | { kind: 'game'; reaction: Reaction }
 
 export interface TapStreak {
   count: number
@@ -51,6 +55,10 @@ export function registerTap(
   if (caps.desktop && streak.count >= settings.taps.biteAt) {
     streak.count = 0
     return caps.reducedMotion ? { kind: 'snap', reaction: last } : { kind: 'bite' }
+  }
+  if (!caps.desktop && streak.count >= settings.taps.gameAt) {
+    streak.count = 0
+    return { kind: 'game', reaction: last }
   }
   const level = Math.min(streak.count, reactions.length)
   return { kind: 'react', reaction: reactions[level - 1]!, level }

@@ -31,11 +31,11 @@ export interface Tweaks {
 
 export const defaultTweaks: Tweaks = {
   keyIntensity: 2.4,
-  rimIntensity: 3.2,
-  fillIntensity: 0.6,
+  rimIntensity: 1.7,
+  fillIntensity: 0.45,
   envIntensity: 0.8,
-  bloomIntensity: 0.9,
-  plateGlow: 1.6,
+  bloomIntensity: 0.3,
+  plateGlow: 0.6,
   grain: 0.025,
   skinCoat: DEFAULT_FINISH.skinCoat,
   skinSheen: DEFAULT_FINISH.skinSheen,
@@ -58,6 +58,8 @@ interface SceneState {
   /** 0 to 1 while the GLB downloads. */
   loadProgress: number
   boot: BootState
+  /** The visitor has dropped the egg (a click on the stage or the drop button). */
+  dropRequested: boolean
   expression: ExpressionName
   /** Clip requested from outside the boot sequence (the debug panel). */
   clipRequest: { name: string; id: number } | null
@@ -82,6 +84,7 @@ interface SceneState {
   setModelQuality: (value: 'lite' | 'full') => void
   setLoadProgress: (value: number) => void
   setBoot: (boot: BootState) => void
+  requestDrop: () => void
   setExpression: (expression: ExpressionName) => void
   playClip: (name: string) => void
   setTweaks: (tweaks: Partial<Tweaks>) => void
@@ -101,6 +104,7 @@ export const useScene = create<SceneState>()((set) => ({
   modelQuality: 'lite',
   loadProgress: 0,
   boot: initialBootState,
+  dropRequested: false,
   expression: 'neutral',
   clipRequest: null,
   tweaks: defaultTweaks,
@@ -119,6 +123,7 @@ export const useScene = create<SceneState>()((set) => ({
   setModelQuality: (modelQuality) => set({ modelQuality }),
   setLoadProgress: (loadProgress) => set({ loadProgress }),
   setBoot: (boot) => set({ boot }),
+  requestDrop: () => set({ dropRequested: true }),
   setExpression: (expression) => set({ expression }),
   playClip: (name) => set((s) => ({ clipRequest: { name, id: (s.clipRequest?.id ?? 0) + 1 } })),
   setTweaks: (tweaks) => set((s) => ({ tweaks: { ...s.tweaks, ...tweaks } })),

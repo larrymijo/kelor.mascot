@@ -1,7 +1,7 @@
 /**
  * Camera framing for the stage: how far the camera must be, and where it
  * must look, so the subject fills a share of the screen that is left free
- * by the text at the bottom. Works for portrait phones and wide desktops.
+ * by the words above and below it. Works for portrait phones and wide desktops.
  */
 import { degToRad } from '@/lib/math/damp'
 
@@ -18,6 +18,8 @@ export interface FramingInput {
   fill: number
   /** Share of the viewport height reserved for text at the bottom, 0 to 1. */
   bottomReserve: number
+  /** Share of the viewport height reserved at the top, 0 to 1 (none by default). */
+  topReserve?: number
 }
 
 export interface Framing {
@@ -29,17 +31,18 @@ export interface Framing {
 export function frameSubject(input: FramingInput): Framing {
   const { aspect, fovDeg, subjectHeightM, subjectWidthM, subjectCenterY, fill, bottomReserve } =
     input
+  const topReserve = input.topReserve ?? 0
   const tanHalf = Math.tan(degToRad(fovDeg) / 2)
-  const free = 1 - bottomReserve
+  const free = 1 - bottomReserve - topReserve
 
   // The visible height at distance d is 2·d·tan(fov/2); the subject gets fill·free of it.
   const byHeight = subjectHeightM / (2 * fill * free * tanHalf)
   const byWidth = subjectWidthM / (2 * fill * aspect * tanHalf)
   const distance = Math.max(byHeight, byWidth)
 
-  // Shift the view down so the subject sits centred in the free (upper) area.
+  // Shift the view so the subject sits centred in the free band between the reserves.
   const halfHeight = distance * tanHalf
-  return { distance, targetY: subjectCenterY - bottomReserve * halfHeight }
+  return { distance, targetY: subjectCenterY - (bottomReserve - topReserve) * halfHeight }
 }
 
 /**

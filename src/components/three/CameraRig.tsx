@@ -6,9 +6,16 @@
  * hero shot at rest, and the bite's moves while it plays.
  *
  * - distance is a multiple of the hero framing that frameSubject computes for
- *   this screen, so every shot works on any aspect ratio;
- * - the target keeps a band free at the bottom for the words, the same rule
- *   frameSubject uses, at whatever distance the shot is;
+ *   this screen and layout (src/lib/showcase/layout.ts), so every shot works
+ *   on any aspect ratio;
+ * - the target keeps the layout's bands free above and below for the words
+ *   and the dock, the same rule frameSubject uses, at whatever distance;
+ * - in the desktop sandbox the visitor orbits the camera (dragging the empty
+ *   stage) and zooms it (the wheel); the bite eases that away while it plays,
+ *   and plays at the close framing of BITE_FRAMING, so the small Kelo of the
+ *   layout still fills the screen with his jaws;
+ * - a lens shift stands Kelo where the layout wants him across the screen
+ *   (right of centre in the sandbox), so the orbit still circles him;
  * - in the bite the target slides onto the mouth of the scaled Kelo, and the
  *   snap shakes the camera.
  *
@@ -16,11 +23,13 @@
  * shell bursts; reduced motion gets neither.
  */
 import { useFrame, useThree } from '@react-three/fiber'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MathUtils, Vector3, type PerspectiveCamera } from 'three'
 import { character } from '@/lib/character'
-import { degToRad, smoothstep } from '@/lib/math/damp'
+import { damp, degToRad, smoothstep } from '@/lib/math/damp'
 import { frameSubject } from '@/lib/scene/framing'
+import { beforeHatch } from '@/lib/scene/boot'
+import { BITE_FRAMING, layoutFraming, SANDBOX_QUERY } from '@/lib/showcase/layout'
 import { live } from './live/LiveDriver'
 import { useScene } from './store'
 
@@ -38,39 +47,68 @@ const _target = new Vector3()
 export function CameraRig() {
   const width = useThree((s) => s.size.width)
   const height = useThree((s) => s.size.height)
+  // Client-only chunk: the media query can be read while initialising.
+  const [sandbox, setSandbox] = useState(() => window.matchMedia(SANDBOX_QUERY).matches)
+  useEffect(() => {
+    const query = window.matchMedia(SANDBOX_QUERY)
+    const update = () => setSandbox(query.matches)
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+  /** How much of the sandbox's orbit and zoom shows: none while the bite plays. */
+  const orbit = useRef(1)
 
-  // The hero framing for this screen; every shot is a multiple of its distance.
+  // The hero framing for this screen and layout; every shot is a multiple of its distance.
   const frame = useMemo(() => {
     const aspect = width / Math.max(1, height)
-    const portrait = aspect < 1
-    // A band at the bottom for the words, the hint and the contact line.
-    const bottomReserve = portrait ? 0.24 : 0.12
-    const { distance } = frameSubject({
-      aspect,
-      fovDeg: FOV,
-      subjectHeightM: H * 1.08,
-      subjectWidthM: H * 0.85,
-      subjectCenterY: H * 0.5,
-      fill: 0.72,
-      bottomReserve,
+    const frameFor = ({ centreX, ...layout }: typeof BITE_FRAMING) => ({
+      distance: frameSubject({
+        aspect,
+        fovDeg: FOV,
+        subjectHeightM: H * 1.08,
+        // Off centre, the far side of the screen is further from him: frame the width for it.
+        subjectWidthM: H * 0.85 * (1 + 2 * Math.abs(centreX - 0.5)),
+        subjectCenterY: H * 0.5,
+        ...layout,
+      }).distance,
+      shift: layout.bottomReserve - (layout.topReserve ?? 0),
+      centreX,
     })
-    return { distance, bottomReserve }
-  }, [width, height])
+    const hero = frameFor(layoutFraming(aspect, sandbox))
+    const bite = frameFor(BITE_FRAMING)
+    return { ...hero, biteDistance: bite.distance, biteShift: bite.shift }
+  }, [width, height, sandbox])
 
-  useFrame((state) => {
+  // The lens shift: the picture slides so he stands at centreX, without turning the camera.
+  const camera = useThree((s) => s.camera) as PerspectiveCamera
+  useEffect(() => {
+    live.layout.centreX = frame.centreX
+    const offset = (frame.centreX - 0.5) * width
+    if (Math.abs(offset) < 0.5) camera.clearViewOffset()
+    else camera.setViewOffset(width, height, -offset, 0, width, height)
+    return () => camera.clearViewOffset()
+  }, [camera, frame.centreX, width, height])
+
+  useFrame((state, delta) => {
     const camera = state.camera as PerspectiveCamera
     const { sample } = live
     const scene = useScene.getState()
     const { phase, hatchProgress } = scene.boot
 
     // The load: pulled back around the egg, pushing in as it hatches.
-    const push =
-      phase === 'egg'
-        ? EGG_DISTANCE
-        : phase === 'hatching' && !scene.reducedMotion
-          ? MathUtils.lerp(EGG_DISTANCE, 1, smoothstep(0, 1, hatchProgress))
-          : 1
-    const distance = frame.distance * sample.distance * push
+    const push = beforeHatch(phase)
+      ? EGG_DISTANCE
+      : phase === 'hatching' && !scene.reducedMotion
+        ? MathUtils.lerp(EGG_DISTANCE, 1, smoothstep(0, 1, hatchProgress))
+        : 1
+    orbit.current = damp(orbit.current, live.bite.playing ? 0 : 1, 5, Math.min(delta, 0.1))
+    const { view } = live
+    const zoom = MathUtils.lerp(1, view.zoom, orbit.current)
+    // The bite moves in to its close framing as the orbit eases away.
+    const close = 1 - orbit.current
+    const base = MathUtils.lerp(frame.distance, frame.biteDistance, close)
+    const shift = MathUtils.lerp(frame.shift, frame.biteShift, close)
+    const distance = base * sample.distance * push * zoom
 
     if (camera.fov !== sample.fovDeg) {
       camera.fov = sample.fovDeg
@@ -78,13 +116,13 @@ export function CameraRig() {
     }
     const halfHeight = distance * Math.tan(degToRad(camera.fov) / 2)
 
-    // Target: the orbit point, keeping the bottom band free, sliding onto the mouth in the gulp.
-    _target.set(0, sample.targetY - frame.bottomReserve * halfHeight, 0)
+    // Target: the orbit point, keeping the layout's bands free, sliding onto the mouth in the gulp.
+    _target.set(0, sample.targetY - shift * halfHeight, 0)
     // The mouth as the mascot left it last frame: it follows the head's gaze and the clip.
     if (sample.mouthFocus > 0) _target.lerp(live.mouth, sample.mouthFocus)
 
-    const azimuth = degToRad(sample.azimuthDeg)
-    const elevation = degToRad(sample.elevationDeg)
+    const azimuth = degToRad(sample.azimuthDeg) + view.yaw * orbit.current
+    const elevation = degToRad(sample.elevationDeg) + view.pitch * orbit.current
     camera.position.set(
       _target.x + Math.sin(azimuth) * Math.cos(elevation) * distance,
       _target.y + Math.sin(elevation) * distance,

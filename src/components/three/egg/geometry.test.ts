@@ -11,6 +11,39 @@ const shellBoxes = () =>
   [pieces.left, pieces.right, pieces.cap].map((g) => box(g.attributes.position as never))
 
 describe('egg geometry', () => {
+  it('turns its outer side to the viewer: the triangles and the normals face outwards', () => {
+    // Faces wound the other way render the outside as the shell's inside:
+    // flipped light, and the darker, cooler inner tone all over.
+    for (const geometry of [pieces.whole, pieces.left, pieces.right, pieces.cap]) {
+      const position = geometry.attributes.position!
+      const normal = geometry.attributes.normal!
+      const index = geometry.index!
+      const [a, b, c, n] = [new Vector3(), new Vector3(), new Vector3(), new Vector3()]
+      let outward = 0
+      let normalsOut = 0
+      for (let i = 0; i < index.count; i += 3) {
+        a.fromBufferAttribute(position, index.getX(i))
+        b.fromBufferAttribute(position, index.getX(i + 1))
+        c.fromBufferAttribute(position, index.getX(i + 2))
+        const face = new Vector3().subVectors(b, a).cross(new Vector3().subVectors(c, a))
+        const radial = a
+          .clone()
+          .add(b)
+          .add(c)
+          .multiplyScalar(1 / 3)
+          .setY(0)
+        radial.y = a.y - egg.heightM * 0.45
+        if (face.dot(radial) > 0) outward++
+        n.fromBufferAttribute(normal, index.getX(i))
+        if (n.dot(radial) > 0) normalsOut++
+      }
+      const triangles = index.count / 3
+      // A few thin triangles at the poles and along the snapped cracks lean the other way.
+      expect(outward / triangles).toBeGreaterThan(0.95)
+      expect(normalsOut / triangles).toBeGreaterThan(0.95)
+    }
+  })
+
   it('stands on the floor and matches the contract height', () => {
     const boxes = shellBoxes()
     expect(Math.min(...boxes.map((b) => b.min.y))).toBeCloseTo(0, 5)

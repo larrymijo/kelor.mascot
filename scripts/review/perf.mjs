@@ -9,7 +9,8 @@
  *                  so headroom above 60 shows
  *   load profiles  record FCP, LCP and its element, CLS, an estimate of TBT
  *                  (long tasks from FCP until 3 s after Kelo is ready), when
- *                  the egg and Kelo appear, and the bytes by kind
+ *                  the stage draws (waiting for the egg, which the probe drops
+ *                  at once) and when Kelo is ready, and the bytes by kind
  *
  * The laptop profiles match the owner's screen (1920x1080 at 150%, so a
  * 1280x650 page at DPR 1.5); the phone profile uses Lighthouse's mobile
@@ -119,10 +120,20 @@ function sampleFrames(windowMs) {
   })
 }
 
+/** The stage opens waiting for the egg: drop it at once, as a visitor would. */
+async function dropEgg(page, timeout) {
+  await page.waitForSelector('[data-scene-state="waiting"],[data-scene-state="unavailable"]', {
+    timeout,
+  })
+  const button = page.locator('#drop-button')
+  if (await button.isVisible()) await button.click()
+}
+
 async function runFps(browser, baseUrl, profile) {
   const context = await browser.newContext(profile.context)
   const page = await context.newPage()
   await page.goto(baseUrl + profile.query)
+  await dropEgg(page, 60_000)
   await page.waitForSelector('[data-scene-state="ready"]', { timeout: 60_000 })
   await page.waitForSelector('html.live', { timeout: 30_000 })
   // Let the full model stream in and the monitor's settle window pass.
@@ -221,6 +232,7 @@ async function runLoad(browser, baseUrl, profile) {
     }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-scene-state'] })
   })
   await page.goto(baseUrl, { timeout: 120_000 })
+  await dropEgg(page, 120_000).catch(() => {})
   await page
     .waitForSelector('[data-scene-state="ready"],[data-scene-state="unavailable"]', {
       timeout: 120_000,
@@ -244,14 +256,15 @@ async function runLoad(browser, baseUrl, profile) {
     const kind = resourceKind(pathname)
     bytes[kind] = (bytes[kind] ?? 0) + size
   }
-  const drawing = m.states.egg ?? m.states.hatching ?? m.states.ready ?? null
+  const drawing = m.states.waiting ?? m.states.egg ?? m.states.hatching ?? m.states.ready ?? null
   const ready = m.states.ready ?? null
   return {
     fcpMs: m.fcp && Math.round(m.fcp),
     lcpMs: m.lcp && Math.round(m.lcp.at),
     lcpElement: m.lcp?.element ?? null,
     cls: Math.round(m.cls * 1000) / 1000,
-    tbtMs: Math.round(blockingTime(m.longTasks, m.fcp ?? 0, (ready ?? m.fcp ?? 0) + 3_000)),
+    // Until 3 s after Kelo is ready; a run that never got there has no TBT.
+    tbtMs: ready === null ? null : Math.round(blockingTime(m.longTasks, m.fcp ?? 0, ready + 3_000)),
     // The page itself: blocking time from first paint until the 3D chunk is requested.
     shellTbtMs:
       stageImport === null ? null : Math.round(blockingTime(m.longTasks, m.fcp ?? 0, stageImport)),
@@ -282,6 +295,8 @@ function summariseLoad(runs) {
     readyMs: pick('readyMs'),
     kB: runs.at(-1).kB,
     runs: runs.length,
+    // Runs where Kelo got ready: the TBT medians count only these.
+    readyRuns: runs.filter((r) => r.readyMs !== null).length,
   }
 }
 
@@ -319,7 +334,7 @@ async function main() {
         console.log(`\n${name}  (median of ${r.runs})`)
         console.log(`  FCP ${r.fcpMs} ms   LCP ${r.lcpMs} ms (${r.lcpElement})   CLS ${r.cls}`)
         console.log(
-          `  TBT ~${r.tbtMs} ms (page ${r.shellTbtMs} ms, 3D boot ${r.tbtMs - r.shellTbtMs} ms)   egg ${r.drawingMs} ms   Kelo ready ${r.readyMs} ms`,
+          `  TBT ~${r.tbtMs} ms (page ${r.shellTbtMs} ms, 3D boot ${r.tbtMs === null ? null : r.tbtMs - r.shellTbtMs} ms)   stage ${r.drawingMs} ms   Kelo ready ${r.readyMs} ms`,
         )
         console.log(
           `  kB  ${Object.entries(r.kB)
@@ -340,11 +355,13 @@ async function main() {
     if (!phone) throw new Error('--assert needs the phone-load profile')
     const checks = checkTbt(phone)
     console.log('')
+    if (phone.readyRuns < phone.runs)
+      console.log(`  FAIL  Kelo got ready in ${phone.readyRuns} of ${phone.runs} runs`)
     for (const c of checks)
       console.log(
         `  ${c.ok ? 'PASS' : 'FAIL'}  ${c.name.padEnd(12)} ${c.value} ms (budget ${c.budget} ms)`,
       )
-    if (checks.some((c) => !c.ok)) process.exitCode = 1
+    if (checks.some((c) => !c.ok) || phone.readyRuns < phone.runs) process.exitCode = 1
   }
 }
 

@@ -36,12 +36,24 @@ export function median(values) {
 export const TBT_BUDGETS = { pageMs: 200, bootMs: 2000 }
 
 /**
- * Checks a load result against the TBT budgets.
- * @param {{ tbtMs: number, shellTbtMs: number | null }} result
+ * Checks a load result against the TBT budgets. A run where Kelo never got
+ * ready has no TBT (null): its window would end early and pass the boot
+ * budget without measuring it, so it fails.
+ * @param {{ tbtMs: number | null, shellTbtMs: number | null }} result
  */
 export function checkTbt(result, budgets = TBT_BUDGETS) {
   if (result.shellTbtMs === null)
     return [{ name: 'page TBT', value: null, budget: budgets.pageMs, ok: false }]
+  if (result.tbtMs === null)
+    return [
+      {
+        name: 'page TBT',
+        value: result.shellTbtMs,
+        budget: budgets.pageMs,
+        ok: result.shellTbtMs <= budgets.pageMs,
+      },
+      { name: '3D boot TBT', value: null, budget: budgets.bootMs, ok: false },
+    ]
   const boot = result.tbtMs - result.shellTbtMs
   return [
     {

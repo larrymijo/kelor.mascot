@@ -3,16 +3,19 @@
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import { Color, ShaderMaterial } from 'three'
-import { character } from '@/lib/character'
 import { smoothstep } from '@/lib/math/damp'
 import { live } from './live/LiveDriver'
+import { blendColor } from './looks'
 
-const INK = character.colors.brandMono.ink900
-/** The halo: the page's ink lifted a little, with a trace of the mascot's violet. */
-const HALO = new Color(INK).lerp(new Color('#3a3448'), 0.55)
+/** The stage's near-black, the same as the page's. */
+const INK = '#0a0a0b'
+const INK_COLOR = new Color(INK)
+/** The halo: the black lifted only a touch behind Kelo, tinted by the lighting look. */
+const HALO_MIX = 0.3
+const _tint = new Color()
 /** Where the halo sits on screen (0..1 from the bottom left), and its radius in screen heights. */
 const CENTRE = { x: 0.5, y: 0.56 }
-const RADIUS = 0.78
+const RADIUS = 0.62
 /** Kelo's scale over which the halo dims in the gulp, so the inside of his mouth stays dark. */
 const GULP_SCALE = { from: 1.2, to: 3 }
 
@@ -56,7 +59,7 @@ export function Backdrop() {
     () => ({
       uniforms: {
         uInk: { value: new Color(INK) },
-        uHalo: { value: HALO.clone() },
+        uHalo: { value: INK_COLOR.clone().lerp(new Color('#3a3448'), HALO_MIX) },
         uCentre: { value: [CENTRE.x, CENTRE.y] },
         uRadius: { value: RADIUS },
         uAspect: { value: 1 },
@@ -74,7 +77,10 @@ export function Backdrop() {
     const u = material.current?.uniforms
     if (!u) return
     u.uAspect!.value = state.size.width / state.size.height
+    // The halo stands behind Kelo, wherever the layout puts him across the screen.
+    ;(u.uCentre!.value as number[])[0] = live.layout.centreX
     u.uStrength!.value = 1 - smoothstep(GULP_SCALE.from, GULP_SCALE.to, live.sample.scale)
+    ;(u.uHalo!.value as Color).copy(INK_COLOR).lerp(blendColor('halo', _tint), HALO_MIX)
   })
 
   return (

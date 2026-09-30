@@ -2,20 +2,18 @@
 
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
-import { AdditiveBlending, type Group } from 'three'
-import { character } from '@/lib/character'
+import type { Group } from 'three'
 import { live } from './live/LiveDriver'
 import { radialTexture } from './textures'
 
 /**
  * The floor is invisible except for what grounds the character: a real
- * shadow on shadow-capable tiers, a soft blob otherwise, and a quiet glow
- * under his feet, which follow him when he is moved and fade as he is
- * lifted. No horizon line against the backdrop.
+ * shadow on shadow-capable tiers, a soft blob otherwise, following him when
+ * he is moved and spreading as he is lifted. No glow, no horizon line: the
+ * stage stays dark around him.
  */
 export function Floor({ shadows }: { shadows: boolean }) {
   const blob = useMemo(() => radialTexture(64, 1.6), [])
-  const pool = useMemo(() => radialTexture(64, 2.4), [])
   const under = useRef<Group>(null)
 
   useFrame(() => {
@@ -49,18 +47,6 @@ export function Floor({ shadows }: { shadows: boolean }) {
             />
           </mesh>
         )}
-        <mesh position-z={0.001}>
-          <planeGeometry args={[2.2, 2.2]} />
-          <meshBasicMaterial
-            map={pool}
-            color={character.colors.mascot['500']}
-            transparent
-            opacity={0.09}
-            depthWrite={false}
-            blending={AdditiveBlending}
-            toneMapped={false}
-          />
-        </mesh>
       </group>
     </group>
   )

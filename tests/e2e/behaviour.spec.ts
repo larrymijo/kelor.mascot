@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
+import { hatch } from './helpers'
 
 const stage = (page: Page) => page.locator('[data-scene-state]')
-const CTA = /Escríbenos/
+const CTA = /Hablemos/
 
 /** Console errors and uncaught exceptions. */
 function collectErrors(page: Page) {
@@ -16,7 +17,7 @@ function collectErrors(page: Page) {
 async function ready(page: Page, reducedMotion: 'reduce' | 'no-preference' = 'no-preference') {
   await page.emulateMedia({ reducedMotion })
   await page.goto('/')
-  await expect(stage(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
+  await hatch(page, 30_000)
 }
 
 /** Where Kelo is on screen, as the frame loop reports it. */
@@ -62,8 +63,9 @@ test.describe('behaviour', () => {
     await expect(page.locator('html.live')).toHaveCount(1, { timeout: 20_000 })
     const cta = page.getByRole('link', { name: CTA })
 
-    // The brand mark, the sound switch, the Kelo button, then the contact link.
-    for (let i = 0; i < 4; i++) await page.keyboard.press('Tab')
+    // The contact link follows the sound switch in the top corner.
+    await page.getByRole('button', { name: 'Sonido' }).focus()
+    await page.keyboard.press('Tab')
     await expect(cta).toBeFocused()
     await expect(stage(page)).toHaveAttribute('data-attention', 'cta')
 

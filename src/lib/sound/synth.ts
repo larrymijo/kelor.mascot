@@ -9,7 +9,7 @@
  *   its widest, the chomp (two rows of teeth clacking shut over a heavy
  *   thump and a crunch, with the room answering), and a cheeky chirp when he
  *   is back;
- * - once the sound is on, everything else: a voice per tap reaction
+ * - once the sound is on, everything else: the runner's 8-bit blips, a voice per tap reaction
  *   (giggle, boing, "hm?", growl, roar), a squeak when he is picked up, a
  *   whoosh when he is tossed, a thud or a pat when he lands, the crack and
  *   pop of the hatch, and a low hum.
@@ -247,6 +247,19 @@ export function createSynth(ctx: AudioContext, initial: SoundMode): Synth {
     pat(at: number) {
       tone(at, 160, 70, 0.12, envelope(at, 0.22, 0.003, 0.12))
       noiseBurst(at, 0.05, filter('lowpass', 400), envelope(at, 0.1, 0.002, 0.04))
+    },
+
+    // Kelo Run: square-wave chips, like an old handheld.
+    blip(at: number) {
+      tone(at, 420, 840, 0.09, envelope(at, 0.1, 0.003, 0.08), 'square')
+    },
+    coin(at: number) {
+      tone(at, 988, 988, 0.06, envelope(at, 0.09, 0.002, 0.06), 'square')
+      tone(at + 0.07, 1319, 1319, 0.14, envelope(at + 0.07, 0.09, 0.002, 0.14), 'square')
+    },
+    crash(at: number) {
+      tone(at, 330, 70, 0.4, envelope(at, 0.14, 0.004, 0.4), 'square')
+      noiseBurst(at, 0.18, filter('lowpass', 1200), envelope(at, 0.12, 0.002, 0.16))
     },
 
     // The bite.

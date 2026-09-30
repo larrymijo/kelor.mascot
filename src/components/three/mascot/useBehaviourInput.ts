@@ -17,15 +17,18 @@
  *   keyboard focus, so keyboard users get the same reaction;
  * - the press on him (or on the Kelo button) that will bite wakes the audio
  *   engine inside that press, since browsers only start audio there and the
- *   bite is heard before the sound is on. Other presses leave it asleep.
+ *   bite is heard before the sound is on. Other presses leave it asleep;
+ * - in the desktop sandbox, dragging the empty stage orbits the camera and
+ *   the wheel zooms it, and the dock's commands reach the controller.
+ *   Presses on the words and panels are left to the browser (text selection).
  *
  * The HTML never imports the 3D chunk: the markers are plain attributes.
  */
 import { useEffect } from 'react'
+import { onCommand } from '@/lib/showcase/state'
+import { onStage, WORDS } from '@/lib/showcase/targets'
 import { preloadAudio, wakeAudio } from '@/lib/sound/control'
 import type { BehaviourController } from './BehaviourController'
-
-const INTERACTIVE = 'a, button, input, select, textarea, label, [role="button"], [contenteditable]'
 
 export function useBehaviourInput(controller: BehaviourController) {
   useEffect(() => {
@@ -51,6 +54,15 @@ export function useBehaviourInput(controller: BehaviourController) {
         captured.element.releasePointerCapture(captured.pointerId)
       captured = null
       root.removeAttribute('data-kelo-held')
+      root.removeAttribute('data-stage-orbit')
+    }
+    const capture = (element: Element, pointerId: number) => {
+      try {
+        element.setPointerCapture(pointerId)
+        captured = { element, pointerId }
+      } catch {
+        captured = null
+      }
     }
 
     const move = (event: PointerEvent) => {
@@ -58,6 +70,7 @@ export function useBehaviourInput(controller: BehaviourController) {
       if (!event.isPrimary) return
       controller.dragTo(event.clientX, event.clientY)
       root.toggleAttribute('data-kelo-held', controller.held)
+      root.toggleAttribute('data-stage-orbit', controller.orbiting)
       if (event.pointerType === 'mouse')
         root.toggleAttribute('data-kelo-hover', controller.hovers(event.clientX, event.clientY))
     }
@@ -65,19 +78,20 @@ export function useBehaviourInput(controller: BehaviourController) {
       controller.pointerAt(event.clientX, event.clientY, event.pointerType)
       if (!event.isPrimary || event.button > 0) return
       const target = event.target as Element | null
-      if (target?.closest(INTERACTIVE)) return
-      if (!controller.pressAt(event.clientX, event.clientY)) return
+      if (!onStage(target)) return
+      if (!controller.pressAt(event.clientX, event.clientY)) {
+        // The empty stage on desktop: a drag orbits the camera, so no text selection.
+        if (controller.canBite) {
+          event.preventDefault()
+          capture(target ?? root, event.pointerId)
+        }
+        return
+      }
       if (controller.canBite) preloadAudio()
       if (controller.nextTapBites) wakeAudio()
       // On Kelo: no text selection or native drag, and keep the pointer if it leaves the window.
       event.preventDefault()
-      const element = target ?? root
-      try {
-        element.setPointerCapture(event.pointerId)
-        captured = { element, pointerId: event.pointerId }
-      } catch {
-        captured = null
-      }
+      capture(target ?? root, event.pointerId)
     }
     const up = (event: PointerEvent) => {
       if (!event.isPrimary) return
@@ -85,6 +99,13 @@ export function useBehaviourInput(controller: BehaviourController) {
       controller.lift(event.clientX, event.clientY)
       letGo()
     }
+    const wheel = (event: WheelEvent) => {
+      if (event.ctrlKey) return
+      const target = event.target as Element | null
+      if (target?.closest?.(WORDS)) return
+      controller.zoomBy(event.deltaY)
+    }
+    const offCommand = onCommand((command) => controller.command(command))
     const out = (event: MouseEvent) => {
       if (!event.relatedTarget) {
         controller.pointerLeft()
@@ -97,6 +118,7 @@ export function useBehaviourInput(controller: BehaviourController) {
     window.addEventListener('pointerup', up)
     window.addEventListener('pointercancel', up)
     window.addEventListener('mouseout', out)
+    window.addEventListener('wheel', wheel, { passive: true })
 
     const button = document.getElementById('kelo-button')
     const tap = () => {
@@ -132,6 +154,8 @@ export function useBehaviourInput(controller: BehaviourController) {
       window.removeEventListener('pointerup', up)
       window.removeEventListener('pointercancel', up)
       window.removeEventListener('mouseout', out)
+      window.removeEventListener('wheel', wheel)
+      offCommand()
       button?.removeEventListener('click', tap)
       button?.removeEventListener('keydown', arrows)
       letGo()

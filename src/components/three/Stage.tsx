@@ -9,6 +9,7 @@ import { detectQualityTier, type QualityTier } from '@/lib/quality/detect'
 import { bootTimings, stepBoot, type BootPhase } from '@/lib/scene/boot'
 import { CameraRig, FOV } from './CameraRig'
 import { LiveDriver } from './live/LiveDriver'
+import { ShowcaseDriver } from './live/ShowcaseDriver'
 import { OverlayDriver } from './live/OverlayDriver'
 import { Effects } from './Effects'
 import { Backdrop } from './Backdrop'
@@ -20,7 +21,7 @@ import { useScene } from './store'
 import { StudioLights } from './StudioLights'
 
 export interface StageProps {
-  /** Called on every boot phase change (egg, hatching, ready). */
+  /** Called on every boot phase change (waiting, egg, hatching, ready). */
   onPhaseChange?: (phase: BootPhase) => void
   /** Called when the live model changes: lite paints first, full may replace it. */
   onModelChange?: (model: 'lite' | 'full') => void
@@ -42,6 +43,9 @@ export interface StageProps {
   children?: ReactNode
 }
 
+/** The stage is nearly black: Kelo, lit softly, is the only thing to look at. */
+const STAGE_BLACK = '#0a0a0b'
+
 /** A tier pinned with ?tier= on local and preview builds, never on production. */
 function forcedTier(): QualityTier | null {
   if (process.env.NEXT_PUBLIC_VERCEL_ENV === 'production') return null
@@ -62,6 +66,7 @@ function BootDriver() {
         elapsedS: elapsed.current,
         modelReady: scene.modelReady,
         reducedMotion: scene.reducedMotion,
+        dropRequested: scene.dropRequested,
       },
       timings,
     )
@@ -195,9 +200,10 @@ export default function Stage({
           gl.domElement.addEventListener('webglcontextrestored', () => onContextRestored?.())
         }}
       >
-        <color attach="background" args={[character.colors.brandMono.ink900]} />
+        <color attach="background" args={[STAGE_BLACK]} />
         <Backdrop />
         <LiveDriver />
+        <ShowcaseDriver />
         <CameraRig />
         <StudioLights
           shadows={boot.shadows}

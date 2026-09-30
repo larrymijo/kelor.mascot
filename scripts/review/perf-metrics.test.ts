@@ -12,6 +12,11 @@ describe('perf metrics', () => {
     expect(over.map((c) => c.ok)).toEqual([false, false])
     // Without the 3D import mark the split is unknown, which fails.
     expect(checkTbt({ tbtMs: 100, shellTbtMs: null }, budgets)[0]!.ok).toBe(false)
+    // Without Kelo ready the boot was never measured, which fails too.
+    expect(checkTbt({ tbtMs: null, shellTbtMs: 150 }, budgets)).toEqual([
+      { name: 'page TBT', value: 150, budget: 200, ok: true },
+      { name: '3D boot TBT', value: null, budget: 2000, ok: false },
+    ])
   })
 
   it('sorts resources into fonts, JS, models, the transcoder and the rest', () => {

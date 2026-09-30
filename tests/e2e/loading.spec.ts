@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { hatch } from './helpers'
 
 const stage = (page: Page) => page.locator('[data-scene-state]')
 
@@ -43,7 +44,7 @@ test.describe('progressive loading', () => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto('/')
 
-    await expect(stage(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
+    await hatch(page, 30_000)
     expect(seen.models[0]).toBe('/models/mascot.lite.glb')
 
     const tier = await stage(page).getAttribute('data-tier')
@@ -81,8 +82,9 @@ test.describe('progressive loading', () => {
       if (/^\/(models|basis)\//.test(url.pathname))
         heavy.push({ url, cacheControl: response.headers()['cache-control'] ?? '' })
     })
-    // Medium, so the full model and its KTX2 transcoder load too.
+    // Medium, so the full model and its KTX2 transcoder load too, once he hatches.
     await page.goto('/?tier=medium')
+    await hatch(page)
     await expect(stage(page)).toHaveAttribute('data-model', 'full', { timeout: 40_000 })
 
     const models = heavy.filter(({ url }) => url.pathname.startsWith('/models/'))
@@ -110,7 +112,7 @@ test.describe('progressive loading', () => {
     })
     await page.goto('/')
 
-    await expect(stage(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 30_000 })
+    await hatch(page, 30_000)
     await page.waitForTimeout(3_000)
     expect(seen.models).toEqual(['/models/mascot.lite.glb'])
     await expect(stage(page)).toHaveAttribute('data-model', 'lite')

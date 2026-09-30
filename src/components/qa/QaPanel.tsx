@@ -125,7 +125,11 @@ export default function QaPanel() {
   const run = async () => {
     setStatus('running')
     setCopied(false)
-    while (stage()?.dataset.sceneState !== 'ready') await wait(250)
+    // The stage waits for the egg: drop it, as a visitor would.
+    while (stage()?.dataset.sceneState !== 'ready') {
+      if (stage()?.dataset.sceneState === 'waiting') document.getElementById('drop-button')?.click()
+      await wait(250)
+    }
     await wait(SETTLE_MS)
     const shots: QaShot[] = []
     const measure = async (id: string, during?: Promise<void>) => {

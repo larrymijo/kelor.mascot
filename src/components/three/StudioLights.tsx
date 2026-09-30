@@ -5,6 +5,7 @@ import { useRef } from 'react'
 import type { DirectionalLight } from 'three'
 import { character } from '@/lib/character'
 import { live } from './live/LiveDriver'
+import { blendColor, blendScale } from './looks'
 import { useScene } from './store'
 import { useStudioEnvironment, type StudioPanel } from './studioEnvironment'
 
@@ -30,23 +31,30 @@ interface StudioLightsProps {
  * and a procedural environment (Lightformers rendered once) for reflections
  * on the glossy eyes. No HDR files, no network.
  *
- * Each frame the key and rim follow the live pose's multipliers, and the
- * key light moves with Kelo and grows with his scale, so his shadow stays
- * sharp wherever he is dragged and is never clipped when he towers over the
- * camera in the bite.
+ * Each frame the key and rim follow the live pose's multipliers, the three
+ * lights take the colours and strengths of the sandbox's lighting look
+ * (looks.ts), and the key light moves with Kelo and grows with his scale, so
+ * his shadow stays sharp wherever he is dragged and is never clipped when he
+ * towers over the camera in the bite.
  */
 export function StudioLights({ shadows, shadowMapSize }: StudioLightsProps) {
   const tweaks = useScene((s) => s.tweaks)
   useStudioEnvironment(PANELS, ENVIRONMENT_RESOLUTION, tweaks.envIntensity)
   const key = useRef<DirectionalLight>(null)
   const rim = useRef<DirectionalLight>(null)
+  const fill = useRef<DirectionalLight>(null)
   const lastScale = useRef(0)
 
   useFrame(() => {
     const { sample } = live
-    const { keyIntensity, rimIntensity } = useScene.getState().tweaks
+    const { keyIntensity, rimIntensity, fillIntensity } = useScene.getState().tweaks
+    if (fill.current) {
+      fill.current.intensity = fillIntensity * blendScale('fillScale')
+      blendColor('fill', fill.current.color)
+    }
     if (key.current) {
-      key.current.intensity = keyIntensity * sample.keyLight
+      key.current.intensity = keyIntensity * sample.keyLight * blendScale('keyScale')
+      blendColor('key', key.current.color)
       const scale = Math.max(1, sample.scale)
       const { x } = live.kelo.feet
       key.current.position.set(...KEY_POSITION).multiplyScalar(scale)
@@ -67,7 +75,10 @@ export function StudioLights({ shadows, shadowMapSize }: StudioLightsProps) {
         camera.updateProjectionMatrix()
       }
     }
-    if (rim.current) rim.current.intensity = rimIntensity * sample.rimLight
+    if (rim.current) {
+      rim.current.intensity = rimIntensity * sample.rimLight * blendScale('rimScale')
+      blendColor('rim', rim.current.color)
+    }
   })
 
   return (
@@ -97,6 +108,7 @@ export function StudioLights({ shadows, shadowMapSize }: StudioLightsProps) {
         color={PURPLE}
       />
       <directionalLight
+        ref={fill}
         position={[-2.4, 1.2, 2.2]}
         intensity={tweaks.fillIntensity}
         color="#dfe3ff"

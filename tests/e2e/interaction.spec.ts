@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { hatch } from './helpers'
 
 /**
  * Kelo alive on one screen (docs/interaction-script.md): taps and their
@@ -7,28 +8,31 @@ import { expect, test, type Page } from '@playwright/test'
  * scripts/review/out as live-<step>-<profile>.png for review.
  */
 
-const stage = (page: Page) => page.locator('[data-scene-state]')
 const ui = (page: Page) => page.locator('#live-ui')
 
 async function live(page: Page, reducedMotion: 'reduce' | 'no-preference' = 'no-preference') {
   await page.emulateMedia({ reducedMotion })
   await page.goto('/')
-  await expect(stage(page)).toHaveAttribute('data-scene-state', 'ready', { timeout: 40_000 })
+  await hatch(page, 40_000)
   await expect(page.locator('html.live')).toHaveCount(1)
   // Let the hatch settle into idle.
   await page.waitForTimeout(1_500)
 }
 
-/** Where Kelo is on screen now, and what he is doing. */
+/**
+ * Where Kelo is on screen now, and what he is doing, read in one go: the
+ * page can be busy (the full model streams in after the hatch), and six
+ * separate reads could straddle a hop or miss a moment of the bite.
+ */
 async function kelo(page: Page) {
-  const read = (name: string) => ui(page).getAttribute(name)
+  const data = await ui(page).evaluate((el) => ({ ...el.dataset }))
   return {
-    x: Number(await read('data-kelo-x')),
-    y: Number(await read('data-kelo-y')),
-    state: await read('data-kelo'),
-    reaction: await read('data-reaction'),
-    biting: (await read('data-biting')) === 'true',
-    scale: Number(await read('data-scale')),
+    x: Number(data.keloX),
+    y: Number(data.keloY),
+    state: data.kelo ?? null,
+    reaction: data.reaction ?? null,
+    biting: data.biting === 'true',
+    scale: Number(data.scale),
   }
 }
 
@@ -80,10 +84,15 @@ test.describe('live Kelo', () => {
     await tap(page, at.x, at.y, touch)
     if (desktop) {
       await expect(ui(page)).toHaveAttribute('data-biting', 'true', { timeout: 2_000 })
-      // The lunge: he fills the screen with his jaw wide open.
-      await expect.poll(async () => (await kelo(page)).scale, { timeout: 3_000 }).toBeGreaterThan(4)
+      // The lunge: he fills the screen with his jaw wide open (for a third of a
+      // second, so the page watches for it every frame).
+      await page.waitForFunction(
+        () => Number(document.getElementById('live-ui')?.dataset.scale) > 4,
+        null,
+        { polling: 'raf', timeout: 3_000 },
+      )
       await shot('bite')
-      await expect(ui(page)).toHaveAttribute('data-biting', 'false', { timeout: 6_000 })
+      await expect(ui(page)).toHaveAttribute('data-biting', 'false', { timeout: 15_000 })
       await expect(ui(page)).toHaveAttribute('data-scale', '1.00')
       await page.waitForTimeout(400)
       await shot('after-bite')
@@ -241,8 +250,11 @@ test.describe('live Kelo', () => {
     await expect(ui(page)).toHaveAttribute('data-biting', 'true', { timeout: 2_000 })
     expect(await contexts()).toBe(1)
     await expect(open).toHaveCount(1)
-    await expect(ui(page)).toHaveAttribute('data-biting', 'false', { timeout: 6_000 })
-    await expect(open).toHaveCount(0, { timeout: 3_000 })
+    // 3.4 s of stage time, and the output closes 0.9 s after it; each frame counts
+    // at most 0.1 s, and a busy machine (the full model swapping in around the
+    // bite, two browsers at once) stretches both.
+    await expect(ui(page)).toHaveAttribute('data-biting', 'false', { timeout: 15_000 })
+    await expect(open).toHaveCount(0, { timeout: 8_000 })
     await expect(toggle).toHaveAttribute('aria-pressed', 'false')
 
     // The switch turns everything on, then everything off, the bite included.
