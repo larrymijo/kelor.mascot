@@ -32,10 +32,10 @@
   },
 
   "budgets": {
-    "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. File sizes are compressed (Meshopt geometry; WebP on lite, KTX2 on full). Lite keeps its phase 4 budget; full returned to 1500 kB in phase 6 for a 2048 px base colour and a 1024 px normal map, since it streams in after first paint. Draw calls = mesh primitives rendered once (shadow passes excluded).",
+    "_doc": "Hard limits enforced by pnpm validate:model. lite is the first-paint model and the low-tier model; full streams in afterwards. File sizes are compressed (Meshopt geometry; WebP on lite, KTX2 on full). Lite keeps its phase 4 budget; full returned to 1500 kB in phase 6 for a 2048 px base colour and a 1024 px normal map, since it streams in after first paint; since phones keep lite, full is the desktop model, and the phase 8 polish raised it to 3500 kB and 60000 triangles for twice the density and 2048 px normal and ORM maps carrying the scales. Draw calls = mesh primitives rendered once (shadow passes excluded).",
     "full": {
-      "maxFileKB": 1500,
-      "maxTriangles": 32000,
+      "maxFileKB": 3500,
+      "maxTriangles": 60000,
       "maxBones": 32,
       "maxInfluencesPerVertex": 4,
       "maxDrawCalls": 9,
@@ -178,8 +178,8 @@
     "_doc": "Expected images. size is the edge in px per tier (square, power of two); null means the texture is dropped in that tier. AO is baked into the red channel of body_orm.",
     "items": [
       { "name": "body_basecolor", "colorSpace": "srgb", "size": { "full": 2048, "lite": 1024 } },
-      { "name": "body_orm", "colorSpace": "linear", "size": { "full": 1024, "lite": 512 } },
-      { "name": "body_normal", "colorSpace": "linear", "size": { "full": 1024, "lite": null } },
+      { "name": "body_orm", "colorSpace": "linear", "size": { "full": 2048, "lite": 512 } },
+      { "name": "body_normal", "colorSpace": "linear", "size": { "full": 2048, "lite": null } },
       { "name": "face_atlas", "colorSpace": "srgb", "size": { "full": 1024, "lite": 1024 } },
       { "name": "eyes_basecolor", "colorSpace": "srgb", "size": { "full": 512, "lite": 256 } }
     ]

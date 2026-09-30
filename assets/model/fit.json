@@ -8,30 +8,60 @@
   },
   "symmetrize": true,
   "retopo": {
-    "_doc": "Voxel remesh makes the source one manifold volume; Quadriflow then builds quads. Face counts are quads (about twice as many triangles).",
+    "_doc": "Voxel remesh makes the source one manifold volume; polish then smooths the scan's lumps out of it (Taubin: iterations of a lambda pass and an inflating mu pass, which keeps the volume); Quadriflow then builds quads. Face counts are quads (about twice as many triangles). Full is desktop only (phones keep lite), so it gets twice the density of phase 3 for a smooth outline.",
     "voxelSizeM": 0.006,
     "targetQuads": {
-      "full": 9500,
+      "full": 20000,
       "lite": 2400
     },
-    "smoothIterations": 2
+    "smoothIterations": 2,
+    "polish": {
+      "iterations": 12,
+      "lambda": 0.5,
+      "mu": -0.53
+    }
   },
   "bake": {
-    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. size is the ORM map per tier; baseColorSize and normalSize are separate because definition matters most in the close-ups (phase 6 raised them: the source base colour is 2048 px, and the camera now gets within centimetres of his face). The normal map exists only on full.",
+    "_doc": "Cycles CPU bakes from the source to the retopologised mesh. size is the ORM map per tier; baseColorSize and normalSize are separate because definition matters most in the close-ups (phase 6 raised them: the source base colour is 2048 px, and the camera now gets within centimetres of his face). The normal map exists only on full, where 2048 px carries the scales (see scales).",
     "size": {
-      "full": 1024,
+      "full": 2048,
       "lite": 512
     },
     "baseColorSize": {
       "full": 2048,
       "lite": 512
     },
-    "normalSize": 1024,
+    "normalSize": 2048,
     "samples": 16,
     "cageExtrusionM": 0.01,
     "maxRayDistanceM": 0.025,
     "roughness": 0.6,
     "jpegQuality": 88
+  },
+  "scales": {
+    "_doc": "The full model's skin, like the concept's: domed scales parted by narrow grooves, a 3D cell pattern in object space (no seams), coarseM wide, finer (fineM) within limbReachM of the forearms, hands, shins and feet and within faceReachM of the snout tip, blended over blendM. randomness jitters the cells, grooveWidth and dome shape them (in cell units), and they rise depthM at strength over the polished forms in the normal map. The belly (its lighter tone, found with Otsu's threshold softened over toneSpread, between the legs and the neck and within halfWidthM of the middle, fading over fadeM) gets rows of plates rowM high and widthM wide, laid like bricks, with grooveM joints. cavity darkens the occlusion and raises the roughness in the grooves of the ORM map.",
+    "coarseM": 0.012,
+    "fineM": 0.008,
+    "limbReachM": 0.07,
+    "faceReachM": 0.16,
+    "blendM": 0.04,
+    "randomness": 0.85,
+    "grooveWidth": 0.1,
+    "dome": 0.6,
+    "depthM": 0.0012,
+    "strength": 0.9,
+    "belly": {
+      "toneSpread": 0.04,
+      "rowM": 0.024,
+      "widthM": 0.05,
+      "grooveM": 0.0025,
+      "fadeM": 0.04,
+      "halfWidthM": 0.2
+    },
+    "cavity": {
+      "ao": 0.3,
+      "roughness": 0.15
+    }
   },
   "compress": {
     "_doc": "Applied to both tiers after assembly. Meshopt quantises the attributes and stores them with EXT_meshopt_compression, whose decoder ships inside three-stdlib. The quantisation volume is scene-wide so the contract's single skin is not split one per mesh. textures picks the container Blender bakes into per tier: the lite tier paints first, so it carries WebP and never waits on a transcoder.",

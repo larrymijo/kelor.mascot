@@ -179,6 +179,14 @@ def main():
     aim(camera, face_target, distance * 0.42, 0, 4)
     render(scene, os.path.join(out, "face-closeup.png"))
 
+    # The skin up close, sharper: the scales on the chin, chest, arm and belly.
+    chest = armature.matrix_world @ armature.data.bones["chest"].head_local
+    size = scene.render.resolution_x
+    scene.render.resolution_x = scene.render.resolution_y = 1024
+    aim(camera, chest + Vector((0, 0, 0.02)), distance * 0.36, 25, 6)
+    render(scene, os.path.join(out, "skin-closeup.png"))
+    scene.render.resolution_x = scene.render.resolution_y = size
+
     # The jaw open as far as the roar opens it. A turn about +X opens it in
     # glTF and in Blender alike (the Y-up to Z-up conversion turns about X).
     jaw_bone = next((b for b in armature.data.bones if b.name == "jaw"), None)

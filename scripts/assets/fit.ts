@@ -29,8 +29,13 @@ export const fitSchema = z
     retopo: z.strictObject({
       ...docShape,
       voxelSizeM: z.number().min(0.002).max(0.05),
-      targetQuads: tiers(z.int().min(500).max(12000)),
+      targetQuads: tiers(z.int().min(500).max(30000)),
       smoothIterations: z.int().min(0).max(10),
+      polish: z.strictObject({
+        iterations: z.int().min(0).max(100),
+        lambda: z.number().positive().max(1),
+        mu: z.number().min(-1).max(0),
+      }),
     }),
     bake: z.strictObject({
       ...docShape,
@@ -42,6 +47,31 @@ export const fitSchema = z
       maxRayDistanceM: z.number().positive().max(0.5),
       roughness: z.number().min(0).max(1),
       jpegQuality: z.int().min(50).max(100),
+    }),
+    scales: z.strictObject({
+      ...docShape,
+      coarseM: z.number().positive().max(0.05),
+      fineM: z.number().positive().max(0.05),
+      limbReachM: z.number().min(0).max(0.3),
+      faceReachM: z.number().min(0).max(0.5),
+      blendM: z.number().positive().max(0.2),
+      randomness: z.number().min(0).max(1),
+      grooveWidth: z.number().positive().max(0.5),
+      dome: z.number().min(0).max(1),
+      depthM: z.number().positive().max(0.01),
+      strength: z.number().min(0).max(1),
+      belly: z.strictObject({
+        toneSpread: z.number().positive().max(0.3),
+        rowM: z.number().positive().max(0.1),
+        widthM: z.number().positive().max(0.2),
+        grooveM: z.number().positive().max(0.02),
+        fadeM: z.number().positive().max(0.2),
+        halfWidthM: z.number().positive().max(0.5),
+      }),
+      cavity: z.strictObject({
+        ao: z.number().min(0).max(1),
+        roughness: z.number().min(0).max(1),
+      }),
     }),
     compress: z.strictObject({
       ...docShape,
