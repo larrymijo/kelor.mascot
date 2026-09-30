@@ -67,6 +67,17 @@ describe('ktxArgs', () => {
     expect(data.join(' ')).toContain('--assign-tf linear')
     expect(data.join(' ')).toContain('--encode uastc')
     expect(data.join(' ')).toContain('--uastc-rdo --uastc-rdo-l 4 --uastc-rdo-m')
+    expect(data).not.toContain('--uastc-rdo-d')
+
+    // The scales' normal map: harder RDO and a bigger dictionary.
+    const normal = ktxArgs(
+      { encode: 'uastc', srgb: false, rdoLambda: 8, rdoDictionary: 32768 },
+      'n.png',
+      'n.ktx2',
+    )
+    expect(normal.join(' ')).toContain(
+      '--uastc-rdo-l 8 --uastc-rdo-m --uastc-rdo-d 32768 --zstd 18',
+    )
 
     // Mipmaps must live in the file: a compressed texture cannot build them later.
     for (const args of [colour, data]) expect(args).toContain('--generate-mipmap')

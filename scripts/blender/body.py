@@ -358,14 +358,19 @@ def paint_scale_sizes(low, rig, scales):
     log(f"scale sizes: {np.mean(fine > 0.5) * 100:.0f}% of the skin fine")
 
 
-def belly_mask(base, spread):
+def read_pixels(image):
+    width, height = image.size
+    pixels = np.empty(width * height * 4, dtype=np.float32)
+    image.pixels.foreach_get(pixels)
+    return pixels.reshape(height, width, 4)
+
+
+def belly_tone(base, spread):
     """Where the belly's lighter tone is, 0 to 1, read from the baked base
     colour: Otsu's threshold between the body's and the belly's tones,
     softened over spread and blurred a little so the plates fade in."""
-    width, height = base.size
-    pixels = np.empty(width * height * 4, dtype=np.float32)
-    base.pixels.foreach_get(pixels)
-    pixels = pixels.reshape(height, width, 4)
+    pixels = read_pixels(base)
+    height, width = pixels.shape[:2]
     tone = 0.2126 * pixels[..., 0] + 0.7152 * pixels[..., 1] + 0.0722 * pixels[..., 2]
     baked = tone[tone > 0.02]
     counts, edges = np.histogram(baked, bins=128, range=(0.0, 1.0))
@@ -381,12 +386,34 @@ def belly_mask(base, spread):
         padded = np.pad(mask, 1, mode="edge")
         mask = sum(padded[dy : dy + height, dx : dx + width] for dy in range(3) for dx in range(3)) / 9
     log(f"belly: tone threshold {threshold:.3f}, {np.mean(mask[tone > 0.02] > 0.5) * 100:.0f}% of the map")
-    image = new_image("belly_mask", width, non_color=True)
+    return mask, tone > 0.02
+
+
+def mask_image(mask, name):
+    height, width = mask.shape
+    image = new_image(name, width, non_color=True)
     out = np.ones((height, width, 4), dtype=np.float32)
     out[..., 0] = out[..., 1] = out[..., 2] = mask
     image.pixels.foreach_set(out.ravel())
     image.update()
     return image
+
+
+def flatten_colours(base, belly, baked, strength):
+    """The source's colours carry shading baked in by the image-to-3D service:
+    blotches on the cheeks and shoulders. Pull the body towards its median
+    purple and the belly towards its median lavender by strength, keeping the
+    edge between them (the belly mask) and a share of the detail."""
+    pixels = read_pixels(base)
+    body_tone = np.median(pixels[baked & (belly < 0.1)][:, :3], axis=0)
+    belly_tone_ = np.median(pixels[baked & (belly > 0.9)][:, :3], axis=0)
+    target = body_tone * (1 - belly[..., None]) + belly_tone_ * belly[..., None]
+    pixels[..., :3] = np.where(
+        baked[..., None], pixels[..., :3] * (1 - strength) + target * strength, pixels[..., :3]
+    )
+    base.pixels.foreach_set(pixels.ravel())
+    base.update()
+    log(f"flattened colours by {strength}: body {np.round(body_tone, 3)}, belly {np.round(belly_tone_, 3)}")
 
 
 def scale_material(forms, belly, landmarks, scales):
@@ -447,9 +474,17 @@ def scale_material(forms, belly, landmarks, scales):
     plates_spec = scales["belly"]
     xyz = nodes.new("ShaderNodeSeparateXYZ")
     links.new(coords, xyz.inputs[0])
+    # Rows curve up towards the sides with the round belly, and wobble a little.
+    wobble = nodes.new("ShaderNodeTexNoise")
+    links.new(coords, wobble.inputs["Vector"])
+    wobble.inputs["Scale"].default_value = plates_spec["warpScale"]
+    shift = op("MULTIPLY", op("SUBTRACT", wobble.outputs["Fac"], 0.5), plates_spec["warpM"])
+    across = op("ADD", xyz.outputs["X"], shift)
+    curve = op("MULTIPLY", op("MULTIPLY", xyz.outputs["X"], xyz.outputs["X"]), plates_spec["curve"])
+    rows = op("ADD", op("ADD", xyz.outputs["Z"], curve), shift)
     front = nodes.new("ShaderNodeCombineXYZ")
-    links.new(xyz.outputs["X"], front.inputs["X"])
-    links.new(xyz.outputs["Z"], front.inputs["Y"])
+    links.new(across, front.inputs["X"])
+    links.new(rows, front.inputs["Y"])
     brick = nodes.new("ShaderNodeTexBrick")
     brick.offset = 0.5
     brick.offset_frequency = 2
@@ -624,6 +659,8 @@ def main():
 
         base = new_image(f"basecolor_{tier}", fit["bake"]["baseColorSize"][tier], non_color=False)
         bake("DIFFUSE", low, base, high=source, samples=4, fit=fit)
+        belly, baked = belly_tone(base, fit["scales"]["belly"]["toneSpread"])
+        flatten_colours(base, belly, baked, fit["bake"]["flatten"])
         save_image(base, os.path.join(folder, f"basecolor.{ext}"), fmt, fit["bake"]["jpegQuality"])
 
         ao = new_image(f"ao_{tier}", size, non_color=True)
@@ -637,11 +674,11 @@ def main():
             bake("NORMAL", low, forms, high=volume, samples=4, fit=fit)
             scales = fit["scales"]
             paint_scale_sizes(low, rig, scales)
-            belly = belly_mask(base, scales["belly"]["toneSpread"])
-            material, emission = scale_material(forms, belly, rig["landmarks"], scales)
+            material, emission = scale_material(forms, mask_image(belly, "belly"), rig["landmarks"], scales)
             normal = new_image(f"normal_{tier}", normal_size, non_color=True)
             bake_material("NORMAL", low, material, normal)
-            save_image(normal, os.path.join(folder, f"normal.{ext}"), fmt, 95)
+            # Lossless: JPEG noise in a normal map costs the KTX2 encoder dearly.
+            save_image(normal, os.path.join(folder, "normal.png"), "PNG")
             height = new_image(f"height_{tier}", size, non_color=True)
             emission(True)
             bake_material("EMIT", low, material, height)

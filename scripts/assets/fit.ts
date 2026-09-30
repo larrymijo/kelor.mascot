@@ -46,6 +46,7 @@ export const fitSchema = z
       cageExtrusionM: z.number().positive().max(0.2),
       maxRayDistanceM: z.number().positive().max(0.5),
       roughness: z.number().min(0).max(1),
+      flatten: z.number().min(0).max(1),
       jpegQuality: z.int().min(50).max(100),
     }),
     scales: z.strictObject({
@@ -67,6 +68,9 @@ export const fitSchema = z
         grooveM: z.number().positive().max(0.02),
         fadeM: z.number().positive().max(0.2),
         halfWidthM: z.number().positive().max(0.5),
+        curve: z.number().min(0).max(5),
+        warpM: z.number().min(0).max(0.02),
+        warpScale: z.number().positive().max(200),
       }),
       cavity: z.strictObject({
         ao: z.number().min(0).max(1),
