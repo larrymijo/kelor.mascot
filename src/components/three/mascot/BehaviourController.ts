@@ -11,6 +11,10 @@
  * face means "look at me", towards a screen edge means "look that way".
  * Picking him up, dropping him and hopping move him on the stage plane
  * (z = 0), inside the screen.
+ *
+ * In the desktop sandbox it also answers the dock (src/lib/showcase/state.ts):
+ * actions play like reactions, the bite can be asked for, and dragging the empty stage orbits the camera while the
+ * wheel zooms it. On touch screens the ninth tap in a row opens the runner.
  */
 import { Plane, Ray, Vector3, type Camera } from 'three'
 import { blinkSoon, createBlink, stepBlink, type BlinkState } from '@/lib/behaviour/blink'
@@ -46,6 +50,7 @@ import { character } from '@/lib/character'
 import { damp, dampFactor, degToRad } from '@/lib/math/damp'
 import type { Random } from '@/lib/math/random'
 import type { BootPhase } from '@/lib/scene/boot'
+import { requestGame, type ShowcaseCommand } from '@/lib/showcase/state'
 import { playSound } from '@/lib/sound/bus'
 import { live, startBite } from '../live/LiveDriver'
 import type { MascotRig } from './MascotRig'
@@ -68,6 +73,13 @@ const STARTLED_S = 0.7
 const SNAP_DELAY_S = 0.35
 /** Let go faster than this, he was tossed: a whoosh. */
 const TOSS_MPS = 1.5
+/**
+ * The sandbox's orbit: radians per pixel dragged, and how far round it goes.
+ * Past about 45° the stage plane he walks on turns edge-on to the camera.
+ */
+const ORBIT = { perPx: 0.005, yaw: degToRad(40), pitchMin: degToRad(-6), pitchMax: degToRad(22) }
+/** The wheel's zoom: a multiple of the hero distance per wheel notch, and its range. */
+const ZOOM = { perNotch: 0.08, min: 0.7, max: 1.35 }
 /**
  * Looking at the camera aims at a point at least this far from the head (times
  * Kelo's scale), on the same line, so both eyes stay parallel instead of
@@ -93,7 +105,11 @@ export interface LiveFrame {
   carried: number
 }
 
-type Queued = { kind: 'tap' } | { kind: 'hop'; x: number } | { kind: 'step'; direction: -1 | 1 }
+type Queued =
+  | { kind: 'tap' }
+  | { kind: 'hop'; x: number }
+  | { kind: 'step'; direction: -1 | 1 }
+  | { kind: 'command'; command: ShowcaseCommand }
 
 // Scratch objects: step() and the input methods never run re-entrantly.
 const _ray = new Ray()
@@ -131,7 +147,13 @@ export class BehaviourController {
   private readonly body = createBody(0)
   private bounds: Bounds = { xMin: -1, xMax: 1, yMax: 1 }
   private press: { x: number; y: number; grabY: number } | null = null
-  private floorPress: { x: number; y: number } | null = null
+  private floorPress: {
+    x: number
+    y: number
+    lastX: number
+    lastY: number
+    orbiting: boolean
+  } | null = null
   private dragging = false
   private readonly queue: Queued[] = []
   private reaction: { spec: Reaction; startS: number; untilS: number } | null = null
@@ -186,19 +208,27 @@ export class BehaviourController {
     this.press = null
     this.floorPress = null
     const ctx = this.lastCtx
+    // Before the hatch a press on the stage drops the egg: the page handles it.
     if (!ctx || !this.interactive(ctx)) return false
     const grabY = this.hitsKelo(clientX, clientY, ctx)
     if (grabY === null) {
-      this.floorPress = { x: clientX, y: clientY }
+      this.floorPress = { x: clientX, y: clientY, lastX: clientX, lastY: clientY, orbiting: false }
       return false
     }
     this.press = { x: clientX, y: clientY, grabY }
     return true
   }
 
-  /** The pointer moved while pressed: past a few pixels on desktop, he is picked up. */
+  /**
+   * The pointer moved while pressed: past a few pixels on desktop, he is
+   * picked up; pressed on the empty stage, the camera orbits him.
+   */
   dragTo(clientX: number, clientY: number) {
     const ctx = this.lastCtx
+    if (this.floorPress && this.caps.desktop) {
+      this.orbitTo(clientX, clientY)
+      return
+    }
     if (!this.press || !ctx) return
     if (!this.dragging) {
       if (!isDrag(this.press, clientX, clientY, this.caps, interaction)) return
@@ -221,13 +251,62 @@ export class BehaviourController {
       if (Math.hypot(this.body.vx, this.body.vy) > TOSS_MPS) playSound('toss')
     } else if (this.press) {
       this.queue.push({ kind: 'tap' })
-    } else if (this.floorPress && ctx) {
+    } else if (this.floorPress && ctx && !this.floorPress.orbiting) {
       const moved = Math.hypot(clientX - this.floorPress.x, clientY - this.floorPress.y)
       if (moved <= interaction.taps.dragThresholdPx && this.onStage(clientX, clientY, ctx, _hit))
         this.queue.push({ kind: 'hop', x: _hit.x })
     }
     this.press = null
     this.floorPress = null
+  }
+
+  /** Dragging the empty stage: past the tap threshold, the camera orbits around him. */
+  private orbitTo(clientX: number, clientY: number) {
+    const press = this.floorPress!
+    if (!press.orbiting) {
+      if (Math.hypot(clientX - press.x, clientY - press.y) <= interaction.taps.dragThresholdPx)
+        return
+      press.orbiting = true
+    }
+    const { view } = live
+    // Dragging right turns the camera to his left, as if turning him by hand.
+    view.yawTarget = clamp(
+      view.yawTarget - (clientX - press.lastX) * ORBIT.perPx,
+      -ORBIT.yaw,
+      ORBIT.yaw,
+    )
+    view.pitchTarget = clamp(
+      view.pitchTarget + (clientY - press.lastY) * ORBIT.perPx,
+      ORBIT.pitchMin,
+      ORBIT.pitchMax,
+    )
+    press.lastX = clientX
+    press.lastY = clientY
+  }
+
+  /** The wheel, on desktop: closer or further, within the sandbox's range. */
+  zoomBy(deltaY: number) {
+    if (!this.caps.desktop) return
+    const { view } = live
+    const notches = Math.max(-3, Math.min(3, deltaY / 100))
+    view.zoomTarget = clamp(view.zoomTarget * (1 + notches * ZOOM.perNotch), ZOOM.min, ZOOM.max)
+  }
+
+  /** What the sandbox's dock asks for, handled on the next frame like a tap. */
+  command(command: ShowcaseCommand) {
+    if (command.kind === 'resetView') {
+      const { view } = live
+      view.yawTarget = 0
+      view.pitchTarget = 0
+      view.zoomTarget = 1
+      return
+    }
+    this.queue.push({ kind: 'command', command })
+  }
+
+  /** Whether the camera is being orbited, for the cursor. */
+  get orbiting() {
+    return Boolean(this.floorPress?.orbiting)
   }
 
   /** The keyboard button on Kelo: Enter or Space taps him, the arrows make him hop. */
@@ -293,7 +372,9 @@ export class BehaviourController {
       reducedMotion: ctx.reducedMotion,
     }
     // The bite moves the camera in close: keep the bounds of the hero shot.
-    if (ctx.bootPhase === 'ready' && live.sample.biteS === null) this.bounds = this.stageBounds(ctx)
+    if (live.sample.biteS === null) this.bounds = this.stageBounds(ctx)
+    // Until he has hatched, he stands wherever the egg was dropped.
+    if (ctx.bootPhase !== 'ready') this.body.x = this.body.targetX = live.egg.x
     for (const event of this.queue) this.handle(event, rig, ctx)
     this.queue.length = 0
 
@@ -389,6 +470,24 @@ export class BehaviourController {
   private handle(event: Queued, rig: MascotRig, ctx: StepContext) {
     if (!this.interactive(ctx) || this.body.mode === 'held') return
     live.kelo.touched = true
+    if (event.kind === 'command') {
+      const { command } = event
+      if (command.kind === 'bite') {
+        if (ctx.reducedMotion) {
+          // The bite without the motion, as on the sixth tap.
+          this.act(interaction.reactions.at(-1)!, rig)
+          playSound('biteStart')
+          this.snapAtS = this.clock + SNAP_DELAY_S
+        } else {
+          this.reaction = null
+          startBite()
+        }
+      } else if (command.kind === 'action') {
+        const action = interaction.actions.find((a) => a.name === command.name)
+        if (action) this.act(action, rig)
+      }
+      return
+    }
     if (event.kind === 'tap') {
       const outcome = registerTap(this.streak, this.clock, this.caps, interaction)
       if (outcome.kind === 'bite') {
@@ -396,10 +495,8 @@ export class BehaviourController {
         startBite()
         return
       }
-      const spec = outcome.reaction
-      this.reaction = { spec, startS: this.clock, untilS: this.clock + spec.durationS }
-      if (spec.clip) rig.play(spec.clip)
-      if (spec.sound) playSound(spec.sound)
+      this.act(outcome.reaction, rig)
+      if (outcome.kind === 'game') requestGame()
       if (outcome.kind === 'snap') {
         // The bite without the motion: heard like the bite, before the sound is on.
         playSound('biteStart')
@@ -411,6 +508,13 @@ export class BehaviourController {
     const x = event.kind === 'hop' ? event.x : this.body.x + event.direction * interaction.hop.stepM
     hopTo(this.body, x, this.bounds, interaction)
     rig.play('jump')
+  }
+
+  /** Play a reaction or a dock action: its clip, its face and jaw for a while, its sound. */
+  private act(spec: Reaction, rig: MascotRig) {
+    this.reaction = { spec, startS: this.clock, untilS: this.clock + spec.durationS }
+    if (spec.clip) rig.play(spec.clip)
+    if (spec.sound) playSound(spec.sound)
   }
 
   /** What an interaction imposes on the director right now. */
@@ -520,4 +624,8 @@ export class BehaviourController {
     if (ray.distanceSqToSegment(_bottom, _top, undefined, _onSegment) > radius * radius) return null
     return Math.min(GRAB.max, Math.max(GRAB.min, _onSegment.y - y))
   }
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
 }

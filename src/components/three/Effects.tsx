@@ -19,6 +19,7 @@ import {
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import { character } from '@/lib/character'
 import { smoothstep } from '@/lib/math/damp'
+import { beforeHatch } from '@/lib/scene/boot'
 import type { QualityTier } from '@/lib/quality/detect'
 import { live } from './live/LiveDriver'
 import { useScene } from './store'
@@ -64,8 +65,11 @@ export function Effects({ tier }: { tier: QualityTier }) {
     const scene = useScene.getState()
     if (vignette.current) {
       const { phase, hatchProgress } = scene.boot
-      const spot =
-        phase === 'egg' ? 1 : phase === 'hatching' ? 1 - smoothstep(0.3, 0.8, hatchProgress) : 0
+      const spot = beforeHatch(phase)
+        ? 1
+        : phase === 'hatching'
+          ? 1 - smoothstep(0.3, 0.8, hatchProgress)
+          : 0
       vignette.current.darkness = sample.vignette + EGG_SPOT * spot
     }
     if (bloom.current) {

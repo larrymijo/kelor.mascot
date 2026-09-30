@@ -13,11 +13,13 @@
  * Offsets therefore never accumulate, whether or not a clip keys the bone.
  */
 import {
+  AdditiveBlending,
   AnimationMixer,
   Euler,
   LoopOnce,
   LoopRepeat,
   Matrix4,
+  MeshBasicMaterial,
   Quaternion,
   Vector3,
   type AnimationAction,
@@ -113,6 +115,16 @@ function findMaterial(root: Object3D, name: string) {
 
 /** Meshes that only exist inside the open mouth. */
 const MOUTH_PARTS = new Set(['teeth', 'mouth'])
+/** The sandbox's x-ray: every mesh as a glowing violet wireframe, shared by all rigs. */
+const XRAY = new MeshBasicMaterial({
+  color: character.colors.mascot['300'],
+  wireframe: true,
+  transparent: true,
+  opacity: 0.55,
+  depthWrite: false,
+  blending: AdditiveBlending,
+  toneMapped: false,
+})
 
 // Scratch objects shared by every rig: behave() runs one rig at a time.
 const _target = new Vector3()
@@ -176,6 +188,8 @@ export class MascotRig {
   private readonly legs: { side: number; thigh?: Bone; shin?: Bone; foot?: Bone }[]
   private readonly arms: { side: number; upper?: Bone; fore?: Bone }[]
   private readonly carryPose: CarryPose = { carried: 0, kick: 0, wiggle: 0, stillness: 1 }
+  private xray = false
+  private readonly solid = new Map<Mesh, Material | Material[]>()
 
   /**
    * @param options.finish swap in the physical skin and eye finish (medium and
@@ -431,7 +445,30 @@ export class MascotRig {
     tuneFinish(this.finish, finish)
   }
 
+  /**
+   * The sandbox's x-ray: every mesh drawn as a glowing wireframe, casting no
+   * shadow, until switched off, when each gets its own material back. The
+   * skeleton over it is drawn by the mascot.
+   */
+  setXray(on: boolean) {
+    if (on === this.xray) return
+    this.xray = on
+    this.scene.traverse((object) => {
+      const mesh = object as Mesh
+      if (!mesh.isMesh) return
+      if (on) {
+        this.solid.set(mesh, mesh.material)
+        mesh.material = XRAY
+      } else {
+        mesh.material = this.solid.get(mesh) ?? mesh.material
+      }
+      mesh.castShadow = !on
+    })
+    if (!on) this.solid.clear()
+  }
+
   dispose() {
+    this.setXray(false)
     for (const material of this.finish) material.dispose()
     this.mixer.removeEventListener('finished', this.onFinished)
     this.mixer.stopAllAction()

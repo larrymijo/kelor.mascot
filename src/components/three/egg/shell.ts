@@ -1,6 +1,7 @@
 /**
- * The eggshell: a standard PBR material with its detail computed on the GPU,
- * so it is crisp at any resolution and costs no texture download.
+ * The eggshell: a physical material with its detail computed on the GPU, so
+ * it is crisp at any resolution and costs no texture download, under a thin
+ * clearcoat that gives the shell the soft sheen of a real egg.
  *
  * - A pebbled surface: fine tubercles like the nodular shell of real
  *   dinosaur eggs, over faint polygonal plates (3D Voronoi cells, mostly
@@ -12,7 +13,7 @@
  *
  * The pattern lives in object space, so it travels with each piece.
  */
-import { Color, DoubleSide, MeshStandardMaterial, type IUniform } from 'three'
+import { Color, DoubleSide, MeshPhysicalMaterial, type IUniform } from 'three'
 import { CAP_AT, CRACK } from './geometry'
 
 /** Plates, tubercles and speckle cells per metre. */
@@ -153,7 +154,7 @@ const glow = /* glsl */ `
 
 /** The shell material and the two values the egg drives each frame. */
 export class EggShell {
-  readonly material: MeshStandardMaterial
+  readonly material: MeshPhysicalMaterial
   private readonly crack: IUniform<number> = { value: 0 }
   private readonly glow: IUniform<number> = { value: 0 }
 
@@ -161,11 +162,15 @@ export class EggShell {
     egg: { heightM: number; shellColor: string; speckleColor: string },
     glowColor: Color,
   ) {
-    this.material = new MeshStandardMaterial({
+    this.material = new MeshPhysicalMaterial({
       color: egg.shellColor,
-      roughness: 0.62,
+      roughness: 0.58,
       metalness: 0,
+      clearcoat: 0.22,
+      clearcoatRoughness: 0.4,
       side: DoubleSide,
+      // The studio's reflections carry its violet panel: kept low, the shell stays ivory.
+      envMapIntensity: 0.3,
     })
     const speckle = new Color(egg.speckleColor)
     this.material.onBeforeCompile = (shader) => {

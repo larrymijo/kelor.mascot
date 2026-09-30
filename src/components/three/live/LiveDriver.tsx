@@ -37,6 +37,22 @@ export const live = {
     /** Whether anyone has touched him yet: the hint shows until then. */
     touched: false,
   },
+  /**
+   * The desktop sandbox's view, eased by ShowcaseDriver: the camera's orbit
+   * around the hero shot (yaw and pitch in radians) and zoom (a multiple of
+   * its distance), the targets the pointer and the wheel set, and Kelo's
+   * turn on the spot (spin, radians).
+   */
+  view: { yaw: 0, pitch: 0, zoom: 1, spin: 0, yawTarget: 0, pitchTarget: 0, zoomTarget: 1 },
+  /** How much each of the sandbox's lighting looks shows, eased; they add up to 1. */
+  look: { studio: 1, sunset: 0, neon: 0 },
+  /**
+   * The egg: where on the stage it was dropped (x, metres), and its height
+   * above the floor while it falls (written by the controller and the egg).
+   */
+  egg: { x: 0, y: 0 },
+  /** Where the layout stands Kelo across the screen, 0 to 1 (written by the camera). */
+  layout: { centreX: 0.5 },
 }
 
 /** Start the bite unless it is already playing. */
