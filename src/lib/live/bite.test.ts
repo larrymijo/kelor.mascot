@@ -66,7 +66,7 @@ describe('the bite', () => {
         fired.push(cue.kind === 'sound' ? cue.sound : cue.kind)
       t = next
     }
-    expect(fired).toEqual(['growl', 'whoosh', 'snap'])
+    expect(fired).toEqual(['biteGrowl', 'lunge', 'rattle', 'snap', 'smug'])
   })
 
   it('eases between keys and holds the ends', () => {

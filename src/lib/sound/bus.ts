@@ -1,10 +1,32 @@
 /**
  * The sounds the scene asks for, and the one continuous level it drives. The
- * synthesiser (a lazy chunk, loaded on the first press of the sound switch)
- * listens; before that, and while the sound is off, cues go nowhere. Tiny and
- * dependency-free, so the 3D chunk can call it without loading any audio code.
+ * synthesiser (a lazy chunk, see control.ts) listens; before it exists, cues
+ * go nowhere. Tiny and dependency-free, so the 3D chunk can call it without
+ * loading any audio code.
+ *
+ * The bite brackets its sounds with 'biteStart' and 'biteEnd': they are the
+ * only sounds heard before the visitor turns the sound on.
  */
-export type SoundCue = 'boop' | 'growl' | 'whoosh' | 'gulp' | 'thud'
+
+/** A tap's reaction, being carried, tossed and landing, and the hatch: heard once the sound is on. */
+export const LIFE_SOUNDS = [
+  'giggle',
+  'boing',
+  'hm',
+  'growl',
+  'roar',
+  'squeak',
+  'toss',
+  'thud',
+  'pat',
+] as const
+
+/** The bite, in order: heard from the start, unless the visitor turned the sound off. */
+export const BITE_SOUNDS = ['biteGrowl', 'lunge', 'rattle', 'chomp', 'smug'] as const
+
+export type LifeSound = (typeof LIFE_SOUNDS)[number]
+export type BiteSound = (typeof BITE_SOUNDS)[number]
+export type SoundCue = LifeSound | BiteSound | 'biteStart' | 'biteEnd'
 
 type Listener = (cue: SoundCue) => void
 

@@ -14,11 +14,15 @@
  * - the Kelo button (#kelo-button) is the keyboard's way to him: Enter or
  *   Space taps him, the arrow keys make him hop;
  * - any element marked data-gaze-target draws his look on hover and on
- *   keyboard focus, so keyboard users get the same reaction.
+ *   keyboard focus, so keyboard users get the same reaction;
+ * - on desktop every press on him (or on the Kelo button) wakes the audio
+ *   engine inside that press, since browsers only start audio there: the
+ *   sixth in a row bites, and the bite is heard before the sound is on.
  *
  * The HTML never imports the 3D chunk: the markers are plain attributes.
  */
 import { useEffect } from 'react'
+import { wakeAudio } from '@/lib/sound/control'
 import type { BehaviourController } from './BehaviourController'
 
 const INTERACTIVE = 'a, button, input, select, textarea, label, [role="button"], [contenteditable]'
@@ -63,6 +67,7 @@ export function useBehaviourInput(controller: BehaviourController) {
       const target = event.target as Element | null
       if (target?.closest(INTERACTIVE)) return
       if (!controller.pressAt(event.clientX, event.clientY)) return
+      if (controller.canBite) wakeAudio()
       // On Kelo: no text selection or native drag, and keep the pointer if it leaves the window.
       event.preventDefault()
       const element = target ?? root
@@ -75,6 +80,7 @@ export function useBehaviourInput(controller: BehaviourController) {
     }
     const up = (event: PointerEvent) => {
       if (!event.isPrimary) return
+      if (controller.pressing && controller.canBite) wakeAudio()
       controller.lift(event.clientX, event.clientY)
       letGo()
     }
@@ -92,7 +98,10 @@ export function useBehaviourInput(controller: BehaviourController) {
     window.addEventListener('mouseout', out)
 
     const button = document.getElementById('kelo-button')
-    const tap = () => controller.key('tap')
+    const tap = () => {
+      if (controller.canBite) wakeAudio()
+      controller.key('tap')
+    }
     const arrows = (event: KeyboardEvent) => {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
       event.preventDefault()

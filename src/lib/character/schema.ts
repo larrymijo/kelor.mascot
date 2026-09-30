@@ -238,7 +238,7 @@ export const characterSchema = z
             jawDeg: z.number().min(0).max(60),
             durationS: z.number().positive().max(5),
             wiggleDeg: z.number().min(0).max(30),
-            sound: z.enum(['boop', 'growl']).nullable(),
+            sound: z.enum(['giggle', 'boing', 'hm', 'growl', 'roar']).nullable(),
           }),
         )
         .min(1),

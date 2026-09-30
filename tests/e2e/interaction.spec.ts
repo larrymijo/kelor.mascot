@@ -193,8 +193,10 @@ test.describe('live Kelo', () => {
     expect(after.scale).toBe(1)
   })
 
-  test('creates no sound before the switch is pressed', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'One profile is enough')
+  test('is silent except for the bite until the switch is pressed', async ({ page }, testInfo) => {
+    const project = testInfo.project.name
+    test.skip(project !== 'desktop' && project !== 'mobile', 'A desktop and a phone are enough')
+    test.setTimeout(90_000)
     await page.addInitScript(() => {
       const counter = window as unknown as { __audioContexts: number }
       counter.__audioContexts = 0
@@ -208,20 +210,50 @@ test.describe('live Kelo', () => {
     })
     const contexts = () =>
       page.evaluate(() => (window as unknown as { __audioContexts: number }).__audioContexts)
-    await live(page)
-
-    // Taps on him make no sound while it is off.
-    const at = await kelo(page)
-    await page.mouse.click(at.x, at.y)
-    expect(await contexts()).toBe(0)
-
+    const open = page.locator('html[data-sound-open]')
     const toggle = page.getByRole('button', { name: 'Sonido' })
+    await live(page)
+    const desktop = await isDesktop(page)
+    const at = await kelo(page)
+    const pester = async (times: number) => {
+      for (let i = 0; i < times; i++) {
+        await tap(page, at.x, at.y, !desktop)
+        await page.waitForTimeout(450)
+      }
+    }
+    await expect(toggle).toHaveAttribute('data-sound', 'auto')
     await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+
+    if (!desktop) {
+      // No bite on phones, so taps never start any audio.
+      await pester(3)
+      expect(await contexts()).toBe(0)
+      return
+    }
+
+    // A tap wakes the audio engine inside the press, yet nothing is heard...
+    await pester(1)
+    expect(await contexts()).toBe(1)
+    await expect(open).toHaveCount(0)
+    // ...until the sixth: the bite is heard, and only while it plays.
+    await pester(5)
+    await expect(ui(page)).toHaveAttribute('data-biting', 'true', { timeout: 2_000 })
+    await expect(open).toHaveCount(1)
+    await expect(ui(page)).toHaveAttribute('data-biting', 'false', { timeout: 6_000 })
+    await expect(open).toHaveCount(0, { timeout: 3_000 })
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+
+    // The switch turns everything on, then everything off, the bite included.
     await toggle.click()
     await expect(toggle).toHaveAttribute('aria-pressed', 'true')
-    expect(await contexts()).toBe(1)
+    await expect(open).toHaveCount(1)
     await toggle.click()
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await expect(toggle).toHaveAttribute('data-sound', 'off')
+    await expect(open).toHaveCount(0, { timeout: 3_000 })
+    await pester(6)
+    await expect(ui(page)).toHaveAttribute('data-biting', 'true', { timeout: 2_000 })
+    await page.waitForTimeout(1_500)
+    await expect(open).toHaveCount(0)
     expect(await contexts()).toBe(1)
   })
 })

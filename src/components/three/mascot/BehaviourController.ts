@@ -60,11 +60,13 @@ const HIT = { bottom: 0.1 * H, top: 0.88 * H, radius: 0.3 * H }
 const BODY = { halfWidthM: 0.3 * H, heightM: 0.8 * H }
 /** Where he can be held: from his belly to the top of his head. */
 const GRAB = { min: 0.4 * H, max: 0.9 * H }
-/** A landing harder than this (m/s) thuds and startles him. */
+/** A landing harder than this (m/s) startles him, with a thud (a pat after a hop). */
 const HARD_LANDING_MPS = 1.6
 const STARTLED_S = 0.7
 /** With reduced motion the bite is a jaw snap in place, once the jaw has opened. */
 const SNAP_DELAY_S = 0.35
+/** Let go faster than this, he was tossed: a whoosh. */
+const TOSS_MPS = 1.5
 /**
  * Looking at the camera aims at a point at least this far from the head (times
  * Kelo's scale), on the same line, so both eyes stay parallel instead of
@@ -204,7 +206,7 @@ export class BehaviourController {
       this.reaction = null
       live.kelo.touched = true
       grab(this.body, this.press.grabY)
-      playSound('boop')
+      playSound('squeak')
     }
     if (this.onStage(clientX, clientY, ctx, _hit)) holdAt(this.body, _hit.x, _hit.y)
   }
@@ -215,6 +217,7 @@ export class BehaviourController {
     if (this.dragging) {
       release(this.body, interaction)
       this.dragging = false
+      if (Math.hypot(this.body.vx, this.body.vy) > TOSS_MPS) playSound('toss')
     } else if (this.press) {
       this.queue.push({ kind: 'tap' })
     } else if (this.floorPress && ctx) {
@@ -254,6 +257,16 @@ export class BehaviourController {
     this.blinkPending = true
   }
 
+  /** A press on him is down: it may become a tap, or on desktop a pick-up. */
+  get pressing() {
+    return this.press !== null
+  }
+
+  /** On desktop the sixth tap bites, so a press on him wakes the audio engine. */
+  get canBite() {
+    return this.caps.desktop
+  }
+
   /** Being held or thrown, for the debug readout and the cursor. */
   get held() {
     return this.dragging
@@ -278,16 +291,19 @@ export class BehaviourController {
     for (const event of this.queue) this.handle(event, rig, ctx)
     this.queue.length = 0
 
+    const hopping = this.body.planted
     stepBody(this.body, dt, this.bounds, interaction)
     if (this.body.landed > 0) {
       if (this.body.landed > HARD_LANDING_MPS) {
-        playSound('thud')
+        playSound(hopping ? 'pat' : 'thud')
         this.startledUntilS = this.clock + STARTLED_S
       }
       this.body.landed = 0
     }
     if (this.clock >= this.snapAtS) {
       rig.bite()
+      playSound('chomp')
+      playSound('biteEnd')
       this.snapAtS = Infinity
     }
     if (this.reaction && this.clock >= this.reaction.untilS) this.reaction = null
@@ -378,7 +394,11 @@ export class BehaviourController {
       this.reaction = { spec, startS: this.clock, untilS: this.clock + spec.durationS }
       if (spec.clip) rig.play(spec.clip)
       if (spec.sound) playSound(spec.sound)
-      if (outcome.kind === 'snap') this.snapAtS = this.clock + SNAP_DELAY_S
+      if (outcome.kind === 'snap') {
+        // The bite without the motion: heard like the bite, before the sound is on.
+        playSound('biteStart')
+        this.snapAtS = this.clock + SNAP_DELAY_S
+      }
       return
     }
     if (this.body.mode !== 'rest') return

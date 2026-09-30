@@ -12,17 +12,22 @@
  *   1.5–2.25 the iris closes on his mouth to black; he is reset while dark;
  *   2.25–3.4 the iris opens on him back at his normal size, smug.
  *
+ * Its sounds (src/lib/sound/synth.ts) are heard even before the visitor turns
+ * the sound on: a deep growl as he crouches, the rush of the lunge, a rattle
+ * with the jaw at its widest, the chomp on the snap, a chirp when he is back.
+ *
  * Between two keys a channel eases with smoothstep, so every move settles.
  * The only jumps happen while the screen is black.
  */
 import { lerp, smoothstep } from '@/lib/math/damp'
+import type { BiteSound } from '@/lib/sound/bus'
 import { REST, POSE_KEYS, type Expression, type Pose, type Sample } from './pose'
 
 export type Key = readonly [seconds: number, value: number]
 export type Channel = readonly Key[]
 
 export type BiteCue =
-  { at: number; kind: 'snap' } | { at: number; kind: 'sound'; sound: 'growl' | 'whoosh' }
+  { at: number; kind: 'snap' } | { at: number; kind: 'sound'; sound: Exclude<BiteSound, 'chomp'> }
 
 export interface BiteScript {
   durationS: number
@@ -160,9 +165,11 @@ export const BITE: BiteScript = {
     { from: 2.2, to: 3.4, value: 'happy' },
   ],
   cues: [
-    { at: 0.12, kind: 'sound', sound: 'growl' },
-    { at: 0.6, kind: 'sound', sound: 'whoosh' },
+    { at: 0.12, kind: 'sound', sound: 'biteGrowl' },
+    { at: 0.55, kind: 'sound', sound: 'lunge' },
+    { at: 1.42, kind: 'sound', sound: 'rattle' },
     { at: SNAP_S, kind: 'snap' },
+    { at: 2.3, kind: 'sound', sound: 'smug' },
   ],
 }
 
