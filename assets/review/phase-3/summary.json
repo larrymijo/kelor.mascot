@@ -84,14 +84,14 @@
         "full": {
           "triangles": 16190,
           "textureSize": 1024,
-          "seconds": 13.8,
+          "seconds": 19.6,
           "unweightedVertices": 0,
           "emptyGroups": []
         },
         "lite": {
           "triangles": 4600,
           "textureSize": 512,
-          "seconds": 4.8,
+          "seconds": 6.9,
           "unweightedVertices": 0,
           "emptyGroups": []
         }
@@ -101,6 +101,19 @@
       "full": {
         "repairedVertices": 788,
         "clampedWeights": 6503,
+        "arms": {
+          "L": {
+            "armpitY": 0.4554,
+            "wallX": 0.1952,
+            "repaired": 0
+          },
+          "R": {
+            "armpitY": 0.4504,
+            "wallX": 0.1972,
+            "repaired": 0
+          }
+        },
+        "bodyMoveM": 0,
         "eyes": {
           "L": [
             0.105,
@@ -119,6 +132,19 @@
       "lite": {
         "repairedVertices": 233,
         "clampedWeights": 2089,
+        "arms": {
+          "L": {
+            "armpitY": 0.4454,
+            "wallX": 0.1992,
+            "repaired": 0
+          },
+          "R": {
+            "armpitY": 0.4554,
+            "wallX": 0.1943,
+            "repaired": 0
+          }
+        },
+        "bodyMoveM": 0,
         "eyes": {
           "L": [
             0.105,
