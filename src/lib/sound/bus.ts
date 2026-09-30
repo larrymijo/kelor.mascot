@@ -35,7 +35,12 @@ const listeners = new Set<Listener>()
 /** How much he fills the screen in the bite, 0 to 1: the hum's rumble follows it. */
 export const soundLevels = { rumble: 0 }
 
+/** Whether the bite is playing, for a synthesiser created in the middle of it. */
+export const soundState = { biting: false }
+
 export function playSound(cue: SoundCue) {
+  if (cue === 'biteStart') soundState.biting = true
+  else if (cue === 'biteEnd') soundState.biting = false
   for (const listener of listeners) listener(cue)
 }
 

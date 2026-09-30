@@ -231,13 +231,15 @@ test.describe('live Kelo', () => {
       return
     }
 
-    // A tap wakes the audio engine inside the press, yet nothing is heard...
-    await pester(1)
-    expect(await contexts()).toBe(1)
-    await expect(open).toHaveCount(0)
-    // ...until the sixth: the bite is heard, and only while it plays.
+    // Taps are silent and start no audio at all...
     await pester(5)
+    expect(await contexts()).toBe(0)
+    await expect(open).toHaveCount(0)
+    // ...until the sixth, which bites: its press starts the audio engine, and
+    // the bite is heard, only while it plays.
+    await pester(1)
     await expect(ui(page)).toHaveAttribute('data-biting', 'true', { timeout: 2_000 })
+    expect(await contexts()).toBe(1)
     await expect(open).toHaveCount(1)
     await expect(ui(page)).toHaveAttribute('data-biting', 'false', { timeout: 6_000 })
     await expect(open).toHaveCount(0, { timeout: 3_000 })

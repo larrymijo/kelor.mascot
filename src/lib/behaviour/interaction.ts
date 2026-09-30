@@ -56,6 +56,24 @@ export function registerTap(
   return { kind: 'react', reaction: reactions[level - 1]!, level }
 }
 
+/**
+ * Whether a tap now would be the bite (or its reduced-motion snap): the one
+ * press the audio engine has to wake for, since browsers start audio only
+ * inside a press.
+ */
+export function nextTapBites(
+  streak: TapStreak,
+  nowS: number,
+  caps: Capabilities,
+  settings: InteractionSettings,
+) {
+  return (
+    caps.desktop &&
+    nowS - streak.lastS <= settings.taps.streakS &&
+    streak.count + 1 >= settings.taps.biteAt
+  )
+}
+
 /** Dragging and the bite need a fine pointer that hovers, on a wide screen. */
 export function isDesktop(
   device: { finePointer: boolean; canHover: boolean; widthPx: number },

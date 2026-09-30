@@ -21,7 +21,7 @@
  * A chunk of its own, created by control.ts inside a press with an
  * AudioContext it hands over: this module never creates one.
  */
-import { BITE_SOUNDS, onSound, soundLevels, type SoundCue } from './bus'
+import { BITE_SOUNDS, onSound, soundLevels, soundState, type SoundCue } from './bus'
 import type { SoundMode } from './control'
 
 /** The shell bursts 30% into the 1.2 s hatch (character.json egg.hatchDurationS). */
@@ -59,15 +59,14 @@ export function createSynth(ctx: AudioContext, initial: SoundMode): Synth {
   const samples = noise.getChannelData(0)
   for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1
 
-  // The room: a short, dark echo from a decaying noise impulse.
+  // The room: a short, dark echo from a decaying noise impulse, mono and
+  // under a second, so the convolution stays light on the CPU.
   const room = ctx.createConvolver()
-  const length = Math.round(ctx.sampleRate * 1.2)
-  const impulse = ctx.createBuffer(2, length, ctx.sampleRate)
-  for (let channel = 0; channel < 2; channel++) {
-    const data = impulse.getChannelData(channel)
-    for (let i = 0; i < length; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.exp((-4.5 * i) / length) ** 1.6
-    }
+  const length = Math.round(ctx.sampleRate * 0.8)
+  const impulse = ctx.createBuffer(1, length, ctx.sampleRate)
+  const data = impulse.getChannelData(0)
+  for (let i = 0; i < length; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.exp((-4.5 * i) / length) ** 1.6
   }
   room.buffer = impulse
   const roomLevel = ctx.createGain()
@@ -299,7 +298,8 @@ export function createSynth(ctx: AudioContext, initial: SoundMode): Synth {
   >
 
   let mode = initial
-  let biting = false
+  // Created by the press that bites, it may join the bite a frame late.
+  let biting = soundState.biting
   let open = false
   let frame = 0
   let closing: ReturnType<typeof setTimeout> | undefined

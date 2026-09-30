@@ -6,9 +6,9 @@
  *
  * The audio engine is an AudioContext and the synthesiser, a chunk of its
  * own. Browsers only start audio inside a press (Safari insists), so the
- * engine is created or woken there: by the switch, or on desktop by a press
- * on Kelo, since the sixth in a row bites. Nothing sound-related exists
- * before the first such press.
+ * engine is created or woken there: by the switch, or on desktop by the
+ * press on Kelo that bites (the sixth in a row). Nothing sound-related
+ * exists before the first such press.
  */
 import type { Synth } from './synth'
 
@@ -39,6 +39,14 @@ export function setSoundMode(next: SoundMode) {
 }
 
 /**
+ * Load the synthesiser's code ahead of the press that bites, without any
+ * audio, so the engine it creates is ready for the bite's first sound.
+ */
+export function preloadAudio() {
+  if (mode !== 'off') void import('./synth')
+}
+
+/**
  * Call inside a press. Creates the audio engine on the first call and wakes it
  * on later ones, unless the visitor turned the sound off. Returns whether an
  * engine exists.
@@ -46,7 +54,9 @@ export function setSoundMode(next: SoundMode) {
 export function wakeAudio() {
   if (mode === 'off' || typeof window === 'undefined' || !('AudioContext' in window)) return false
   if (!context) {
-    const created = new AudioContext()
+    // 24 kHz is plenty for growls and clacks, and halves the audio thread's work
+    // while the bite plays over the busiest frames.
+    const created = new AudioContext({ latencyHint: 'balanced', sampleRate: 24000 })
     context = created
     engine = import('./synth').then((m) => m.createSynth(created, mode))
   }

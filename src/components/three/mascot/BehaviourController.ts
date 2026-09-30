@@ -37,6 +37,7 @@ import {
   createStreak,
   isDesktop,
   isDrag,
+  nextTapBites,
   registerTap,
   type Capabilities,
   type Reaction,
@@ -262,9 +263,14 @@ export class BehaviourController {
     return this.press !== null
   }
 
-  /** On desktop the sixth tap bites, so a press on him wakes the audio engine. */
+  /** On desktop the sixth tap bites: presses on him preload the synthesiser. */
   get canBite() {
     return this.caps.desktop
+  }
+
+  /** Whether a tap now would bite: that press wakes the audio engine. */
+  get nextTapBites() {
+    return nextTapBites(this.streak, this.clock, this.caps, interaction)
   }
 
   /** Being held or thrown, for the debug readout and the cursor. */

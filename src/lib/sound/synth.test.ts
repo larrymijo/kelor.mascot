@@ -151,6 +151,16 @@ describe('createSynth', () => {
     expect(heard(sources, 'chomp')).toBe(false)
   })
 
+  it('joins a bite already playing when the biting press creates it', () => {
+    playSound('biteStart')
+    const { sources, create } = fakeContext()
+    const { synth, master } = create('auto')
+    unsubscribe.push(() => synth.setMode('off'))
+    expect(master.gain.setTargetAtTime).toHaveBeenCalledWith(expect.any(Number), 0, 0.08)
+    expect(heard(sources, 'lunge')).toBe(true)
+    playSound('biteEnd')
+  })
+
   it('plays everything once on, and nothing once off, the bite included', () => {
     const { sources, create } = fakeContext()
     const { synth, master } = create('on')
