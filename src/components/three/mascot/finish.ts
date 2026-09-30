@@ -5,7 +5,9 @@
  *
  * - skin and face: a soft clearcoat and sheen, the vinyl-toy finish the
  *   concept describes, with the same values on both so the face shell never
- *   reads as a separate patch;
+ *   reads as a separate patch; and soft-skin shading, where light wraps a
+ *   little past the terminator with a violet tint, as through soft vinyl
+ *   (its colour lifted a touch towards the concept's purple on the skin);
  * - eyes: a glossy clearcoat cornea over the iris, so they look wet and alive
  *   in the close-ups;
  * - teeth and tusks: hard, glossy enamel that catches the studio's light.
@@ -17,6 +19,7 @@ import {
   Color,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
+  ShaderChunk,
   type Material,
   type Mesh,
   type Object3D,
@@ -28,9 +31,72 @@ export interface Finish {
   skinCoat: number
   /** Sheen strength on the skin, 0 to 1. */
   skinSheen: number
+  /** How far light wraps past the terminator, 0 (none) to 1. */
+  skinWrap: number
+  /** The skin colour's saturation, 1 as baked. */
+  skinSaturation: number
 }
 
-export const DEFAULT_FINISH: Finish = { skinCoat: 0.2, skinSheen: 0.25 }
+export const DEFAULT_FINISH: Finish = {
+  skinCoat: 0.2,
+  skinSheen: 0.25,
+  skinWrap: 0.35,
+  skinSaturation: 1.15,
+}
+
+/** The direct diffuse line of three's physical lighting, and its soft-skin version. */
+const LAMBERT =
+  'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );'
+const SOFT_LAMBERT = /* glsl */ `float wrapNL = saturate( ( dot( geometryNormal, directLight.direction ) + softSkinWrap ) / ( 1.0 + softSkinWrap ) );
+	vec3 scatter = directLight.color * softSkinTint * max( 0.0, wrapNL - dotNL );
+	reflectedLight.directDiffuse += ( irradiance + scatter ) * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );`
+const SOFT_UNIFORMS = /* glsl */ `uniform float softSkinWrap;
+uniform vec3 softSkinTint;
+uniform float skinSaturation;
+`
+/** After the base colour is read: saturation about its luminance. */
+const SATURATE = /* glsl */ `#include <map_fragment>
+	diffuseColor.rgb = max( mix( vec3( dot( diffuseColor.rgb, vec3( 0.2126, 0.7152, 0.0722 ) ) ), diffuseColor.rgb, skinSaturation ), 0.0 );`
+
+/**
+ * three's physical lighting with soft-skin diffuse, or null when three no
+ * longer has the line it replaces (the finish then keeps plain lighting).
+ */
+export function softSkinLights(chunk = ShaderChunk.lights_physical_pars_fragment) {
+  if (!chunk.includes(LAMBERT)) return null
+  return SOFT_UNIFORMS + chunk.replace(LAMBERT, SOFT_LAMBERT)
+}
+
+type SoftSkin = {
+  softSkinWrap: { value: number }
+  softSkinTint: { value: Color }
+  skinSaturation: { value: number }
+}
+const softSkins = new WeakMap<MeshPhysicalMaterial, SoftSkin>()
+// The light that wraps round is tinted like light through violet vinyl.
+const SCATTER_COLOR = new Color(character.colors.mascot['300'])
+
+/** Soft-skin lighting on a skin material; the body's colour is also saturated. */
+function softSkin(material: MeshPhysicalMaterial, saturate: boolean) {
+  const lights = softSkinLights()
+  if (!lights) return
+  const uniforms: SoftSkin = {
+    softSkinWrap: { value: DEFAULT_FINISH.skinWrap },
+    softSkinTint: { value: SCATTER_COLOR },
+    skinSaturation: { value: saturate ? DEFAULT_FINISH.skinSaturation : 1 },
+  }
+  softSkins.set(material, uniforms)
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms)
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <lights_physical_pars_fragment>',
+      lights,
+    )
+    if (saturate)
+      shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', SATURATE)
+  }
+  material.customProgramCacheKey = () => (saturate ? 'kelo-soft-skin' : 'kelo-soft-face')
+}
 
 const SKIN = new Set(['body', 'face'])
 const UPGRADED = new Set([...SKIN, 'eyes', 'teeth'])
@@ -52,6 +118,7 @@ function upgrade(source: MeshStandardMaterial) {
     material.clearcoatRoughness = 0.45
     material.sheenColor.copy(SHEEN_COLOR)
     material.sheenRoughness = 0.7
+    softSkin(material, source.name === 'body')
   } else if (source.name === 'teeth') {
     // Enamel: a hard, glossy coat, so every tooth and tusk catches a highlight.
     material.clearcoat = 1
@@ -101,5 +168,9 @@ export function tuneFinish(materials: readonly MeshPhysicalMaterial[], finish: F
     if (!SKIN.has(material.name)) continue
     material.clearcoat = finish.skinCoat
     material.sheen = finish.skinSheen
+    const uniforms = softSkins.get(material)
+    if (!uniforms) continue
+    uniforms.softSkinWrap.value = finish.skinWrap
+    if (material.name === 'body') uniforms.skinSaturation.value = finish.skinSaturation
   }
 }

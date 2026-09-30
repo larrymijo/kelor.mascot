@@ -24,6 +24,9 @@ export interface Tweaks {
   /** Vinyl finish on the skin (medium and high tiers). */
   skinCoat: number
   skinSheen: number
+  /** Soft-skin shading: how far light wraps, and the skin colour's saturation. */
+  skinWrap: number
+  skinSaturation: number
 }
 
 export const defaultTweaks: Tweaks = {
@@ -36,6 +39,8 @@ export const defaultTweaks: Tweaks = {
   grain: 0.025,
   skinCoat: DEFAULT_FINISH.skinCoat,
   skinSheen: DEFAULT_FINISH.skinSheen,
+  skinWrap: DEFAULT_FINISH.skinWrap,
+  skinSaturation: DEFAULT_FINISH.skinSaturation,
 }
 
 interface SceneState {
