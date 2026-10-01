@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { IBM_Plex_Sans, Montserrat } from 'next/font/google'
 import { copy } from '@/lib/copy'
-import { siteUrl } from '@/lib/site'
+import { isIndexable, siteUrl } from '@/lib/site'
 import './globals.css'
 
 const display = Montserrat({
@@ -22,12 +22,20 @@ export const metadata: Metadata = {
   title: { default: copy.meta.title, template: `%s · ${copy.brand}` },
   description: copy.meta.description,
   applicationName: copy.brand,
-  // Not indexed until launch (phase 8).
-  robots: { index: false, follow: false },
+  // Indexed in production only (src/lib/site.ts); the share image is
+  // src/app/opengraph-image.jpg (scripts/review/share-image.mjs).
+  robots: isIndexable ? { index: true, follow: true } : { index: false, follow: false },
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
+    url: '/',
     locale: 'es_EC',
     siteName: copy.brand,
+    title: copy.meta.title,
+    description: copy.meta.description,
+  },
+  twitter: {
+    card: 'summary_large_image',
     title: copy.meta.title,
     description: copy.meta.description,
   },

@@ -2,7 +2,7 @@
 
 Promotional website for KELOR Interactive, starring Kelo, a purple chibi dinosaur mascot who hatches from his egg and lives on one screen: he follows the cursor with his eyes, reacts to taps, can be carried around on desktop, and bites the screen when pestered.
 
-**Status:** phase 9, the showcase: a minimal dark stage where the visitor drops the egg and a small, finely scaled Kelo hatches; on desktop a slim dock drives his actions, the light, a turntable and an x-ray, and the camera orbits and zooms; on a phone the ninth tap opens a pixel-art runner. The launch (domain, indexing, analytics, monitoring, runbook and handover) is phase 10. `CLAUDE.md` describes the architecture, `docs/interaction-script.md` the behaviour, `docs/decisions.md` every decision and `docs/qa.md` the release gate.
+**Status:** phase 10, launched at <https://kelormascot.vercel.app>: indexed in production with a share card, and linked from the studio's site, where the pixel-art Kelo waits in a corner. Phase 9 built the showcase: a minimal dark stage where the visitor drops the egg and a small, finely scaled Kelo hatches; on desktop a slim dock drives his actions, the light, a turntable and an x-ray, and the camera orbits and zooms; on a phone the ninth tap opens a pixel-art runner. The launch (domain, indexing, analytics, monitoring, runbook and handover) is phase 10. `CLAUDE.md` describes the architecture, `docs/interaction-script.md` the behaviour, `docs/decisions.md` every decision and `docs/qa.md` the release gate.
 
 ## Requirements
 
