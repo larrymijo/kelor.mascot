@@ -9,8 +9,10 @@
  * The same shape is meant to drive the Blender pipeline in phase 3, so keep
  * it free of three.js types. Never key `root` or the procedural eye bones.
  *
- * Arm raises stay at or below about 45 degrees: the contract has no clavicles,
- * so bigger raises of these short arms stretch the shoulder skin.
+ * Arm raises stay at or below about 50 degrees: the contract has no clavicles,
+ * so bigger raises of these short arms stretch the shoulder skin, and past
+ * vertical they sweep the hand through the big head. model/clearance.test.ts
+ * keeps every clip's forearms and hands 5 cm off the head.
  */
 
 /** Sine sway sampled into keys, closing the loop exactly at t = 1. */
@@ -140,13 +142,26 @@ const jump = (() => {
   ]
 })()
 
+/**
+ * A wave beside his cheek, not over his head: the big head leaves these short
+ * arms no room above it (a 115 degree raise went through it). The shoulder
+ * rises 48 to 50 degrees, swung back a little behind the snout, the elbow
+ * bends the hand up and waves it, and the head leans away; the forearm and
+ * hand stay over 8 cm from the head (clearance.test.ts).
+ */
 const wave = (() => {
   const t = [0, 0.2, 0.35, 0.5, 0.65, 0.8, 1]
+  const back = [0, -12, -12, -12, -12, -12, 0]
+  const raise = [0, -48, -50, -48, -50, -48, 0]
   return [
-    rot('upperarm_R', t, 'z', [0, -110, -115, -110, -115, -110, 0]),
-    rot('forearm_R', t, 'z', [0, -20, 15, -20, 15, -20, 0]),
-    rot('head', t, 'z', [0, 5, 5, 5, 5, 5, 0]),
-    rot('spine_02', t, 'z', [0, -3, -3, -3, -3, -3, 0]),
+    {
+      bone: 'upperarm_R',
+      path: 'rotation',
+      keys: t.map((time, i) => [time, [back[i], 0, raise[i]]]),
+    },
+    rot('forearm_R', t, 'z', [0, -45, -8, -45, -8, -45, 0]),
+    rot('head', t, 'z', [0, -7, -7, -7, -7, -7, 0]),
+    rot('spine_02', t, 'z', [0, 3, 3, 3, 3, 3, 0]),
   ]
 })()
 
