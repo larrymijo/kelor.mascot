@@ -55,6 +55,8 @@ export const copy = {
       lights: { studio: 'Estudio', sunset: 'Atardecer', neon: 'Neón' },
       view: { spin: 'Giro 360°', xray: 'Rayos X', reset: 'Centrar' },
       game: 'Jugar a Kelo Run',
+      size: 'Tamaño de Kelo',
+      pixel: 'pixel art',
     },
   },
   /** The pixel runner, after the ninth tap on a phone. */
