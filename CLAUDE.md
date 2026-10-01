@@ -159,6 +159,13 @@ public/basis            three's Basis transcoder for KTX2, served locally (kept 
 - Locally, `node scripts/assets/model/run.mjs --until rig` runs the Node steps into `build/model`.
 - `node scripts/assets/model/reassemble.mjs [--public] [--raw]` rebuilds the lite model from HEAD's committed body with the current assembly code, no Blender, to tune the jaw, eyes or plates before spending a CI run. `--public` overwrites the committed lite model for a preview: `git checkout -- public/models/mascot.lite.glb` before committing.
 
+## Launch (phase 10)
+
+- `src/lib/site.ts`: `siteUrl` (the production host on Vercel) and `isIndexable` (`VERCEL_ENV === 'production'`), which drive the robots meta in `layout.tsx`, `src/app/robots.ts` and `src/app/sitemap.ts`. Previews and local builds are never indexed.
+- The share image is `src/app/opengraph-image.jpg` and `twitter-image.jpg` with their `.alt.txt`, a frame of the real Kelo rendered by the production build: regenerate with `corepack pnpm build && node scripts/review/share-image.mjs` after a model or look change.
+- `page.tsx` carries the JSON-LD (a data block, outside the CSP).
+- The studio's site (larrymijo/KELOR_Interactive, Astro) shows the pixel-art Kelo in a corner, linking here. Its SVG comes from `src/lib/game/sprites.ts`: `node --experimental-transform-types scripts/review/export-pixel-kelo.mjs ../KELOR_Interactive/src/assets/kelo-pixel.svg` (the flag, because the sprite module uses parameter properties).
+
 ## Performance and QA (phase 7)
 
 - Resilience: `StageMount` wraps the 3D experience in an error boundary. A failed chunk, model or WebGL leaves `data-scene-state="unavailable"` and the brand mark; a failed full model keeps lite. A lost WebGL context shows the brand mark until it is restored. `not-found.tsx`, `error.tsx` and `global-error.tsx` are Spanish.
