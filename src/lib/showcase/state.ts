@@ -12,6 +12,8 @@
  * stage stops drawing behind it.
  */
 
+import { DEFAULT_SIZE } from './size'
+
 export const LIGHTINGS = ['studio', 'sunset', 'neon'] as const
 export type Lighting = (typeof LIGHTINGS)[number]
 
@@ -24,6 +26,8 @@ export interface ShowcaseState {
   spin: boolean
   /** The mesh as a glowing wireframe, with his skeleton over it. */
   xray: boolean
+  /** The size slider, 0 tiny (pixel art) to 1 the old hero shot (size.ts). */
+  size: number
 }
 
 export type ShowcaseCommand =
@@ -36,6 +40,7 @@ export const DEFAULT_SHOWCASE: ShowcaseState = {
   lighting: 'studio',
   spin: false,
   xray: false,
+  size: DEFAULT_SIZE,
 }
 
 let state: ShowcaseState = DEFAULT_SHOWCASE

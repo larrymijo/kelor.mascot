@@ -67,6 +67,16 @@ describe('interaction', () => {
     expect(nextTapOpensGame(createStreak(), 0, desktop, settings)).toBe(false)
   })
 
+  it('never bites as pixel art: the reactions carry on, the grumpiest again', () => {
+    const pixel = { ...desktop, pixel: true }
+    const outcomes = tapSeries([0, 0.4, 0.8, 1.2, 1.6, 2, 2.4], pixel)
+    expect(outcomes.some((o) => o.kind === 'bite' || o.kind === 'game')).toBe(false)
+    expect(names(outcomes).at(-1)).toBe('grumpier')
+    const streak = createStreak()
+    for (const t of [0, 0.4, 0.8, 1.2, 1.6]) registerTap(streak, t, pixel, settings)
+    expect(nextTapBites(streak, 2, pixel, settings)).toBe(false)
+  })
+
   it('opens the pixel runner on the ninth tap on touch screens, then starts over', () => {
     const times = Array.from({ length: 10 }, (_, i) => i * 0.4)
     const outcomes = tapSeries(times, touch)

@@ -14,6 +14,7 @@ import {
   setShowcase,
   showcase,
 } from './state'
+import { DEFAULT_SIZE } from './size'
 
 describe('showcase state', () => {
   afterEach(() => setShowcase(DEFAULT_SHOWCASE))
@@ -46,7 +47,12 @@ describe('showcase state', () => {
   })
 
   it('starts in the studio light, still and solid', () => {
-    expect(showcase()).toEqual({ lighting: 'studio', spin: false, xray: false })
+    expect(showcase()).toEqual({
+      lighting: 'studio',
+      spin: false,
+      xray: false,
+      size: DEFAULT_SIZE,
+    })
   })
 
   it('tells listeners of real changes only, and stops when unsubscribed', () => {
