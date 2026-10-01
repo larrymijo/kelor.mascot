@@ -15,9 +15,11 @@
  *   Space taps him, the arrow keys make him hop;
  * - any element marked data-gaze-target draws his look on hover and on
  *   keyboard focus, so keyboard users get the same reaction;
- * - the press on him (or on the Kelo button) that will bite wakes the audio
- *   engine inside that press, since browsers only start audio there and the
- *   bite is heard before the sound is on. Other presses leave it asleep;
+ * - the press on him (or on the Kelo button) that will bite, or open the
+ *   runner on a phone, wakes the audio engine inside that press (and again as
+ *   it lifts, since iOS counts only the lift of a touch), because browsers
+ *   only start audio there and both are heard before the sound is on. Other
+ *   presses leave it asleep;
  * - in the desktop sandbox, dragging the empty stage orbits the camera and
  *   the wheel zooms it, and the dock's commands reach the controller.
  *   Presses on the words and panels are left to the browser (text selection).
@@ -88,14 +90,14 @@ export function useBehaviourInput(controller: BehaviourController) {
         return
       }
       if (controller.canBite) preloadAudio()
-      if (controller.nextTapBites) wakeAudio()
+      if (controller.nextTapWakesAudio) wakeAudio()
       // On Kelo: no text selection or native drag, and keep the pointer if it leaves the window.
       event.preventDefault()
       capture(target ?? root, event.pointerId)
     }
     const up = (event: PointerEvent) => {
       if (!event.isPrimary) return
-      if (controller.pressing && controller.nextTapBites) wakeAudio()
+      if (controller.pressing && controller.nextTapWakesAudio) wakeAudio()
       controller.lift(event.clientX, event.clientY)
       letGo()
     }
@@ -122,7 +124,7 @@ export function useBehaviourInput(controller: BehaviourController) {
 
     const button = document.getElementById('kelo-button')
     const tap = () => {
-      if (controller.nextTapBites) wakeAudio()
+      if (controller.nextTapWakesAudio) wakeAudio()
       controller.key('tap')
     }
     const arrows = (event: KeyboardEvent) => {

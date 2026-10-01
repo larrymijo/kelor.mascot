@@ -21,7 +21,7 @@
  * A chunk of its own, created by control.ts inside a press with an
  * AudioContext it hands over: this module never creates one.
  */
-import { BITE_SOUNDS, onSound, soundLevels, soundState, type SoundCue } from './bus'
+import { BITE_SOUNDS, GAME_SOUNDS, onSound, soundLevels, soundState, type SoundCue } from './bus'
 import type { SoundMode } from './control'
 
 /** The shell bursts 30% into the 1.2 s hatch (character.json egg.hatchDurationS). */
@@ -29,12 +29,15 @@ const POP_DELAY_S = 0.36
 const VOLUME = 0.7
 /** After the bite ends, its echo rings out before the output closes. */
 const TAIL_MS = 900
+/** After the runner closes, its last crash rings out. */
+const GAME_TAIL_MS = 400
 /** A press woke the engine for a bite that may follow: sleep again after this. */
 const SLEEP_MS = 3000
 /** Once closed, the audio thread stops after the fade. */
 const SUSPEND_MS = 400
 
 const BITE = new Set<SoundCue>(BITE_SOUNDS)
+const GAME = new Set<SoundCue>(GAME_SOUNDS)
 
 export interface Synth {
   setMode(mode: SoundMode): void
@@ -87,7 +90,8 @@ export function createSynth(ctx: AudioContext, initial: SoundMode): Synth {
   humFilter.type = 'lowpass'
   humFilter.frequency.value = 260
   const humGain = ctx.createGain()
-  humGain.gain.value = 0.08
+  // Silent until the output opens: the loop brings it up, for the bite and once on.
+  humGain.gain.value = 0
   humFilter.connect(humGain).connect(master)
   for (const frequency of [55, 82.4]) {
     const oscillator = ctx.createOscillator()
@@ -306,16 +310,18 @@ export function createSynth(ctx: AudioContext, initial: SoundMode): Synth {
       tone(second, 880, 1320, 0.1, envelope(second, 0.15, 0.004, 0.11), 'triangle')
     },
   } satisfies Record<
-    Exclude<SoundCue, 'biteStart' | 'biteEnd'> | 'crack' | 'pop',
+    Exclude<SoundCue, 'biteStart' | 'biteEnd' | 'gameStart' | 'gameEnd'> | 'crack' | 'pop',
     (at: number) => void
   >
 
   let mode = initial
-  // Created by the press that bites, it may join the bite a frame late.
+  // Created by the press that bites (or opens the runner), it may join a frame late.
   let biting = soundState.biting
+  let gaming = soundState.gaming
   let open = false
   let frame = 0
   let closing: ReturnType<typeof setTimeout> | undefined
+  let gameClosing: ReturnType<typeof setTimeout> | undefined
   let sleeping: ReturnType<typeof setTimeout> | undefined
   let suspending: ReturnType<typeof setTimeout> | undefined
 
@@ -324,13 +330,15 @@ export function createSynth(ctx: AudioContext, initial: SoundMode): Synth {
     // The rumble: louder and brighter as he grows in the bite.
     const grow = soundLevels.rumble
     humFilter.frequency.setTargetAtTime(260 + 900 * grow, now, 0.1)
-    humGain.gain.setTargetAtTime(0.08 + 0.12 * grow, now, 0.1)
+    // No hum under the runner alone: it only belongs to Kelo's stage.
+    const hum = mode === 'on' || biting ? 0.08 + 0.12 * grow : 0
+    humGain.gain.setTargetAtTime(hum, now, 0.1)
     frame = requestAnimationFrame(loop)
   }
 
-  /** Open the output while the sound is on, or while the bite plays in 'auto'. */
+  /** Open the output while the sound is on, or in 'auto' while the bite plays or the runner is open. */
   const update = () => {
-    const next = mode === 'on' || (mode === 'auto' && biting)
+    const next = mode === 'on' || (mode === 'auto' && (biting || gaming))
     if (next === open) return
     open = next
     document.documentElement.toggleAttribute('data-sound-open', open)
@@ -367,7 +375,22 @@ export function createSynth(ctx: AudioContext, initial: SoundMode): Synth {
       }, TAIL_MS)
       return
     }
-    const heard = mode === 'on' || (mode === 'auto' && biting && BITE.has(cue))
+    if (cue === 'gameStart') {
+      clearTimeout(gameClosing)
+      gaming = true
+      update()
+      return
+    }
+    if (cue === 'gameEnd') {
+      clearTimeout(gameClosing)
+      gameClosing = setTimeout(() => {
+        gaming = false
+        update()
+      }, GAME_TAIL_MS)
+      return
+    }
+    const heard =
+      mode === 'on' || (mode === 'auto' && ((biting && BITE.has(cue)) || (gaming && GAME.has(cue))))
     if (heard) sounds[cue](ctx.currentTime)
   })
 
