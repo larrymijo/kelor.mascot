@@ -5,6 +5,7 @@ import {
   isDesktop,
   isDrag,
   nextTapBites,
+  nextTapOpensGame,
   registerTap,
   type TapOutcome,
 } from './interaction'
@@ -51,6 +52,19 @@ describe('interaction', () => {
     expect(nextTapBites(streak, 5 + settings.taps.streakS + 0.1, desktop, settings)).toBe(false)
     expect(nextTapBites(streak, 5.4, touch, settings)).toBe(false)
     expect(nextTapBites(streak, 5.4, { desktop: true, reducedMotion: true }, settings)).toBe(true)
+  })
+
+  it('knows which tap will open the runner on a touch screen, so it wakes the audio too', () => {
+    const streak = createStreak()
+    const opens: boolean[] = []
+    for (let i = 0; i < settings.taps.gameAt; i++) {
+      opens.push(nextTapOpensGame(streak, i * 0.4, touch, settings))
+      registerTap(streak, i * 0.4, touch, settings)
+    }
+    expect(opens.indexOf(true)).toBe(settings.taps.gameAt - 1)
+    expect(opens.filter(Boolean)).toHaveLength(1)
+    // Desktops open it from the dock instead.
+    expect(nextTapOpensGame(createStreak(), 0, desktop, settings)).toBe(false)
   })
 
   it('opens the pixel runner on the ninth tap on touch screens, then starts over', () => {

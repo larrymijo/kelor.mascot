@@ -62,6 +62,7 @@ test.describe('accessibility', () => {
           - button "Giro 360°"
           - button "Rayos X"
           - button "Centrar"
+          - button "Jugar a Kelo Run"
         - region "¿Quieres una web a medida?":
           - paragraph: /© \\d{4} KELOR Interactive/
     `)

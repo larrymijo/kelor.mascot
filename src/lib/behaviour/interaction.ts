@@ -82,6 +82,24 @@ export function nextTapBites(
   )
 }
 
+/**
+ * Whether a tap now would open the pixel runner (touch screens). Its sounds
+ * are heard from the start, like the bite's, so its press wakes the audio
+ * engine too.
+ */
+export function nextTapOpensGame(
+  streak: TapStreak,
+  nowS: number,
+  caps: Capabilities,
+  settings: InteractionSettings,
+) {
+  return (
+    !caps.desktop &&
+    nowS - streak.lastS <= settings.taps.streakS &&
+    streak.count + 1 >= settings.taps.gameAt
+  )
+}
+
 /** Dragging and the bite need a fine pointer that hovers, on a wide screen. */
 export function isDesktop(
   device: { finePointer: boolean; canHover: boolean; widthPx: number },

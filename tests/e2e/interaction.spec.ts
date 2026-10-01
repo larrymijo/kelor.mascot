@@ -85,11 +85,12 @@ test.describe('live Kelo', () => {
     if (desktop) {
       await expect(ui(page)).toHaveAttribute('data-biting', 'true', { timeout: 2_000 })
       // The lunge: he fills the screen with his jaw wide open (for a third of a
-      // second, so the page watches for it every frame).
+      // second, so the page watches for it every frame; a busy machine stretches
+      // the bite, see the sound test).
       await page.waitForFunction(
         () => Number(document.getElementById('live-ui')?.dataset.scale) > 4,
         null,
-        { polling: 'raf', timeout: 3_000 },
+        { polling: 'raf', timeout: 10_000 },
       )
       await shot('bite')
       await expect(ui(page)).toHaveAttribute('data-biting', 'false', { timeout: 15_000 })

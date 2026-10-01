@@ -2,12 +2,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   DEFAULT_SHOWCASE,
   dropEgg,
+  isGameOpen,
   onCommand,
   onDropEgg,
+  onGameOpen,
   onGameRequest,
   onShowcase,
   requestGame,
   sendCommand,
+  setGameOpen,
   setShowcase,
   showcase,
 } from './state'
@@ -27,6 +30,18 @@ describe('showcase state', () => {
     expect(listener).not.toHaveBeenCalled()
     dropEgg()
     expect(listener).toHaveBeenCalledWith(undefined)
+    off()
+  })
+
+  it('tells the scene when the runner opens and closes', () => {
+    const listener = vi.fn()
+    const off = onGameOpen(listener)
+    expect(isGameOpen()).toBe(false)
+    setGameOpen(true)
+    setGameOpen(true)
+    expect(isGameOpen()).toBe(true)
+    setGameOpen(false)
+    expect(listener).toHaveBeenCalledTimes(2)
     off()
   })
 

@@ -6,8 +6,10 @@
  * loads 3D code and the 3D code never imports React components.
  *
  * It also carries the drop of the egg to the scene (a press on the stage, or
- * the page's drop button), and the one request the scene makes of the page:
- * open the pixel runner, after the ninth tap in a row on a touch screen.
+ * the page's drop button), and the pixel runner: the scene asks the page to
+ * open it after the ninth tap in a row on a touch screen (the dock's button
+ * asks on desktop), and the page tells the scene while it is open, so the
+ * stage stops drawing behind it.
  */
 
 export const LIGHTINGS = ['studio', 'sunset', 'neon'] as const
@@ -104,7 +106,28 @@ export function onDropEgg(listener: (at?: DropPoint) => void) {
   }
 }
 
-/** The scene asks the page to open the pixel runner. */
+let gameOpen = false
+const gameOpenListeners = new Set<() => void>()
+
+/** Whether the pixel runner is open. */
+export function isGameOpen() {
+  return gameOpen
+}
+
+export function setGameOpen(open: boolean) {
+  if (open === gameOpen) return
+  gameOpen = open
+  for (const listener of gameOpenListeners) listener()
+}
+
+export function onGameOpen(listener: () => void) {
+  gameOpenListeners.add(listener)
+  return () => {
+    gameOpenListeners.delete(listener)
+  }
+}
+
+/** Open the pixel runner: the scene (the ninth tap) or the dock asks the page. */
 export function requestGame() {
   for (const listener of gameListeners) listener()
 }

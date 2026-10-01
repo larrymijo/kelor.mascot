@@ -42,6 +42,7 @@ import {
   isDesktop,
   isDrag,
   nextTapBites,
+  nextTapOpensGame,
   registerTap,
   type Capabilities,
   type Reaction,
@@ -350,6 +351,11 @@ export class BehaviourController {
   /** Whether a tap now would bite: that press wakes the audio engine. */
   get nextTapBites() {
     return nextTapBites(this.streak, this.clock, this.caps, interaction)
+  }
+
+  /** Whether the next tap will be heard before the sound is on: the bite, or opening the runner. */
+  get nextTapWakesAudio() {
+    return this.nextTapBites || nextTapOpensGame(this.streak, this.clock, this.caps, interaction)
   }
 
   /** Being held or thrown, for the debug readout and the cursor. */

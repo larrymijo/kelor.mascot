@@ -151,6 +151,36 @@ describe('createSynth', () => {
     expect(heard(sources, 'chomp')).toBe(false)
   })
 
+  it('plays the runner from the start while it is open, and nothing else', () => {
+    const { sources, create } = fakeContext()
+    const { synth, master } = create('auto')
+    unsubscribe.push(() => synth.setMode('off'))
+    expect(heard(sources, 'blip')).toBe(false)
+
+    playSound('gameStart')
+    expect(master.gain.setTargetAtTime).toHaveBeenLastCalledWith(expect.any(Number), 0, 0.08)
+    expect(document.documentElement.toggleAttribute).toHaveBeenLastCalledWith(
+      'data-sound-open',
+      true,
+    )
+    for (const cue of ['blip', 'coin', 'crash'] as const) expect(heard(sources, cue)).toBe(true)
+    // Kelo's own sounds wait for the switch, and the bite's for the bite.
+    expect(heard(sources, 'giggle')).toBe(false)
+    expect(heard(sources, 'chomp')).toBe(false)
+
+    // Closed, the last crash rings out, then the output closes.
+    playSound('gameEnd')
+    vi.advanceTimersByTime(500)
+    expect(master.gain.setTargetAtTime).toHaveBeenLastCalledWith(0, 0, 0.06)
+    expect(heard(sources, 'blip')).toBe(false)
+
+    // Once the visitor turned the sound off, the runner is silent too.
+    synth.setMode('off')
+    playSound('gameStart')
+    expect(heard(sources, 'coin')).toBe(false)
+    playSound('gameEnd')
+  })
+
   it('joins a bite already playing when the biting press creates it', () => {
     playSound('biteStart')
     const { sources, create } = fakeContext()

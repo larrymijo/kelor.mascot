@@ -25,6 +25,8 @@ import {
   type Sprite,
 } from '@/lib/game/sprites'
 import { playSound } from '@/lib/sound/bus'
+import { wakeAudio } from '@/lib/sound/control'
+import { ConsoleShell } from './ConsoleShell'
 
 const STEP_S = 1 / 120
 const BEST_KEY = 'kelo-run-best'
@@ -78,13 +80,14 @@ const STARS = [
 ] as const
 
 /**
- * Kelo Run: the pixel runner a phone opens on the ninth tap in a row
- * (docs/interaction-script.md). A dialog over the page with an old-school
- * screen: Kelo runs, a tap (or Space) jumps over the bugs, the score climbs
- * and the record is kept on the device. The game's rules live in
- * src/lib/game/runner.ts; this draws them on a 240 x 100 canvas scaled up
- * with crisp pixels, at a fixed 120 steps a second. Esc or the close button
- * returns to Kelo.
+ * Kelo Run: the pixel runner a phone opens on the ninth tap in a row, and
+ * the dock's button on desktop (docs/interaction-script.md). A dialog over
+ * the page with the game on the screen of a KELOR handheld (ConsoleShell):
+ * Kelo runs, a press anywhere (or Space, or the arrow up) jumps over the
+ * bugs, the score climbs and the record is kept on the device. The game's
+ * rules live in src/lib/game/runner.ts; this draws them on a 240 x 100
+ * canvas scaled up with crisp pixels, at a fixed 120 steps a second. Esc or
+ * the close button returns to Kelo.
  */
 export default function RunnerGame({ onClose }: { onClose: () => void }) {
   const dialog = useRef<HTMLDivElement>(null)
@@ -227,13 +230,27 @@ export default function RunnerGame({ onClose }: { onClose: () => void }) {
     }
     frame = requestAnimationFrame(tick)
 
-    // Taps and keys: a press jumps (or starts, or restarts), letting go shortens the jump.
+    // Taps and keys: a press jumps (or starts, or restarts), letting go shortens
+    // the jump. The handheld's A button and D-pad show it (data-pressed).
+    // Heard from the start, like the bite: every press keeps the audio awake
+    // (iOS may have stopped it), and the lift too, since iOS counts only that.
+    playSound('gameStart')
+    const jump = () => {
+      wakeAudio()
+      element.dataset.pressed = ''
+      events(press(state))
+    }
+    const land = () => {
+      wakeAudio()
+      delete element.dataset.pressed
+      release(state)
+    }
     const down = (event: PointerEvent) => {
       if ((event.target as Element).closest('button')) return
       event.preventDefault()
-      events(press(state))
+      jump()
     }
-    const up = () => release(state)
+    const up = () => land()
     const keyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose()
@@ -241,10 +258,10 @@ export default function RunnerGame({ onClose }: { onClose: () => void }) {
       }
       if (event.key !== ' ' && event.key !== 'ArrowUp') return
       event.preventDefault()
-      if (!event.repeat) events(press(state))
+      if (!event.repeat) jump()
     }
     const keyUp = (event: KeyboardEvent) => {
-      if (event.key === ' ' || event.key === 'ArrowUp') release(state)
+      if (event.key === ' ' || event.key === 'ArrowUp') land()
     }
     // Paused while the tab is hidden: no catching up afterwards.
     const visibility = () => {
@@ -265,6 +282,7 @@ export default function RunnerGame({ onClose }: { onClose: () => void }) {
       element.removeEventListener('keydown', keyDown)
       element.removeEventListener('keyup', keyUp)
       document.removeEventListener('visibilitychange', visibility)
+      playSound('gameEnd')
       saveBest(state.best)
       returnFocus?.focus?.()
     }
@@ -279,7 +297,7 @@ export default function RunnerGame({ onClose }: { onClose: () => void }) {
       aria-describedby="runner-help"
       tabIndex={-1}
       data-game-phase={phase}
-      className="fixed inset-0 z-50 flex touch-none flex-col items-center justify-center bg-[#07040d]/92 px-3 outline-none select-none"
+      className="group fixed inset-0 z-50 flex touch-none flex-col items-center justify-center overflow-y-auto bg-[#07040d]/94 px-3 py-16 outline-none select-none"
     >
       <button
         type="button"
@@ -300,7 +318,7 @@ export default function RunnerGame({ onClose }: { onClose: () => void }) {
         </svg>
       </button>
 
-      <div className="relative w-full max-w-[720px] overflow-hidden rounded-xl border-2 border-mascot-500/60 shadow-[0_0_60px_-10px_rgb(122_63_228/0.6)]">
+      <ConsoleShell>
         <canvas
           ref={canvas}
           width={WIDTH}
@@ -312,17 +330,23 @@ export default function RunnerGame({ onClose }: { onClose: () => void }) {
             aria-live="polite"
             className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#120a22]/45 text-center"
           >
-            <p className="font-display text-2xl font-extrabold tracking-[0.2em] text-mascot-glow sm:text-4xl">
+            <p className="font-display text-xl font-extrabold tracking-[0.2em] text-mascot-glow handheld-wide:text-4xl">
               {phase === 'over' ? game.over : game.title}
             </p>
-            <p className="font-display text-[0.7rem] font-semibold tracking-[0.25em] text-ink-100 uppercase sm:text-xs">
-              {phase === 'over' ? game.again : game.start}
+            <p className="font-display text-[0.6rem] font-semibold tracking-[0.25em] text-ink-100 uppercase handheld-wide:text-xs">
+              <span className="hint-pointer">
+                {phase === 'over' ? game.again.pointer : game.start.pointer}
+              </span>
+              <span className="hint-touch">
+                {phase === 'over' ? game.again.touch : game.start.touch}
+              </span>
             </p>
           </div>
         )}
-      </div>
-      <p id="runner-help" className="mt-4 max-w-xs text-center text-[0.75rem] text-ink-300">
-        {game.help}
+      </ConsoleShell>
+      <p id="runner-help" className="mt-6 max-w-sm text-center text-[0.75rem] text-ink-300">
+        <span className="hint-pointer">{game.help.pointer}</span>
+        <span className="hint-touch">{game.help.touch}</span>
       </p>
     </div>
   )
