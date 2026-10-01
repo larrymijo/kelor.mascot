@@ -78,7 +78,7 @@ function parseArgs(argv) {
   return args
 }
 
-async function serve() {
+export async function serve() {
   const port = 3200 + Math.floor(Math.random() * 500)
   const server = spawn(
     process.execPath,
