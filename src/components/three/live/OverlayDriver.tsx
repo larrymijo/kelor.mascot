@@ -8,7 +8,8 @@
  * button follow him exactly. Only writes a value when it changes.
  *
  * For tests it also exposes data-scale, data-biting, data-kelo (what he is
- * doing), data-reaction, and his screen position as data-kelo-x and -y.
+ * doing), data-reaction, his form (data-kelo-form: model, morph or pixel),
+ * and his screen position as data-kelo-x and -y.
  */
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
@@ -63,6 +64,8 @@ export function OverlayDriver() {
     data('reaction', kelo.reaction)
     data('scale', sample.scale.toFixed(2))
     data('biting', String(sample.biteS !== null))
+    const form = live.form.pixel
+    data('keloForm', form >= 1 ? 'pixel' : form <= 0 ? 'model' : 'morph')
 
     // The iris: a circle centred on the scaled, turned mouth, projected to the screen.
     if (sample.iris > 0) {

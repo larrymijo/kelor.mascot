@@ -27,9 +27,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { MathUtils, Vector3, type PerspectiveCamera } from 'three'
 import { character } from '@/lib/character'
 import { damp, degToRad, smoothstep } from '@/lib/math/damp'
+import { RESET_S } from '@/lib/live/bite'
 import { frameSubject } from '@/lib/scene/framing'
 import { beforeHatch } from '@/lib/scene/boot'
 import { BITE_FRAMING, layoutFraming, SANDBOX_QUERY } from '@/lib/showcase/layout'
+import { fillFor } from '@/lib/showcase/size'
 import { live } from './live/LiveDriver'
 import { useScene } from './store'
 
@@ -74,9 +76,10 @@ export function CameraRig() {
       shift: layout.bottomReserve - (layout.topReserve ?? 0),
       centreX,
     })
-    const hero = frameFor(layoutFraming(aspect, sandbox))
+    const layout = layoutFraming(aspect, sandbox)
+    const hero = frameFor(layout)
     const bite = frameFor(BITE_FRAMING)
-    return { ...hero, biteDistance: bite.distance, biteShift: bite.shift }
+    return { ...hero, fill: layout.fill, biteDistance: bite.distance, biteShift: bite.shift }
   }, [width, height, sandbox])
 
   // The lens shift: the picture slides so he stands at centreX, without turning the camera.
@@ -101,12 +104,18 @@ export function CameraRig() {
       : phase === 'hatching' && !scene.reducedMotion
         ? MathUtils.lerp(EGG_DISTANCE, 1, smoothstep(0, 1, hatchProgress))
         : 1
-    orbit.current = damp(orbit.current, live.bite.playing ? 0 : 1, 5, Math.min(delta, 0.1))
+    // The bite takes the camera over until he is reset in the dark: the
+    // visitor's shot, at his chosen size, is back whole before the iris opens.
+    const lunging = sample.biteS !== null && sample.biteS < RESET_S
+    orbit.current = lunging ? damp(orbit.current, 0, 5, Math.min(delta, 0.1)) : 1
     const { view } = live
     const zoom = MathUtils.lerp(1, view.zoom, orbit.current)
+    // The sandbox's size slider: the hero shot frames him at its fill instead
+    // (frameSubject's distance goes as 1 / fill).
+    const hero = sandbox ? frame.distance * (frame.fill / fillFor(view.size)) : frame.distance
     // The bite moves in to its close framing as the orbit eases away.
     const close = 1 - orbit.current
-    const base = MathUtils.lerp(frame.distance, frame.biteDistance, close)
+    const base = MathUtils.lerp(hero, frame.biteDistance, close)
     const shift = MathUtils.lerp(frame.shift, frame.biteShift, close)
     const distance = base * sample.distance * push * zoom
 

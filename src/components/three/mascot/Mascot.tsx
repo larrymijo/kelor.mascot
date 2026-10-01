@@ -15,6 +15,7 @@ import { loadKtx2Module, useKtx2Extension, useModel, warmUp } from '../loaders'
 import { useScene } from '../store'
 import { BehaviourController } from './BehaviourController'
 import { MascotRig, type RigSnapshot } from './MascotRig'
+import { PixelKelo } from './PixelKelo'
 import { useBehaviourInput } from './useBehaviourInput'
 
 const easeOutBack = (t: number) => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2
@@ -93,6 +94,8 @@ export function Mascot() {
   const offset = useRef<Group>(null)
   const shape = useRef<Group>(null)
   const root = useRef<Group>(null)
+  /** The 3D model inside the pose, which shrinks away when he turns into pixel art. */
+  const model = useRef<Group>(null)
   const handledPhase = useRef<BootPhase | null>(null)
   const lastRequest = useRef(0)
   const lastBlink = useRef(0)
@@ -104,6 +107,9 @@ export function Mascot() {
   // Outlives rig swaps: the director, blink rhythm and gaze target carry on.
   const [behaviour] = useState(() => new BehaviourController())
   useBehaviourInput(behaviour)
+  // The runner's Kelo as blocks: the size slider's smallest end (docs/interaction-script.md).
+  const [pixel] = useState(() => new PixelKelo())
+  useEffect(() => () => pixel.dispose(), [pixel])
   const upgrade = useMemo(() => {
     const url = upgradeUrl(character, bootTier)
     return shouldUpgrade(url, readConnection()) ? url : null
@@ -193,6 +199,21 @@ export function Mascot() {
       // His three-quarter turn (the bite turns him to you), less while carried, plus the turntable.
       root.current.rotation.y =
         degToRad(sample.bodyYawDeg) * (1 - CARRIED_FACING * frame.carried) + live.view.spin
+      // Pixel art: the model shrinks away as the blocks sweep up from his feet, and back.
+      const form = live.form.pixel
+      if (model.current) {
+        const shown = 1 - smoothstep(0, 0.55, form)
+        model.current.visible = shown > 0
+        model.current.scale.setScalar(Math.max(shown, 1e-4))
+      }
+      pixel.update(Math.min(delta, 0.1), {
+        amount: form,
+        state: live.kelo.state,
+        acts: live.kelo.acts,
+        x: body.x,
+        xray: showcase().xray,
+        reducedMotion: scene.reducedMotion,
+      })
       rig.mouthWorld(live.mouth)
       // Where he is, for the overlays, the keyboard button and the tests.
       const size = H * sample.scale * squash
@@ -209,7 +230,8 @@ export function Mascot() {
     // The sandbox's x-ray: a wireframe body with the skeleton drawn over it.
     const xray = showcase().xray
     rig.setXray(xray)
-    if (xray && !skeleton.current) {
+    // The skeleton belongs to the 3D model: none over the blocks.
+    if (xray && live.form.pixel < 1 && !skeleton.current) {
       const helper = new SkeletonHelper(rig.scene)
       helper.setColors(BONE_COLORS[0]!, BONE_COLORS[1]!)
       const material = helper.material as { depthTest: boolean; toneMapped: boolean }
@@ -218,7 +240,7 @@ export function Mascot() {
       helper.renderOrder = 10
       state.scene.add(helper)
       skeleton.current = helper
-    } else if (!xray && skeleton.current) {
+    } else if ((!xray || live.form.pixel >= 1) && skeleton.current) {
       skeleton.current.removeFromParent()
       skeleton.current.dispose()
       skeleton.current = null
@@ -236,7 +258,10 @@ export function Mascot() {
         <group ref={offset}>
           <group ref={shape}>
             <group ref={root} visible={false}>
-              <primitive object={rig.scene} />
+              <group ref={model}>
+                <primitive object={rig.scene} />
+              </group>
+              <primitive object={pixel.group} />
             </group>
           </group>
         </group>

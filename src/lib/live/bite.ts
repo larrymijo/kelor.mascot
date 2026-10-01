@@ -39,7 +39,7 @@ export interface BiteScript {
 /** When the jaw slams shut. */
 export const SNAP_S = 1.58
 /** When he is put back at his normal size, hidden by the closed iris. */
-const RESET_S = 2.0
+export const RESET_S = 2.0
 const JUST_AFTER = RESET_S + 0.01
 
 export const BITE: BiteScript = {

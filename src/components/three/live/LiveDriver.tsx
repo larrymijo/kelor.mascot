@@ -14,6 +14,7 @@ import { Vector3 } from 'three'
 import { BITE, crossedBiteCues, sampleBite } from '@/lib/live/bite'
 import { createSample, MOUTH, restSample } from '@/lib/live/pose'
 import { smoothstep } from '@/lib/math/damp'
+import { DEFAULT_SIZE } from '@/lib/showcase/size'
 import { playSound, soundLevels } from '@/lib/sound/bus'
 
 export const live = {
@@ -36,6 +37,8 @@ export const live = {
     reaction: '',
     /** Whether anyone has touched him yet: the hint shows until then. */
     touched: false,
+    /** Counts every reaction and action, so the pixel-art Kelo hops at each. */
+    acts: 0,
   },
   /**
    * The desktop sandbox's view, eased by ShowcaseDriver: the camera's orbit
@@ -43,7 +46,22 @@ export const live = {
    * its distance), the targets the pointer and the wheel set, and Kelo's
    * turn on the spot (spin, radians).
    */
-  view: { yaw: 0, pitch: 0, zoom: 1, spin: 0, yawTarget: 0, pitchTarget: 0, zoomTarget: 1 },
+  view: {
+    yaw: 0,
+    pitch: 0,
+    zoom: 1,
+    spin: 0,
+    yawTarget: 0,
+    pitchTarget: 0,
+    zoomTarget: 1,
+    /** The size slider's position, eased (size.ts). */
+    size: DEFAULT_SIZE,
+  },
+  /**
+   * His form: whether the size slider has made him pixel art (target), and
+   * how far the transformation has gone, 0 the 3D model to 1 the blocks.
+   */
+  form: { target: false, pixel: 0 },
   /** How much each of the sandbox's lighting looks shows, eased; they add up to 1. */
   look: { studio: 1, sunset: 0, neon: 0 },
   /**
