@@ -21,6 +21,8 @@ export interface Capabilities {
   /** A fine pointer that can hover, on a wide screen: dragging and the bite. */
   desktop: boolean
   reducedMotion: boolean
+  /** Shrunk into pixel art (the sandbox's size slider): no bite, the reactions stay. */
+  pixel?: boolean
 }
 
 export type TapOutcome =
@@ -52,7 +54,7 @@ export function registerTap(
   streak.lastS = nowS
   const { reactions } = settings
   const last = reactions[reactions.length - 1]!
-  if (caps.desktop && streak.count >= settings.taps.biteAt) {
+  if (caps.desktop && !caps.pixel && streak.count >= settings.taps.biteAt) {
     streak.count = 0
     return caps.reducedMotion ? { kind: 'snap', reaction: last } : { kind: 'bite' }
   }
@@ -77,6 +79,7 @@ export function nextTapBites(
 ) {
   return (
     caps.desktop &&
+    !caps.pixel &&
     nowS - streak.lastS <= settings.taps.streakS &&
     streak.count + 1 >= settings.taps.biteAt
   )

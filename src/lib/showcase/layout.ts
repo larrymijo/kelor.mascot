@@ -10,6 +10,7 @@
  *   call to action at the bottom.
  */
 import type { FramingInput } from '@/lib/scene/framing'
+import { SIZE } from './size'
 
 /** The CSS media query of the sandbox layout; globals.css uses the same one. */
 export const SANDBOX_QUERY = '(min-width: 1024px) and (hover: hover) and (pointer: fine)'
@@ -19,9 +20,14 @@ export type Layout = Pick<FramingInput, 'fill' | 'topReserve' | 'bottomReserve'>
   centreX: number
 }
 
-/** The share of the screen Kelo fills, the bands kept around him, and where he stands. */
+/**
+ * The share of the screen Kelo fills, the bands kept around him, and where
+ * he stands. In the sandbox the fill is where the size slider starts
+ * (size.ts); the camera applies the slider on top.
+ */
 export function layoutFraming(aspect: number, sandbox: boolean): Layout {
-  if (sandbox) return { fill: 0.34, topReserve: 0.06, bottomReserve: 0.14, centreX: 0.5 }
+  if (sandbox)
+    return { fill: SIZE.defaultFill, topReserve: 0.06, bottomReserve: 0.14, centreX: 0.5 }
   if (aspect < 1) return { fill: 0.5, topReserve: 0.1, bottomReserve: 0.16, centreX: 0.5 }
   return { fill: 0.45, topReserve: 0.1, bottomReserve: 0.14, centreX: 0.5 }
 }

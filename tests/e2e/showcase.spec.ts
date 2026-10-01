@@ -114,6 +114,50 @@ test.describe('showcase', () => {
     expect(errors).toEqual([])
   })
 
+  test('resizes Kelo with the dock slider, down to pixel art, and keeps the size', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The slider is the desktop sandbox')
+    test.setTimeout(90_000)
+    const errors = collectErrors(page)
+    const height = () =>
+      page.evaluate(() =>
+        parseFloat(document.getElementById('live-ui')!.style.getPropertyValue('--kelo-h')),
+      )
+    await page.goto('/')
+    await hatch(page)
+    await page.waitForTimeout(1_000)
+    const start = await height()
+    const slider = page.getByRole('slider', { name: 'Tamaño de Kelo' })
+    await expect(slider).toBeVisible()
+
+    // The largest: about the old hero shot, more than twice his start.
+    await slider.focus()
+    await page.keyboard.press('End')
+    await expect.poll(height, { timeout: 5_000 }).toBeGreaterThan(start * 2)
+    await expect(ui(page)).toHaveAttribute('data-kelo-form', 'model')
+
+    // The smallest: the runner's pixel-art Kelo, who cannot bite.
+    await page.keyboard.press('Home')
+    await expect(ui(page)).toHaveAttribute('data-kelo-form', 'pixel', { timeout: 5_000 })
+    await expect(slider).toHaveAttribute('aria-valuetext', /pixel art/)
+    await expect(page.getByRole('button', { name: 'Morder' })).toBeDisabled()
+    expect(await height()).toBeLessThan(start / 2)
+    await page.waitForTimeout(800)
+    await page.screenshot({ path: 'scripts/review/out/showcase-pixel-desktop.png' })
+
+    // A tap makes the pixel Kelo hop; the size stays after a reload.
+    const x = Number(await ui(page).getAttribute('data-kelo-x'))
+    const y = Number(await ui(page).getAttribute('data-kelo-y'))
+    await page.mouse.click(x, y)
+    await expect(ui(page)).toHaveAttribute('data-reaction', 'giggle', { timeout: 2_000 })
+    await page.reload()
+    await hatch(page)
+    await expect(ui(page)).toHaveAttribute('data-kelo-form', 'pixel', { timeout: 5_000 })
+    await expect(slider).toHaveValue('0')
+    expect(errors).toEqual([])
+  })
+
   test('opens Kelo Run in the KELOR handheld from the dock, plays it by keyboard and closes', async ({
     page,
   }, testInfo) => {

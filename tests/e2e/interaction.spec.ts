@@ -36,6 +36,12 @@ async function kelo(page: Page) {
   }
 }
 
+/** How tall Kelo stands on screen (CSS px), as the frame loop reports it. */
+const keloHeight = (page: Page) =>
+  page.evaluate(() =>
+    parseFloat(document.getElementById('live-ui')!.style.getPropertyValue('--kelo-h')),
+  )
+
 /** A fine pointer that hovers, on a wide screen: where dragging and the bite exist. */
 const isDesktop = (page: Page) =>
   page.evaluate(
@@ -72,6 +78,7 @@ test.describe('live Kelo', () => {
     const desktop = await isDesktop(page)
     await expect(ui(page)).toHaveAttribute('data-kelo', 'rest')
     await shot('rest')
+    const restHeight = await keloHeight(page)
 
     const at = await kelo(page)
     for (const [i, reaction] of ['giggle', 'hop', 'stare', 'grumpy', 'grumpier'].entries()) {
@@ -81,6 +88,22 @@ test.describe('live Kelo', () => {
       await page.waitForTimeout(500)
     }
 
+    // Every frame from his reset in the dark to the end of the bite: how tall he is.
+    await page.evaluate(() => {
+      const element = document.getElementById('live-ui')!
+      const after: number[] = []
+      Object.assign(window, { __afterBite: after })
+      let peaked = false
+      let back = 0
+      const tick = () => {
+        const scale = Number(element.dataset.scale)
+        if (scale > 4) peaked = true
+        else if (peaked && element.dataset.biting === 'true' && scale === 1 && ++back > 3)
+          after.push(parseFloat(element.style.getPropertyValue('--kelo-h')))
+        if (!peaked || element.dataset.biting === 'true') requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
     await tap(page, at.x, at.y, touch)
     if (desktop) {
       await expect(ui(page)).toHaveAttribute('data-biting', 'true', { timeout: 2_000 })
@@ -95,6 +118,13 @@ test.describe('live Kelo', () => {
       await shot('bite')
       await expect(ui(page)).toHaveAttribute('data-biting', 'false', { timeout: 15_000 })
       await expect(ui(page)).toHaveAttribute('data-scale', '1.00')
+      // The iris opens on him at his own size: never larger, shrinking back.
+      const after = await page.evaluate(
+        () => (window as unknown as { __afterBite: number[] }).__afterBite,
+      )
+      expect(after.length).toBeGreaterThan(5)
+      expect(Math.max(...after)).toBeLessThanOrEqual(restHeight * 1.04)
+      expect(Math.min(...after)).toBeGreaterThanOrEqual(restHeight * 0.96)
       await page.waitForTimeout(400)
       await shot('after-bite')
     } else {

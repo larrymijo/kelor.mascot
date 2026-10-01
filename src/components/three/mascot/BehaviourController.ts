@@ -345,7 +345,7 @@ export class BehaviourController {
 
   /** On desktop the sixth tap bites: presses on him preload the synthesiser. */
   get canBite() {
-    return this.caps.desktop
+    return this.caps.desktop && !this.caps.pixel
   }
 
   /** Whether a tap now would bite: that press wakes the audio engine. */
@@ -376,6 +376,7 @@ export class BehaviourController {
     this.caps = {
       desktop: isDesktop(this.device, interaction),
       reducedMotion: ctx.reducedMotion,
+      pixel: live.form.target,
     }
     // The bite moves the camera in close: keep the bounds of the hero shot.
     if (live.sample.biteS === null) this.bounds = this.stageBounds(ctx)
@@ -479,6 +480,8 @@ export class BehaviourController {
     if (event.kind === 'command') {
       const { command } = event
       if (command.kind === 'bite') {
+        // Pixel art has no jaws to bite with.
+        if (this.caps.pixel) return
         if (ctx.reducedMotion) {
           // The bite without the motion, as on the sixth tap.
           this.act(interaction.reactions.at(-1)!, rig)
@@ -516,11 +519,16 @@ export class BehaviourController {
     rig.play('jump')
   }
 
-  /** Play a reaction or a dock action: its clip, its face and jaw for a while, its sound. */
+  /**
+   * Play a reaction or a dock action: its clip, its face and jaw for a while,
+   * its sound. As pixel art he hops instead, with the runner's blip.
+   */
   private act(spec: Reaction, rig: MascotRig) {
     this.reaction = { spec, startS: this.clock, untilS: this.clock + spec.durationS }
+    live.kelo.acts += 1
     if (spec.clip) rig.play(spec.clip)
-    if (spec.sound) playSound(spec.sound)
+    if (this.caps.pixel) playSound('blip')
+    else if (spec.sound) playSound(spec.sound)
   }
 
   /** What an interaction imposes on the director right now. */
