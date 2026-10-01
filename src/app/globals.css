@@ -6,6 +6,8 @@
   layout: the words above Kelo, the call to action below.
 */
 @custom-variant sandbox (@media (min-width: 1024px) and (hover: hover) and (pointer: fine));
+/* Room for the KELOR handheld held sideways: controls beside the screen. */
+@custom-variant handheld-wide (@media (min-width: 1000px) and (min-aspect-ratio: 5/4));
 
 /*
   Design tokens: the single source of truth for colour, type and motion.
@@ -336,5 +338,41 @@ html[data-stage-orbit] * {
   .glass {
     background-color: Canvas;
     border-color: CanvasText;
+  }
+}
+
+/*
+ * The KELOR handheld the runner plays in: it rises into place and its
+ * screen switches on with a brief flash, the way old LCDs warmed up.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .console-in {
+    animation: console-in 520ms var(--ease-out-quart) both;
+  }
+
+  .screen-on {
+    animation: screen-on 900ms 160ms ease-out both;
+  }
+}
+
+@keyframes console-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+  }
+}
+
+@keyframes screen-on {
+  0% {
+    opacity: 0;
+    filter: brightness(2.6) saturate(0);
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    filter: none;
   }
 }

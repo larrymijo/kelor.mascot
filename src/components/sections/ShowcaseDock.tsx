@@ -7,6 +7,7 @@ import {
   DEFAULT_SHOWCASE,
   LIGHTINGS,
   onShowcase,
+  requestGame,
   sendCommand,
   setShowcase,
   showcase,
@@ -14,45 +15,62 @@ import {
 } from '@/lib/showcase/state'
 import { wakeAudio } from '@/lib/sound/control'
 
+/** Kelo Run is heard from the start: wake the audio inside the click that opens it. */
+function play() {
+  wakeAudio()
+  requestGame()
+}
+
 const { dock } = copy.showcase
 
 /** Thin-stroke icons, 24 px grid. */
-const ICONS: Record<ActionName | 'bite' | 'light' | 'spin' | 'xray' | 'reset', ReactNode> = {
-  wave: (
-    <path d="M8 12.5V6.5a1.5 1.5 0 0 1 3 0V11m0-.5V4.5a1.5 1.5 0 0 1 3 0V11m0-.5v-4a1.5 1.5 0 0 1 3 0v7A6.5 6.5 0 0 1 10.5 20h-.3a5 5 0 0 1-4.1-2.1L3.8 14.6a1.5 1.5 0 0 1 2.4-1.8L8 14.5" />
-  ),
-  jump: <path d="M12 16V4.5M7.5 9 12 4.5 16.5 9M5 20h14" />,
-  roar: <path d="M4 10v4h3l4.5 3.5v-11L7 10H4Zm11.5-1a4 4 0 0 1 0 6m2.5-8.5a7.5 7.5 0 0 1 0 11" />,
-  look: (
-    <>
-      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
-      <circle cx="12" cy="12" r="2.75" />
-    </>
-  ),
-  bite: (
-    <path d="M3.5 7h17M3.5 17h17M5 7l2.1 4.5L9.2 7l2.1 4.5L13.4 7l2.1 4.5L17.6 7M6.2 17l2.1-4 2.1 4 2.1-4 2.1 4 2.1-4" />
-  ),
-  light: (
-    <>
-      <circle cx="12" cy="12" r="3.75" />
-      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
-    </>
-  ),
-  spin: <path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4.5h-4.5" />,
-  xray: (
-    <>
-      <path d="M12 2.5 20.5 7.25v9.5L12 21.5l-8.5-4.75v-9.5Z" />
-      <path d="M12 2.5v19M3.5 7.25l17 9.5M20.5 7.25l-17 9.5" opacity="0.5" />
-    </>
-  ),
-  reset: (
-    <>
-      <circle cx="12" cy="12" r="7" />
-      <path d="M12 2.5V6M12 18v3.5M2.5 12H6M18 12h3.5" />
-      <circle cx="12" cy="12" r="1" />
-    </>
-  ),
-}
+const ICONS: Record<ActionName | 'bite' | 'light' | 'spin' | 'xray' | 'reset' | 'game', ReactNode> =
+  {
+    wave: (
+      <path d="M8 12.5V6.5a1.5 1.5 0 0 1 3 0V11m0-.5V4.5a1.5 1.5 0 0 1 3 0V11m0-.5v-4a1.5 1.5 0 0 1 3 0v7A6.5 6.5 0 0 1 10.5 20h-.3a5 5 0 0 1-4.1-2.1L3.8 14.6a1.5 1.5 0 0 1 2.4-1.8L8 14.5" />
+    ),
+    jump: <path d="M12 16V4.5M7.5 9 12 4.5 16.5 9M5 20h14" />,
+    roar: (
+      <path d="M4 10v4h3l4.5 3.5v-11L7 10H4Zm11.5-1a4 4 0 0 1 0 6m2.5-8.5a7.5 7.5 0 0 1 0 11" />
+    ),
+    look: (
+      <>
+        <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+        <circle cx="12" cy="12" r="2.75" />
+      </>
+    ),
+    bite: (
+      <path d="M3.5 7h17M3.5 17h17M5 7l2.1 4.5L9.2 7l2.1 4.5L13.4 7l2.1 4.5L17.6 7M6.2 17l2.1-4 2.1 4 2.1-4 2.1 4 2.1-4" />
+    ),
+    light: (
+      <>
+        <circle cx="12" cy="12" r="3.75" />
+        <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+      </>
+    ),
+    spin: <path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4.5h-4.5" />,
+    xray: (
+      <>
+        <path d="M12 2.5 20.5 7.25v9.5L12 21.5l-8.5-4.75v-9.5Z" />
+        <path d="M12 2.5v19M3.5 7.25l17 9.5M20.5 7.25l-17 9.5" opacity="0.5" />
+      </>
+    ),
+    reset: (
+      <>
+        <circle cx="12" cy="12" r="7" />
+        <path d="M12 2.5V6M12 18v3.5M2.5 12H6M18 12h3.5" />
+        <circle cx="12" cy="12" r="1" />
+      </>
+    ),
+    game: (
+      <>
+        <path d="M7.2 7.5h9.6a4.2 4.2 0 0 1 4.1 3.4l.8 4.3a2.6 2.6 0 0 1-4.5 2.2L15.3 15H8.7l-1.9 2.4a2.6 2.6 0 0 1-4.5-2.2l.8-4.3a4.2 4.2 0 0 1 4.1-3.4Z" />
+        <path d="M8 9.7v3.4M6.3 11.4h3.4" />
+        <circle cx="15.4" cy="12.4" r="0.5" fill="currentColor" />
+        <circle cx="17.2" cy="10.6" r="0.5" fill="currentColor" />
+      </>
+    ),
+  }
 
 function IconButton({
   icon,
@@ -104,7 +122,9 @@ const Divider = () => <span aria-hidden="true" className="mx-1.5 h-5 w-px bg-whi
  * a clip with its face and sound, and the bite (its press starts the audio,
  * as the sixth tap's does); the light cycles the studio's looks; the view
  * spins him on a turntable, shows him in x-ray and centres the camera
- * again. It talks to the 3D chunk only through src/lib/showcase/state.ts.
+ * again; the last button opens Kelo Run in its KELOR handheld (phones get
+ * it on the ninth tap). It talks to the 3D chunk only through
+ * src/lib/showcase/state.ts.
  */
 export function ShowcaseDock() {
   const state = useSyncExternalStore(onShowcase, showcase, () => DEFAULT_SHOWCASE)
@@ -159,6 +179,8 @@ export function ShowcaseDock() {
         label={dock.view.reset}
         onClick={() => sendCommand({ kind: 'resetView' })}
       />
+      <Divider />
+      <IconButton icon="game" accent label={dock.game} onClick={play} />
     </div>
   )
 }

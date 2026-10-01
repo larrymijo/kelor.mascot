@@ -54,17 +54,30 @@ export const copy = {
       light: 'Luz',
       lights: { studio: 'Estudio', sunset: 'Atardecer', neon: 'Neón' },
       view: { spin: 'Giro 360°', xray: 'Rayos X', reset: 'Centrar' },
+      game: 'Jugar a Kelo Run',
     },
   },
   /** The pixel runner, after the ninth tap on a phone. */
   game: {
     label: 'Minijuego: Kelo esquiva bichos',
     title: 'KELO RUN',
-    start: 'Toca para empezar',
+    start: { pointer: 'Pulsa Espacio para empezar', touch: 'Toca para empezar' },
     over: 'Fin del juego',
-    again: 'Toca para jugar otra vez',
+    again: { pointer: 'Pulsa Espacio para jugar otra vez', touch: 'Toca para jugar otra vez' },
     close: 'Cerrar el minijuego',
-    help: 'Toca la pantalla, o pulsa Espacio, para saltar los bichos.',
+    help: {
+      pointer: 'Espacio, ↑ o el botón A para saltar los bichos. Esc para salir.',
+      touch: 'Toca la pantalla para saltar los bichos.',
+    },
+    /** The printing on the KELOR handheld the runner plays in (decorative). */
+    console: {
+      brand: 'KELOR',
+      maker: 'Interactive',
+      model: 'K-89',
+      power: 'Power',
+      select: 'Select',
+      start: 'Start',
+    },
   },
   notFound: {
     title: 'Página no encontrada',

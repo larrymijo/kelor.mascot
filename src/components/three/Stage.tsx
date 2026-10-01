@@ -2,11 +2,12 @@
 
 import { useProgress } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { AgXToneMapping } from 'three'
 import { character } from '@/lib/character'
 import { detectQualityTier, type QualityTier } from '@/lib/quality/detect'
 import { bootTimings, stepBoot, type BootPhase } from '@/lib/scene/boot'
+import { isGameOpen, onGameOpen } from '@/lib/showcase/state'
 import { CameraRig, FOV } from './CameraRig'
 import { LiveDriver } from './live/LiveDriver'
 import { ShowcaseDriver } from './live/ShowcaseDriver'
@@ -180,6 +181,9 @@ export default function Stage({
     [onPhaseChange, onModelChange, onAttentionChange, onClipChange],
   )
 
+  // The pixel runner covers the stage: nothing to draw behind it.
+  const gameOpen = useSyncExternalStore(onGameOpen, isGameOpen, () => false)
+
   if (bootTier === 'unavailable') return null
 
   const boot = character.quality.tiers[bootTier]
@@ -189,7 +193,7 @@ export default function Stage({
       <Canvas
         shadows={boot.shadows ? 'percentage' : false}
         dpr={dpr}
-        frameloop={inView && pageVisible ? 'always' : 'never'}
+        frameloop={inView && pageVisible && !gameOpen ? 'always' : 'never'}
         gl={{ antialias: bootTier === 'low', powerPreference: 'high-performance', stencil: false }}
         camera={{ fov: FOV, near: 0.1, far: 40, position: [0, 1, 4] }}
         onCreated={({ gl }) => {
